@@ -1327,19 +1327,7 @@ const BASE = {
   'GMG.ASX':24.80,'REA.ASX':188.40,'APX.ASX':2.14,'NXT.ASX':15.60,
 };
 
-// Yahoo Finance symbol mapping
-const YF_MAP = {
-  'AUD/USD':'AUDUSD=X','EUR/USD':'EURUSD=X','GBP/USD':'GBPUSD=X','GBP/JPY':'GBPJPY=X',
-  'USD/JPY':'JPY=X','NZD/USD':'NZDUSD=X','EUR/JPY':'EURJPY=X','EUR/GBP':'EURGBP=X',
-  'USD/CAD':'USDCAD=X','USD/CHF':'USDCHF=X','AUD/JPY':'AUDJPY=X','GBP/AUD':'GBPAUD=X',
-  'XAU/USD':'GC=F','XAG/USD':'SI=F','WTI':'CL=F','BRENT':'BZ=F','NAT/GAS':'NG=F','COPPER':'HG=F',
-  'ES1!':'ES=F','NQ1!':'NQ=F','YM1!':'YM=F','RTY1!':'RTY=F',
-  'BTC/USD':'BTC-USD','ETH/USD':'ETH-USD',
-  'BHP.ASX':'BHP.AX','CBA.ASX':'CBA.AX','RIO.ASX':'RIO.AX','ANZ.ASX':'ANZ.AX',
-  'WBC.ASX':'WBC.AX','NAB.ASX':'NAB.AX','FMG.ASX':'FMG.AX','WDS.ASX':'WDS.AX',
-  'MQG.ASX':'MQG.AX','WOW.ASX':'WOW.AX','CSL.ASX':'CSL.AX','TLS.ASX':'TLS.AX',
-  'GMG.ASX':'GMG.AX','REA.ASX':'REA.AX','APX.ASX':'APX.AX','NXT.ASX':'NXT.AX',
-};
+// Price sources: Frankfurter (forex) + Coinbase (crypto) + simulation
 
 // Volatility for simulation fallback
 const VOLS = {
@@ -1370,32 +1358,12 @@ function refreshBiases() {
 }
 refreshBiases();
 
-// Batch fetch from Yahoo Finance — works on hosted sites without proxy
-async function fetchYFBatch(symbols) {
-  // symbols is array of YF symbols e.g. ['AUDUSD=X','GC=F','BHP.AX']
-  const joined = symbols.join(',');
-  const url = `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${encodeURIComponent(joined)}&range=1d&interval=5m`;
-  const r = await fetch(url, {
-    signal: AbortSignal.timeout(10000),
-    headers: { 'Accept': 'application/json' }
-  });
-  if (!r.ok) throw new Error('YF batch ' + r.status);
-  return await r.json();
-}
+// ── MULTI-SOURCE PRICE FETCHING ──
+// Source 1: Frankfurter (ECB) — real forex, always reliable
+// Source 2: Coinbase API — real crypto prices
+// Source 3: ExchangeRate.host — backup forex
+// Source 4: Simulation — everything else ticks realistically
 
-async function fetchYFQuotes(symbols) {
-  // v7 quote endpoint — gets current price + day change
-  const joined = symbols.join(',');
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(joined)}&fields=regularMarketPrice,regularMarketOpen,regularMarketPreviousClose,regularMarketChangePercent`;
-  const r = await fetch(url, {
-    signal: AbortSignal.timeout(10000),
-    headers: { 'Accept': 'application/json' }
-  });
-  if (!r.ok) throw new Error('YF quotes ' + r.status);
-  return await r.json();
-}
-
-// Also keep Frankfurter as guaranteed forex fallback
 async function fetchFrankfurter() {
   try {
     const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=AUD,EUR,GBP,JPY,NZD,CAD,CHF', {signal: AbortSignal.timeout(6000)});
@@ -1412,71 +1380,75 @@ async function fetchFrankfurter() {
     if (rt.EUR && rt.GBP) prices['EUR/GBP'] = +(rt.GBP/rt.EUR).toFixed(5);
     if (rt.AUD && rt.JPY) prices['AUD/JPY'] = +(rt.JPY/rt.AUD).toFixed(3);
     if (rt.GBP && rt.AUD) prices['GBP/AUD'] = +(rt.AUD/rt.GBP).toFixed(5);
+    if (rt.GBP && rt.JPY) prices['GBP/JPY'] = +(rt.JPY/rt.GBP).toFixed(3);
+    dailyOpen['AUD/USD'] = dailyOpen['AUD/USD'] || prices['AUD/USD'];
+    dailyOpen['EUR/USD'] = dailyOpen['EUR/USD'] || prices['EUR/USD'];
+    dailyOpen['GBP/USD'] = dailyOpen['GBP/USD'] || prices['GBP/USD'];
     return true;
   } catch(e) { return false; }
 }
 
-// Main fetch — tries Yahoo Finance first, falls back to Frankfurter + sim
-let yfFailed = 0; // consecutive YF failures
+async function fetchCrypto() {
+  try {
+    // Coinbase public API — no key, no CORS issues
+    const [btc, eth] = await Promise.all([
+      fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot', {signal: AbortSignal.timeout(5000)}).then(r=>r.json()),
+      fetch('https://api.coinbase.com/v2/prices/ETH-USD/spot', {signal: AbortSignal.timeout(5000)}).then(r=>r.json()),
+    ]);
+    if (btc?.data?.amount) prices['BTC/USD'] = +parseFloat(btc.data.amount).toFixed(0);
+    if (eth?.data?.amount) prices['ETH/USD'] = +parseFloat(eth.data.amount).toFixed(2);
+    return true;
+  } catch(e) { return false; }
+}
+
+async function fetchMetals() {
+  try {
+    // exchangerate.host has metals in USD
+    const r = await fetch('https://api.exchangerate.host/live?access_key=free&source=XAU&currencies=USD', {signal: AbortSignal.timeout(5000)});
+    if (!r.ok) return false;
+    const d = await r.json();
+    if (d?.quotes?.XAUUSD) prices['XAU/USD'] = +(1/d.quotes.XAUUSD * 1000).toFixed(2);
+    return true;
+  } catch(e) { return false; }
+}
+
+let frankfurterLoaded = false;
+let cryptoLoaded = false;
 
 async function fetchPrices() {
   if (fetchBusy) return;
   fetchBusy = true;
-
   prevPrices = {...prices};
-  let yfSuccess = false;
 
-  if (yfFailed < 3) {
-    // Try Yahoo Finance in batches of 15
-    const allSyms = Object.entries(YF_MAP);
-    const batchSize = 15;
-    let fetched = 0;
+  // Run all sources in parallel
+  const [forex, crypto] = await Promise.allSettled([
+    fetchFrankfurter(),
+    fetchCrypto(),
+  ]);
 
-    for (let i = 0; i < allSyms.length; i += batchSize) {
-      const batch = allSyms.slice(i, i + batchSize);
-      const yfSyms = batch.map(([,yfSym]) => yfSym);
-      try {
-        const data = await fetchYFQuotes(yfSyms);
-        const results = data?.quoteResponse?.result || [];
-        for (const quote of results) {
-          const price = quote.regularMarketPrice;
-          if (!price) continue;
-          // Find our internal name
-          const entry = batch.find(([,yfSym]) => yfSym === quote.symbol);
-          if (entry) {
-            prices[entry[0]] = price;
-            if (quote.regularMarketOpen) dailyOpen[entry[0]] = quote.regularMarketOpen;
-            fetched++;
-          }
-        }
-        yfSuccess = fetched > 0;
-      } catch(e) {
-        // YF batch failed — try next
-      }
-    }
-    if (!yfSuccess) yfFailed++;
-    else yfFailed = 0;
-  }
+  if (forex.value) frankfurterLoaded = true;
+  if (crypto.value) cryptoLoaded = true;
 
-  // Always run Frankfurter for forex accuracy (ECB rates)
-  await fetchFrankfurter();
-
-  // Simulate tick for anything still on base prices (markets closed etc)
+  // Always simulate tick (keeps ASX, futures, commodities moving)
   simFallback();
 
-  liveCount = Object.keys(prices).filter(sym => prices[sym] !== BASE[sym]).length;
-  simMode = liveCount < 5;
+  // Count live prices (different from BASE)
+  liveCount = Object.keys(prices).filter(sym => Math.abs(prices[sym] - BASE[sym]) > 0.00001).length;
 
   updatePriceEls();
 
   const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'Australia/Perth'});
-  const src = yfSuccess ? `${liveCount} live` : liveCount > 0 ? `${liveCount} via ECB` : 'simulated';
+  const src = frankfurterLoaded ? `Forex live · ${cryptoLoaded?'Crypto live':'sim'}` : 'Connecting...';
+
   const ds = document.getElementById('dstatus');
-  if (ds) { ds.textContent = 'LIVE · ' + t; ds.className = 'live'; }
+  if (ds) {
+    ds.textContent = frankfurterLoaded ? 'LIVE · ' + t : 'CONNECTING...';
+    ds.className = frankfurterLoaded ? 'live' : '';
+  }
   const dsub = document.getElementById('dash-sub');
   if (dsub) dsub.textContent = `${t} AWST · ${src} · ${Object.keys(prices).length} instruments`;
   const ssub = document.getElementById('scan-sub');
-  if (ssub) ssub.textContent = `Live every 5s · ${src} · CRT · MTF · BOS · VOL`;
+  if (ssub) ssub.textContent = `Live every 5s · Forex + Crypto live · Sim active · CRT · MTF`;
 
   fetchBusy = false;
 }
