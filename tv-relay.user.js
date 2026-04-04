@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ApexTrade TV Relay
 // @namespace    https://apextrade-proxy.netlify.app
-// @version      1.2
+// @version      1.3
 // @description  Intercepts TradingView candle data and relays it to your ApexTrade proxy cache
 // @match        https://www.tradingview.com/*
 // @match        https://tradingview.com/*
@@ -291,5 +291,123 @@
     } catch (e) {}
   }, 2000);
 
-  log('ApexTrade TV Relay v1.2 loaded');
+  // ── AUTO-CYCLE: automatically rotate through ASX tickers ──
+  var autoCycleEnabled = false;
+  var autoCycleIndex = 0;
+  var autoCycleList = [];
+  var autoCycleInterval = null;
+  var CYCLE_DELAY = 8000; // 8 seconds per ticker (enough for WS data to load)
+  var ASX_LIST_URL = 'https://apextrade-proxy.netlify.app/.netlify/functions/asx-list';
+
+  function changeSymbol(ticker) {
+    // Use TradingView's internal widget API to change the chart symbol
+    try {
+      // Method 1: TV's internal navigation
+      var symbolInput = document.querySelector('#header-toolbar-symbol-search');
+      if (symbolInput) {
+        symbolInput.click();
+        setTimeout(function () {
+          var input = document.querySelector('input[data-role="search"]') || document.querySelector('.search-ZXzPWcCf input') || document.querySelector('input[type="text"]');
+          if (input) {
+            input.value = '';
+            input.focus();
+            // Simulate typing
+            var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+            nativeInputValueSetter.call(input, 'ASX:' + ticker);
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            // Wait for search results then press Enter
+            setTimeout(function () {
+              input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+            }, 1500);
+          }
+        }, 500);
+        return;
+      }
+
+      // Method 2: URL navigation (simpler fallback)
+      var currentUrl = window.location.href;
+      if (currentUrl.indexOf('/chart/') !== -1) {
+        // Change symbol via URL param
+        var base = currentUrl.split('?')[0];
+        window.location.href = base + '?symbol=ASX%3A' + ticker;
+      }
+    } catch (e) {
+      log('Symbol change failed: ' + e.message);
+    }
+  }
+
+  function startAutoCycle() {
+    if (autoCycleEnabled) return;
+    autoCycleEnabled = true;
+    log('Auto-cycle: fetching ASX ticker list...');
+
+    origFetch(ASX_LIST_URL).then(function (r) { return r.json(); }).then(function (data) {
+      if (data.tickers && Array.isArray(data.tickers)) {
+        autoCycleList = data.tickers.map(function (t) { return t.ticker || t; });
+      } else if (Array.isArray(data)) {
+        autoCycleList = data.map(function (t) { return t.ticker || t; });
+      }
+      log('Auto-cycle: loaded ' + autoCycleList.length + ' tickers');
+      updateBadge();
+
+      autoCycleInterval = setInterval(function () {
+        if (autoCycleIndex >= autoCycleList.length) {
+          log('Auto-cycle: completed all ' + autoCycleList.length + ' tickers!');
+          stopAutoCycle();
+          return;
+        }
+        var ticker = autoCycleList[autoCycleIndex];
+        log('Auto-cycle: [' + (autoCycleIndex + 1) + '/' + autoCycleList.length + '] ' + ticker);
+        changeSymbol(ticker);
+        autoCycleIndex++;
+        updateBadge();
+      }, CYCLE_DELAY);
+    }).catch(function (e) {
+      log('Auto-cycle: failed to load tickers: ' + e.message);
+      autoCycleEnabled = false;
+    });
+  }
+
+  function stopAutoCycle() {
+    autoCycleEnabled = false;
+    if (autoCycleInterval) clearInterval(autoCycleInterval);
+    autoCycleInterval = null;
+    updateBadge();
+    log('Auto-cycle stopped at index ' + autoCycleIndex);
+  }
+
+  function updateBadge() {
+    var b = document.getElementById('apextrade-relay-badge');
+    if (!b) return;
+    if (autoCycleEnabled) {
+      b.textContent = 'Relay: Cycling ' + autoCycleIndex + '/' + autoCycleList.length;
+      b.style.color = '#ffaa00';
+      b.style.borderColor = '#ffaa00';
+    } else {
+      b.textContent = 'ApexTrade Relay';
+      b.style.color = '#00d4aa';
+      b.style.borderColor = '#00d4aa';
+    }
+  }
+
+  // Override badge click to toggle auto-cycle
+  function addBadgeV2() {
+    var b = document.getElementById('apextrade-relay-badge');
+    if (!b) { setTimeout(addBadgeV2, 1000); return; }
+    b.onclick = function () {
+      if (autoCycleEnabled) {
+        stopAutoCycle();
+        alert('Auto-cycle stopped at ticker ' + autoCycleIndex + '/' + autoCycleList.length);
+      } else {
+        var t = Object.keys(pendingData), total = 0;
+        for (var i = 0; i < t.length; i++) total += pendingData[t[i]].candles.length;
+        if (confirm('ApexTrade Relay v1.3\n\nBuffered: ' + t.length + ' tickers, ' + total + ' candles\n\nStart AUTO-CYCLE through all ASX tickers?\n(Click OK to start, Cancel to dismiss)')) {
+          startAutoCycle();
+        }
+      }
+    };
+  }
+  setTimeout(addBadgeV2, 4000);
+
+  log('ApexTrade TV Relay v1.3 loaded — click badge to start auto-cycle');
 })();
