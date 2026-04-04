@@ -46,12 +46,13 @@ exports.handler = async (event) => {
         if(!crt||!inner)continue;
         var crtRange=crt.h-crt.l;
         if(crtRange<=0)continue;
+        var tol=crtRange*0.005;
         // BULLISH: inner must have swept CRT low (wick below) AND closed back above it
-        // Close can be anywhere above CRT low — doesn't need to be below CRT high
+        // Close can be anywhere above CRT low â doesn't need to be below CRT high
         if(inner.l<crt.l&&inner.c>crt.l){
           var tbos=T.filter(function(x){return x.t>inner.t;});
           if(tbos.length){
-            // Sweep already happened on inner candle itself — now look for TBOS
+            // Sweep already happened on inner candle itself â now look for TBOS
             // TBOS level = CRT high (the swing high before the sweep)
             var tbosLvl=crt.h;
             // Check if any TBOS candle before inner had a higher high
@@ -63,13 +64,13 @@ exports.handler = async (event) => {
             var lastPurgeIdx=-1;
             for(var j=0;j<tbos.length;j++){
               var c=tbos[j];
-              if(c.c<crt.l){invalidated=true;break;} // closed below CRT low = invalid
+              if(c.c<crt.l-tol){invalidated=true;break;} // closed below CRT low = invalid
               if(c.l<crt.l){purges++;lastPurgeIdx=j;} // additional purge
               if(c.c>tbosLvl&&!tbosC){tbosC=c;tbosAge=tbos.length-1-j;}
             }
             if(!invalidated){
               var last=tbos[tbos.length-1];
-              var sweepingNow=!tbosC&&last.l<crt.l&&last.c>=crt.l;
+              var sweepingNow=!tbosC&&last.l<crt.l&&last.c>=crt.l-tol;
               var tbosForming=!tbosC&&!sweepingNow&&last.c>tbosLvl;
               if(tbosC||sweepingNow||tbosForming){
                 if(!tbosC||(tbosAge<=3)){
@@ -108,7 +109,7 @@ exports.handler = async (event) => {
             var purges=1;
             for(var j=0;j<tbos.length;j++){
               var c=tbos[j];
-              if(c.c>crt.h){invalidated=true;break;}
+              if(c.c>crt.h+tol){invalidated=true;break;}
               if(c.h>crt.h){purges++;}
               if(c.c<tbosLvl&&!tbosC){tbosC=c;tbosAge=tbos.length-1-j;}
             }
