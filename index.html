@@ -8,11 +8,11 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  /* Core backgrounds — deep navy to slate */
+  /* Core backgrounds â deep navy to slate */
   --bg:#060c18;--bg2:#0a1628;--bg3:#0f1f3d;--bg4:#162447;--bg5:#1d2e56;
   /* Borders */
   --border:rgba(100,160,255,0.10);--border2:rgba(100,160,255,0.18);--border3:rgba(100,160,255,0.30);
-  /* Text — white to blue-grey */
+  /* Text â white to blue-grey */
   --text:#f4f7ff;--text2:#a8bcd8;--text3:#5a7aaa;--text4:#2d4a70;
   /* Accent: electric blue (primary action colour) */
   --accent:#2d8eff;--accent2:rgba(45,142,255,0.18);--accent3:rgba(45,142,255,0.09);
@@ -31,7 +31,7 @@
 body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px;height:100vh;overflow:hidden;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
 ::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 .mono{font-family:var(--fm) !important}
-/* Section labels — Inter, uppercase, tracked */
+/* Section labels â Inter, uppercase, tracked */
 .seclab{font-family:var(--fd);font-size:10px;letter-spacing:.10em;color:var(--text3);padding:10px 16px 4px;text-transform:uppercase;font-weight:700}
 /* Scanner price uses mono */
 .sprice{font-size:13px;font-weight:700;color:var(--text);font-family:var(--fm)}
@@ -127,9 +127,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .cbar{flex:1;background:var(--bg5);border-radius:2px;height:3px}
 .cfill{height:3px;border-radius:2px}
 
-/* ═══════════════════════════════
+/* âââââââââââââââââââââââââââââââ
    SCANNER STYLES
-═══════════════════════════════ */
+âââââââââââââââââââââââââââââââ */
 .filter-bar{padding:9px 16px;border-bottom:1px solid var(--border2);display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:var(--bg2);flex-shrink:0}
 .chip{font-family:var(--fm);font-size:10px;padding:3px 9px;border-radius:99px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer;transition:all .15s}
 .chip.on{background:var(--accent3);color:var(--accent);border-color:rgba(45,142,255,.3)}
@@ -172,9 +172,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .strbar{width:64px;height:3px;background:var(--bg5);border-radius:2px;margin:4px 0 0 auto}
 .strfill{height:3px;border-radius:2px}
 
-/* ═══════════════════════════════
+/* âââââââââââââââââââââââââââââââ
    DASHBOARD STYLES
-═══════════════════════════════ */
+âââââââââââââââââââââââââââââââ */
 .prow{display:grid;grid-template-columns:100px 60px 1fr 80px 76px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
 .prow:hover{background:var(--bg4)}
 .prow:last-child{border-bottom:none}
@@ -220,9 +220,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .cal-prev{font-size:10px;color:var(--text3)}
 .cal-act{font-size:11px;font-weight:600;min-width:60px;text-align:right}
 
-/* ═══════════════════════════════
+/* âââââââââââââââââââââââââââââââ
    JOURNAL STYLES
-═══════════════════════════════ */
+âââââââââââââââââââââââââââââââ */
 .jstats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .journal-table{width:100%;border-collapse:collapse;font-size:12px}
 .journal-table th{padding:9px 12px;text-align:left;font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid var(--border2);background:var(--bg5);font-weight:700;font-family:var(--fd)}
@@ -329,9 +329,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .mbtn.p{background:var(--accent2);border-color:rgba(45,142,255,.35);color:var(--accent)}
 .mbtn.p:hover{background:rgba(45,142,255,.28)}
 
-/* ═══════════════════════════════
+/* âââââââââââââââââââââââââââââââ
    SECTOR INTELLIGENCE STYLES
-═══════════════════════════════ */
+âââââââââââââââââââââââââââââââ */
 /* Heatmap grid */
 .sector-heatmap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .sh-card{border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;border:1px solid transparent}
@@ -391,9 +391,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .mf-bear{position:absolute;right:50%;top:0;height:100%;border-radius:4px 0 0 4px}
 .mf-label{font-size:10px;min-width:60px;text-align:right;font-weight:600}
 
-/* ═══════════════════════════════
+/* âââââââââââââââââââââââââââââââ
    SECTOR / MONEY FLOW STYLES
-═══════════════════════════════ */
+âââââââââââââââââââââââââââââââ */
 .sector-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .sector-card{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:13px 15px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
 .sector-card:hover{border-color:var(--border3)}
@@ -445,7 +445,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .outperf-sym{font-size:13px;font-weight:600;color:var(--text)}
 .outperf-sect{font-size:10px;color:var(--text3);margin-top:1px}
 
-/* ═══════════ UPGRADED SCANNER ═══════════ */
+/* âââââââââââ UPGRADED SCANNER âââââââââââ */
 .scan-row-new{
   display:grid;
   grid-template-columns:110px 80px 80px 60px 1fr 120px 90px;
@@ -513,9 +513,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 }
 
 
-/* ═══════════════════════════════════════
-   APEX TRADE — ELITE UPGRADE
-   ═══════════════════════════════════════ */
+/* âââââââââââââââââââââââââââââââââââââââ
+   APEX TRADE â ELITE UPGRADE
+   âââââââââââââââââââââââââââââââââââââââ */
 
 /* Market session indicator */
 .session-bar {
@@ -834,7 +834,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   </button>
 </div>
 
-<!-- ═══════════════ PAGE: DASHBOARD ═══════════════ -->
+<!-- âââââââââââââââ PAGE: DASHBOARD âââââââââââââââ -->
 <div class="page active" id="page-dash">
   <div class="ph">
     <div><div class="ph-t">Dashboard</div><div class="ph-s" id="dash-sub">Loading...</div></div>
@@ -846,22 +846,22 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <div class="scroll">
     <div class="metrics">
       <div class="mc"><div class="mc-l">P&L today</div><div class="mc-v up" id="m-pnl">+$3,241</div><div class="mc-s"><span class="up">+2.1%</span> vs yesterday</div></div>
-      <div class="mc"><div class="mc-l">Open positions</div><div class="mc-v" id="m-pos">7</div><div class="mc-s">4 long · 3 short</div></div>
+      <div class="mc"><div class="mc-l">Open positions</div><div class="mc-v" id="m-pos">7</div><div class="mc-s">4 long Â· 3 short</div></div>
       <div class="mc"><div class="mc-l">Win rate (30d)</div><div class="mc-v up" id="m-wr">61%</div><div class="mc-s">44 of 72 trades</div></div>
-      <div class="mc"><div class="mc-l">Max drawdown</div><div class="mc-v dn" id="m-dd">−4.2%</div><div class="mc-s">Peak: $83,400</div></div>
+      <div class="mc"><div class="mc-l">Max drawdown</div><div class="mc-v dn" id="m-dd">â4.2%</div><div class="mc-s">Peak: $83,400</div></div>
     </div>
 
     <div class="g2">
       <!-- Positions -->
       <div class="panel">
         <div class="phead"><div class="ptitle">Open positions</div><div class="pmeta g">7 active</div></div>
-        <div class="prow"><div><div class="psym">BHP.ASX</div><div class="pmkt2">ASX</div></div><span class="badge bg">Long</span><div class="pd">200sh · $46.80</div><div class="pp" id="p-bhp">$47.38</div><div class="ppnl up" id="pnl-bhp">+$342</div></div>
-        <div class="prow"><div><div class="psym">EUR/USD</div><div class="pmkt2">Forex</div></div><span class="badge br">Short</span><div class="pd">1 lot · 1.0821</div><div class="pp" id="p-eur">1.0834</div><div class="ppnl up" id="pnl-eur">+$194</div></div>
-        <div class="prow"><div><div class="psym">XAU/USD</div><div class="pmkt2">Commodity</div></div><span class="badge bg">Long</span><div class="pd">5oz · $2,318</div><div class="pp" id="p-gold">2,341.80</div><div class="ppnl up" id="pnl-gold">+$610</div></div>
-        <div class="prow"><div><div class="psym">AUD/USD</div><div class="pmkt2">Forex</div></div><span class="badge bg">Long</span><div class="pd">2 lots · 0.6451</div><div class="pp" id="p-aud">0.6482</div><div class="ppnl up" id="pnl-aud">+$310</div></div>
-        <div class="prow"><div><div class="psym">WTI Crude</div><div class="pmkt2">Commodity</div></div><span class="badge br">Short</span><div class="pd">3 contracts · $81.20</div><div class="pp" id="p-wti">80.44</div><div class="ppnl up" id="pnl-wti">+$228</div></div>
-        <div class="prow"><div><div class="psym">ES1! (S&P)</div><div class="pmkt2">Future</div></div><span class="badge br">Short</span><div class="pd">1 contract · 5,360</div><div class="pp" id="p-es">5,332</div><div class="ppnl up" id="pnl-es">+$700</div></div>
-        <div class="prow"><div><div class="psym">GBP/JPY</div><div class="pmkt2">Forex</div></div><span class="badge br">Short</span><div class="pd">0.5 lots · 198.10</div><div class="pp" id="p-gbpjpy">197.82</div><div class="ppnl up" id="pnl-gbpjpy">+$70</div></div>
+        <div class="prow"><div><div class="psym">BHP.ASX</div><div class="pmkt2">ASX</div></div><span class="badge bg">Long</span><div class="pd">200sh Â· $46.80</div><div class="pp" id="p-bhp">$47.38</div><div class="ppnl up" id="pnl-bhp">+$342</div></div>
+        <div class="prow"><div><div class="psym">EUR/USD</div><div class="pmkt2">Forex</div></div><span class="badge br">Short</span><div class="pd">1 lot Â· 1.0821</div><div class="pp" id="p-eur">1.0834</div><div class="ppnl up" id="pnl-eur">+$194</div></div>
+        <div class="prow"><div><div class="psym">XAU/USD</div><div class="pmkt2">Commodity</div></div><span class="badge bg">Long</span><div class="pd">5oz Â· $2,318</div><div class="pp" id="p-gold">2,341.80</div><div class="ppnl up" id="pnl-gold">+$610</div></div>
+        <div class="prow"><div><div class="psym">AUD/USD</div><div class="pmkt2">Forex</div></div><span class="badge bg">Long</span><div class="pd">2 lots Â· 0.6451</div><div class="pp" id="p-aud">0.6482</div><div class="ppnl up" id="pnl-aud">+$310</div></div>
+        <div class="prow"><div><div class="psym">WTI Crude</div><div class="pmkt2">Commodity</div></div><span class="badge br">Short</span><div class="pd">3 contracts Â· $81.20</div><div class="pp" id="p-wti">80.44</div><div class="ppnl up" id="pnl-wti">+$228</div></div>
+        <div class="prow"><div><div class="psym">ES1! (S&P)</div><div class="pmkt2">Future</div></div><span class="badge br">Short</span><div class="pd">1 contract Â· 5,360</div><div class="pp" id="p-es">5,332</div><div class="ppnl up" id="pnl-es">+$700</div></div>
+        <div class="prow"><div><div class="psym">GBP/JPY</div><div class="pmkt2">Forex</div></div><span class="badge br">Short</span><div class="pd">0.5 lots Â· 198.10</div><div class="pp" id="p-gbpjpy">197.82</div><div class="ppnl up" id="pnl-gbpjpy">+$70</div></div>
       </div>
 
       <div class="vcol">
@@ -898,7 +898,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
               <div class="corr-cell" style="background:#14532d;color:#4ade80">1.0</div>
             </div>
           </div>
-          <div style="padding:6px 16px 10px;font-size:10px;color:var(--amber)">⚠ AUD/USD + XAU/USD highly correlated (0.71) — review exposure</div>
+          <div style="padding:6px 16px 10px;font-size:10px;color:var(--amber)">â  AUD/USD + XAU/USD highly correlated (0.71) â review exposure</div>
         </div>
 
         <!-- Risk Calculator -->
@@ -911,8 +911,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
             <div class="rc-row"><div class="rc-label">Stop loss</div><input class="rc-input" id="rc-stop" placeholder="e.g. 46.50" oninput="calcRisk()"></div>
             <div class="rc-result">
               <div class="rc-res-row"><span style="color:var(--text3)">Risk amount</span><span class="rc-res-val" id="rc-amount" style="color:var(--amber)">$800</span></div>
-              <div class="rc-res-row"><span style="color:var(--text3)">Position size</span><span class="rc-res-val up" id="rc-size">—</span></div>
-              <div class="rc-res-row"><span style="font-weight:600">Total position value</span><span class="rc-res-val" id="rc-value" style="font-family:var(--fd);font-size:16px">—</span></div>
+              <div class="rc-res-row"><span style="color:var(--text3)">Position size</span><span class="rc-res-val up" id="rc-size">â</span></div>
+              <div class="rc-res-row"><span style="font-weight:600">Total position value</span><span class="rc-res-val" id="rc-value" style="font-family:var(--fd);font-size:16px">â</span></div>
             </div>
           </div>
         </div>
@@ -927,7 +927,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
           <div class="eq-stat"><div class="eq-stat-v up">$83,241</div><div class="eq-stat-l">Current equity</div></div>
           <div class="eq-stat"><div class="eq-stat-v">$80,000</div><div class="eq-stat-l">Starting capital</div></div>
           <div class="eq-stat"><div class="eq-stat-v up">+4.1%</div><div class="eq-stat-l">Total return</div></div>
-          <div class="eq-stat"><div class="eq-stat-v dn">−4.2%</div><div class="eq-stat-l">Max drawdown</div></div>
+          <div class="eq-stat"><div class="eq-stat-v dn">â4.2%</div><div class="eq-stat-l">Max drawdown</div></div>
         </div>
         <svg class="eq-svg" viewBox="0 0 800 120" preserveAspectRatio="none">
           <defs>
@@ -941,7 +941,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
           <!-- Drawdown zone -->
           <path d="M80,70 L120,85 L160,78" fill="none" stroke="#ff3d5a" stroke-width="2" stroke-dasharray="4 2"/>
           <line x1="80" y1="70" x2="120" y2="70" stroke="#ff3d5a" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
-          <text x="100" y="68" font-size="8" fill="#ff3d5a" text-anchor="middle" font-family="DM Mono">−4.2%</text>
+          <text x="100" y="68" font-size="8" fill="#ff3d5a" text-anchor="middle" font-family="DM Mono">â4.2%</text>
         </svg>
       </div>
     </div>
@@ -951,10 +951,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <div class="panel">
         <div class="phead"><div class="ptitle">Economic calendar</div><div class="pmeta">High-impact events today</div></div>
         <div class="cal-row"><div class="cal-time">09:30</div><div class="cal-impact" style="background:var(--red)"></div><div class="cal-event">US CPI (MoM)</div><div class="cal-prev" style="min-width:80px">Prev: 0.3%</div><div class="cal-act am">PENDING</div></div>
-        <div class="cal-row"><div class="cal-time">10:00</div><div class="cal-impact" style="background:var(--amber)"></div><div class="cal-event">RBA Meeting Minutes</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act up">Released</div></div>
-        <div class="cal-row"><div class="cal-time">14:30</div><div class="cal-impact" style="background:var(--red)"></div><div class="cal-event">Fed Chair Powell Speech</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act am">PENDING</div></div>
-        <div class="cal-row"><div class="cal-time">16:00</div><div class="cal-impact" style="background:var(--amber)"></div><div class="cal-event">EIA Crude Inventories</div><div class="cal-prev" style="min-width:80px">Prev: −2.1M</div><div class="cal-act am">PENDING</div></div>
-        <div class="cal-row"><div class="cal-time">18:00</div><div class="cal-impact" style="background:var(--text4)"></div><div class="cal-event">ASX 200 Close</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act" style="color:var(--text3)">EOD</div></div>
+        <div class="cal-row"><div class="cal-time">10:00</div><div class="cal-impact" style="background:var(--amber)"></div><div class="cal-event">RBA Meeting Minutes</div><div class="cal-prev" style="min-width:80px">â</div><div class="cal-act up">Released</div></div>
+        <div class="cal-row"><div class="cal-time">14:30</div><div class="cal-impact" style="background:var(--red)"></div><div class="cal-event">Fed Chair Powell Speech</div><div class="cal-prev" style="min-width:80px">â</div><div class="cal-act am">PENDING</div></div>
+        <div class="cal-row"><div class="cal-time">16:00</div><div class="cal-impact" style="background:var(--amber)"></div><div class="cal-event">EIA Crude Inventories</div><div class="cal-prev" style="min-width:80px">Prev: â2.1M</div><div class="cal-act am">PENDING</div></div>
+        <div class="cal-row"><div class="cal-time">18:00</div><div class="cal-impact" style="background:var(--text4)"></div><div class="cal-event">ASX 200 Close</div><div class="cal-prev" style="min-width:80px">â</div><div class="cal-act" style="color:var(--text3)">EOD</div></div>
       </div>
       <div class="panel">
         <div class="phead"><div class="ptitle">P&L by market</div><div class="pmeta">Today</div></div>
@@ -963,19 +963,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
           <div style="padding:8px 16px;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px"><span>Commodities</span><span class="up">+$838</span></div><div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:48%;height:4px;border-radius:2px;background:var(--green)"></div></div></div>
           <div style="padding:8px 16px;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px"><span>Futures</span><span class="up">+$700</span></div><div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:40%;height:4px;border-radius:2px;background:var(--green)"></div></div></div>
           <div style="padding:8px 16px;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px"><span>Forex</span><span class="up">+$574</span></div><div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:33%;height:4px;border-radius:2px;background:var(--green)"></div></div></div>
-          <div style="padding:8px 16px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px"><span>US equities</span><span class="dn">−$88</span></div><div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:8%;height:4px;border-radius:2px;background:var(--red)"></div></div></div>
+          <div style="padding:8px 16px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px"><span>US equities</span><span class="dn">â$88</span></div><div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:8%;height:4px;border-radius:2px;background:var(--red)"></div></div></div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════ PAGE: SCANNER ═══════════════ -->
+<!-- âââââââââââââââ PAGE: SCANNER âââââââââââââââ -->
 <div class="page" id="page-scanner">
   <div class="ph">
     <div>
-      <div class="ph-t">Scanner <span style="font-size:13px;font-weight:500;color:var(--accent)">— Better than Spark</span></div>
-      <div class="ph-s" id="scan-sub">Live every 5s · CRT · MTF · BOS · RVOL · Auction · Gap · VWAP · Sector</div>
+      <div class="ph-t">Scanner <span style="font-size:13px;font-weight:500;color:var(--accent)">â Better than Spark</span></div>
+      <div class="ph-s" id="scan-sub">Live every 5s Â· CRT Â· MTF Â· BOS Â· RVOL Â· Auction Â· Gap Â· VWAP Â· Sector</div>
     </div>
     <div class="ph-r">
       <button class="btn" id="push-btn" onclick="requestPushPermission()">Enable alerts</button>
@@ -1010,14 +1010,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <!-- Populated by JS -->
   </div>
   <div style="background:var(--bg4);border-bottom:1px solid var(--border2);padding:8px 20px;display:flex;gap:24px;align-items:center;flex-shrink:0">
-    <div style="font-size:11px;color:var(--text3)">SIGNALS <span id="stat-total" style="color:var(--text);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)">HIGH <span id="stat-high" style="color:var(--red);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)">MEDIUM <span id="stat-med" style="color:var(--amber);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)">LONGS <span id="stat-long" style="color:var(--green);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)">SHORTS <span id="stat-short" style="color:var(--red);font-weight:700">—</span></div>
+    <div style="font-size:11px;color:var(--text3)">SIGNALS <span id="stat-total" style="color:var(--text);font-weight:700">â</span></div>
+    <div style="font-size:11px;color:var(--text3)">HIGH <span id="stat-high" style="color:var(--red);font-weight:700">â</span></div>
+    <div style="font-size:11px;color:var(--text3)">MEDIUM <span id="stat-med" style="color:var(--amber);font-weight:700">â</span></div>
+    <div style="font-size:11px;color:var(--text3)">LONGS <span id="stat-long" style="color:var(--green);font-weight:700">â</span></div>
+    <div style="font-size:11px;color:var(--text3)">SHORTS <span id="stat-short" style="color:var(--red);font-weight:700">â</span></div>
     <div style="flex:1"></div>
-    <div style="font-size:11px;color:var(--text3)">Avg confidence <span id="stat-conf" style="color:var(--accent);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)">Updated <span id="stat-time" style="color:var(--text2)">—</span></div>
+    <div style="font-size:11px;color:var(--text3)">Avg confidence <span id="stat-conf" style="color:var(--accent);font-weight:700">â</span></div>
+    <div style="font-size:11px;color:var(--text3)">Updated <span id="stat-time" style="color:var(--text2)">â</span></div>
   </div>
 
   <!-- Scanner columns header -->
@@ -1042,10 +1042,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   </div>
 </div>
 
-<!-- ═══════════════ PAGE: INTELLIGENCE ═══════════════ -->
+<!-- âââââââââââââââ PAGE: INTELLIGENCE âââââââââââââââ -->
 <div class="page" id="page-intel">
   <div class="ph">
-    <div><div class="ph-t">Intelligence</div><div class="ph-s" id="intel-sub">AI analysis · News · Sentiment · Live prices</div></div>
+    <div><div class="ph-t">Intelligence</div><div class="ph-s" id="intel-sub">AI analysis Â· News Â· Sentiment Â· Live prices</div></div>
     <div class="ph-r"><button class="btn g" onclick="fetchNews()">Refresh news</button><button class="btn" id="add-news-key-btn" onclick="openModal()" style="display:none">Add NewsAPI key</button></div>
   </div>
   <div class="scroll">
@@ -1105,44 +1105,44 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <div class="panel">
       <div class="phead"><div class="ptitle">Intelligence feed</div><div class="pmeta" id="intel-feed-time">Loading...</div></div>
       <div id="news-feed">
-        <div class="iitem"><div class="idot" style="background:var(--red)"></div><div><div class="itext"><strong>RBA minutes:</strong> board discussed further hike but voted to hold. AUD reaction muted — market had priced hold.</div><div class="imeta"><span class="itime">14 min ago · Reuters</span><span class="itag ih">High · AUD</span></div></div></div>
-        <div class="iitem"><div class="idot" style="background:var(--amber)"></div><div><div class="itext"><strong>US jobless claims</strong> beat forecast at 242k vs 228k expected. Dollar weakening across majors on miss.</div><div class="imeta"><span class="itime">41 min ago · Bloomberg</span><span class="itag im2">Medium · USD</span></div></div></div>
-        <div class="iitem"><div class="idot" style="background:var(--amber)"></div><div><div class="itext"><strong>ECB Lagarde</strong> signals rates could stay elevated longer than market pricing. EUR volatile on comment.</div><div class="imeta"><span class="itime">1 hr ago · FT</span><span class="itag im2">Medium · EUR</span></div></div></div>
-        <div class="iitem"><div class="idot" style="background:var(--text4)"></div><div><div class="itext"><strong>BHP Q2 production</strong> in line with expectations. Iron ore +3% QoQ. Minor positive, largely priced in.</div><div class="imeta"><span class="itime">2 hr ago · ASX</span><span class="itag il">Low · BHP</span></div></div></div>
+        <div class="iitem"><div class="idot" style="background:var(--red)"></div><div><div class="itext"><strong>RBA minutes:</strong> board discussed further hike but voted to hold. AUD reaction muted â market had priced hold.</div><div class="imeta"><span class="itime">14 min ago Â· Reuters</span><span class="itag ih">High Â· AUD</span></div></div></div>
+        <div class="iitem"><div class="idot" style="background:var(--amber)"></div><div><div class="itext"><strong>US jobless claims</strong> beat forecast at 242k vs 228k expected. Dollar weakening across majors on miss.</div><div class="imeta"><span class="itime">41 min ago Â· Bloomberg</span><span class="itag im2">Medium Â· USD</span></div></div></div>
+        <div class="iitem"><div class="idot" style="background:var(--amber)"></div><div><div class="itext"><strong>ECB Lagarde</strong> signals rates could stay elevated longer than market pricing. EUR volatile on comment.</div><div class="imeta"><span class="itime">1 hr ago Â· FT</span><span class="itag im2">Medium Â· EUR</span></div></div></div>
+        <div class="iitem"><div class="idot" style="background:var(--text4)"></div><div><div class="itext"><strong>BHP Q2 production</strong> in line with expectations. Iron ore +3% QoQ. Minor positive, largely priced in.</div><div class="imeta"><span class="itime">2 hr ago Â· ASX</span><span class="itag il">Low Â· BHP</span></div></div></div>
       </div>
     </div>
   </div>
 </div>
 
 
-<!-- ═══════════════ PAGE: JOURNAL ═══════════════ -->
+<!-- âââââââââââââââ PAGE: JOURNAL âââââââââââââââ -->
 <div class="page" id="page-journal">
   <div style="padding:16px 20px;border-bottom:1px solid var(--border2)">
     <div class="journal-stats-grid">
       <div class="jstat">
         <div class="jstat-label">Total Trades</div>
-        <div class="jstat-val" id="jstat-trades">—</div>
+        <div class="jstat-val" id="jstat-trades">â</div>
       </div>
       <div class="jstat">
         <div class="jstat-label">Win Rate</div>
-        <div class="jstat-val" id="jstat-wr">—</div>
+        <div class="jstat-val" id="jstat-wr">â</div>
       </div>
       <div class="jstat">
         <div class="jstat-label">Net P&L</div>
-        <div class="jstat-val" id="jstat-pnl">—</div>
+        <div class="jstat-val" id="jstat-pnl">â</div>
       </div>
       <div class="jstat">
         <div class="jstat-label">Avg Win</div>
-        <div class="jstat-val" id="jstat-avgw" style="color:var(--green)">—</div>
+        <div class="jstat-val" id="jstat-avgw" style="color:var(--green)">â</div>
       </div>
       <div class="jstat">
         <div class="jstat-label">Profit Factor</div>
-        <div class="jstat-val" id="jstat-pf">—</div>
+        <div class="jstat-val" id="jstat-pf">â</div>
       </div>
     </div>
   </div>
   <div class="ph">
-    <div><div class="ph-t">Journal — The Teacher</div><div class="ph-s">Track behaviour, not just trades</div></div>
+    <div><div class="ph-t">Journal â The Teacher</div><div class="ph-s">Track behaviour, not just trades</div></div>
     <div class="ph-r">
       <button class="btn" onclick="exportCSV()">Export CSV</button>
       <button class="btn g" onclick="showAddTrade()">+ Log trade</button>
@@ -1161,30 +1161,30 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 
     <!-- Behavioral Heatmap -->
     <div class="panel">
-      <div class="phead"><div class="ptitle">Behavioral heatmap — when do you trade best?</div><div class="pmeta">Last 90 days · Win rate by session</div></div>
+      <div class="phead"><div class="ptitle">Behavioral heatmap â when do you trade best?</div><div class="pmeta">Last 90 days Â· Win rate by session</div></div>
       <div class="heatmap-wrap">
         <div class="heatmap-grid">
           <div></div>
           <div class="hm-head">Monday</div><div class="hm-head">Tuesday</div><div class="hm-head">Wednesday</div><div class="hm-head">Thursday</div><div class="hm-head">Friday</div>
-          <div class="hm-label">Pre-mkt<br><span style="font-size:9px;color:var(--text3)">7–9am</span></div>
+          <div class="hm-label">Pre-mkt<br><span style="font-size:9px;color:var(--text3)">7â9am</span></div>
           <div class="hm-cell" style="background:rgba(255,176,32,.25)" title="6 trades"><div class="hm-wr am">52%</div><div class="hm-n">6 trades</div></div>
           <div class="hm-cell" style="background:rgba(0,232,150,.35)" title="8 trades"><div class="hm-wr up">68%</div><div class="hm-n">8t</div></div>
           <div class="hm-cell" style="background:rgba(0,232,150,.2)" title="5 trades"><div class="hm-wr up">60%</div><div class="hm-n">5t</div></div>
           <div class="hm-cell" style="background:rgba(255,61,90,.2)" title="4 trades"><div class="hm-wr dn">40%</div><div class="hm-n">4t</div></div>
           <div class="hm-cell" style="background:rgba(255,61,90,.15)" title="3 trades"><div class="hm-wr dn">33%</div><div class="hm-n">3t</div></div>
-          <div class="hm-label">ASX open<br><span style="font-size:9px;color:var(--text3)">10am–1pm</span></div>
+          <div class="hm-label">ASX open<br><span style="font-size:9px;color:var(--text3)">10amâ1pm</span></div>
           <div class="hm-cell" style="background:rgba(0,232,150,.4)" title="12 trades"><div class="hm-wr up">67%</div><div class="hm-n">12t</div></div>
           <div class="hm-cell" style="background:rgba(0,232,150,.6)" title="14 trades"><div class="hm-wr up" style="font-size:13px">74%</div><div class="hm-n">14t</div></div>
           <div class="hm-cell" style="background:rgba(0,232,150,.45)" title="11 trades"><div class="hm-wr up">70%</div><div class="hm-n">11t</div></div>
           <div class="hm-cell" style="background:rgba(0,232,150,.3)" title="9 trades"><div class="hm-wr up">64%</div><div class="hm-n">9t</div></div>
           <div class="hm-cell" style="background:rgba(255,176,32,.2)" title="7 trades"><div class="hm-wr am">48%</div><div class="hm-n">7t</div></div>
-          <div class="hm-label">Midday<br><span style="font-size:9px;color:var(--text3)">1–4pm</span></div>
+          <div class="hm-label">Midday<br><span style="font-size:9px;color:var(--text3)">1â4pm</span></div>
           <div class="hm-cell" style="background:rgba(255,176,32,.15)" title="5 trades"><div class="hm-wr am">45%</div><div class="hm-n">5t</div></div>
           <div class="hm-cell" style="background:rgba(0,232,150,.25)" title="6 trades"><div class="hm-wr up">62%</div><div class="hm-n">6t</div></div>
           <div class="hm-cell" style="background:rgba(255,176,32,.2)" title="7 trades"><div class="hm-wr am">50%</div><div class="hm-n">7t</div></div>
           <div class="hm-cell" style="background:rgba(255,61,90,.15)" title="4 trades"><div class="hm-wr dn">42%</div><div class="hm-n">4t</div></div>
           <div class="hm-cell" style="background:rgba(255,61,90,.25)" title="6 trades"><div class="hm-wr dn">38%</div><div class="hm-n">6t</div></div>
-          <div class="hm-label">US open<br><span style="font-size:9px;color:var(--text3)">11pm–2am</span></div>
+          <div class="hm-label">US open<br><span style="font-size:9px;color:var(--text3)">11pmâ2am</span></div>
           <div class="hm-cell" style="background:rgba(255,61,90,.3)" title="5 trades"><div class="hm-wr dn">35%</div><div class="hm-n">5t</div></div>
           <div class="hm-cell" style="background:rgba(255,176,32,.2)" title="4 trades"><div class="hm-wr am">50%</div><div class="hm-n">4t</div></div>
           <div class="hm-cell" style="background:rgba(255,61,90,.2)" title="3 trades"><div class="hm-wr dn">40%</div><div class="hm-n">3t</div></div>
@@ -1192,7 +1192,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
           <div class="hm-cell" style="background:rgba(255,61,90,.4)" title="5 trades"><div class="hm-wr dn">28%</div><div class="hm-n">5t</div></div>
         </div>
         <div style="margin-top:12px;font-size:11px;color:var(--text3)">
-          Insight: <span style="color:var(--green);font-weight:600">Tuesday ASX open is your strongest session (74% win rate)</span> · <span style="color:var(--red);font-weight:600">Friday PM and US open on Monday are your weakest — consider not trading these</span>
+          Insight: <span style="color:var(--green);font-weight:600">Tuesday ASX open is your strongest session (74% win rate)</span> Â· <span style="color:var(--red);font-weight:600">Friday PM and US open on Monday are your weakest â consider not trading these</span>
         </div>
       </div>
     </div>
@@ -1205,25 +1205,25 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         <span><span style="display:inline-block;width:10px;height:3px;background:var(--green);border-radius:1px;vertical-align:middle;margin-right:4px"></span>MFE (peak profit)</span>
         <span><span style="display:inline-block;width:2px;height:10px;background:var(--text);border-radius:1px;vertical-align:middle;margin-right:4px"></span>Entry</span>
       </div>
-      <div class="mfe-bar"><div class="mfe-sym">BHP.ASX</div><div class="mfe-track"><div class="mfe-mae" style="width:12%;background:rgba(255,61,90,.5)"></div><div class="mfe-mfe" style="width:68%;background:rgba(0,232,150,.4)"></div><div class="mfe-entry" style="left:50%"></div></div><div class="mfe-label"><span class="dn">MAE −$82</span> / <span class="up">MFE +$460</span></div></div>
-      <div class="mfe-bar"><div class="mfe-sym">AUD/USD</div><div class="mfe-track"><div class="mfe-mae" style="width:18%;background:rgba(255,61,90,.5)"></div><div class="mfe-mfe" style="width:55%;background:rgba(0,232,150,.4)"></div><div class="mfe-entry" style="left:50%"></div></div><div class="mfe-label"><span class="dn">MAE −$110</span> / <span class="up">MFE +$340</span></div></div>
-      <div class="mfe-bar"><div class="mfe-sym">XAU/USD</div><div class="mfe-track"><div class="mfe-mae" style="width:8%;background:rgba(255,61,90,.5)"></div><div class="mfe-mfe" style="width:72%;background:rgba(0,232,150,.4)"></div><div class="mfe-entry" style="left:50%"></div></div><div class="mfe-label"><span class="dn">MAE −$50</span> / <span class="up">MFE +$890</span></div></div>
-      <div class="mfe-bar"><div class="mfe-sym">USD/JPY</div><div class="mfe-track"><div class="mfe-mae" style="width:35%;background:rgba(255,61,90,.5)"></div><div class="mfe-mfe" style="width:20%;background:rgba(0,232,150,.4)"></div><div class="mfe-entry" style="left:50%"></div></div><div class="mfe-label"><span class="dn">MAE −$210</span> / <span class="up">MFE +$95</span></div></div>
-      <div style="padding:10px 16px;font-size:11px;color:var(--text3)">Insight: USD/JPY MAE (−$210) exceeds MFE (+$95) — stop may be too tight or trade taken against trend. BHP + XAU show strong R:R profiles.</div>
+      <div class="mfe-bar"><div class="mfe-sym">BHP.ASX</div><div class="mfe-track"><div class="mfe-mae" style="width:12%;background:rgba(255,61,90,.5)"></div><div class="mfe-mfe" style="width:68%;background:rgba(0,232,150,.4)"></div><div class="mfe-entry" style="left:50%"></div></div><div class="mfe-label"><span class="dn">MAE â$82</span> / <span class="up">MFE +$460</span></div></div>
+      <div class="mfe-bar"><div class="mfe-sym">AUD/USD</div><div class="mfe-track"><div class="mfe-mae" style="width:18%;background:rgba(255,61,90,.5)"></div><div class="mfe-mfe" style="width:55%;background:rgba(0,232,150,.4)"></div><div class="mfe-entry" style="left:50%"></div></div><div class="mfe-label"><span class="dn">MAE â$110</span> / <span class="up">MFE +$340</span></div></div>
+      <div class="mfe-bar"><div class="mfe-sym">XAU/USD</div><div class="mfe-track"><div class="mfe-mae" style="width:8%;background:rgba(255,61,90,.5)"></div><div class="mfe-mfe" style="width:72%;background:rgba(0,232,150,.4)"></div><div class="mfe-entry" style="left:50%"></div></div><div class="mfe-label"><span class="dn">MAE â$50</span> / <span class="up">MFE +$890</span></div></div>
+      <div class="mfe-bar"><div class="mfe-sym">USD/JPY</div><div class="mfe-track"><div class="mfe-mae" style="width:35%;background:rgba(255,61,90,.5)"></div><div class="mfe-mfe" style="width:20%;background:rgba(0,232,150,.4)"></div><div class="mfe-entry" style="left:50%"></div></div><div class="mfe-label"><span class="dn">MAE â$210</span> / <span class="up">MFE +$95</span></div></div>
+      <div style="padding:10px 16px;font-size:11px;color:var(--text3)">Insight: USD/JPY MAE (â$210) exceeds MFE (+$95) â stop may be too tight or trade taken against trend. BHP + XAU show strong R:R profiles.</div>
     </div>
 
     <!-- Trade log -->
     <div class="panel">
-      <div class="phead"><div class="ptitle">Trade log</div><div class="pmeta">72 trades · 30 days</div></div>
+      <div class="phead"><div class="ptitle">Trade log</div><div class="pmeta">72 trades Â· 30 days</div></div>
       <div style="overflow-x:auto">
         <table class="journal-table" id="journal-table">
           <thead><tr><th>Date</th><th>Symbol</th><th>Dir</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Tags</th><th>Plan?</th><th>MAE</th><th>MFE</th><th>Notes</th></tr></thead>
           <tbody id="journal-body">
-            <tr><td>Today 14:22</td><td style="font-weight:600;color:var(--text)">RIO.ASX</td><td><span class="badge bg">Long</span></td><td>118.40</td><td>122.80</td><td class="up">+$480</td><td><span class="tag tg">#TrendFollow</span><span class="tag tb">#MTFConfluence</span></td><td class="disc-yes">YES</td><td class="dn">−$40</td><td class="up">+$520</td><td style="color:var(--text3);font-size:11px">Clean CRT setup, held to TP</td></tr>
-            <tr><td>Today 11:05</td><td style="font-weight:600;color:var(--text)">USD/JPY</td><td><span class="badge br">Short</span></td><td>154.80</td><td>155.30</td><td class="dn">−$210</td><td><span class="tag tr2">#FOMOTrade</span><span class="tag ta">#AgainstTrend</span></td><td class="disc-no">NO</td><td class="dn">−$280</td><td class="up">+$95</td><td style="color:var(--text3);font-size:11px">Entered without MTF confirm</td></tr>
-            <tr><td>Yesterday</td><td style="font-weight:600;color:var(--text)">Corn Futures</td><td><span class="badge bg">Long</span></td><td>481.25</td><td>487.50</td><td class="up">+$1,140</td><td><span class="tag tg">#TrendFollow</span><span class="tag tp">#HighConviction</span></td><td class="disc-yes">YES</td><td class="dn">−$60</td><td class="up">+$1,180</td><td style="color:var(--text3);font-size:11px">Perfect execution, held full position</td></tr>
-            <tr><td>Yesterday</td><td style="font-weight:600;color:var(--text)">AAPL</td><td><span class="badge bg">Long</span></td><td>182.40</td><td>181.75</td><td class="dn">−$95</td><td><span class="tag tr2">#RevengeTrade</span></td><td class="disc-no">NO</td><td class="dn">−$180</td><td class="up">+$30</td><td style="color:var(--text3);font-size:11px">Revenge after USD/JPY loss. Should not have traded</td></tr>
-            <tr><td>2 days ago</td><td style="font-weight:600;color:var(--text)">XAU/USD</td><td><span class="badge bg">Long</span></td><td>2318.00</td><td>2334.20</td><td class="up">+$820</td><td><span class="tag tg">#TrendFollow</span><span class="tag tb">#MTFConfluence</span><span class="tag tp">#HighConviction</span></td><td class="disc-yes">YES</td><td class="dn">−$50</td><td class="up">+$890</td><td style="color:var(--text3);font-size:11px">Textbook setup. Left $70 on table (early exit)</td></tr>
+            <tr><td>Today 14:22</td><td style="font-weight:600;color:var(--text)">RIO.ASX</td><td><span class="badge bg">Long</span></td><td>118.40</td><td>122.80</td><td class="up">+$480</td><td><span class="tag tg">#TrendFollow</span><span class="tag tb">#MTFConfluence</span></td><td class="disc-yes">YES</td><td class="dn">â$40</td><td class="up">+$520</td><td style="color:var(--text3);font-size:11px">Clean CRT setup, held to TP</td></tr>
+            <tr><td>Today 11:05</td><td style="font-weight:600;color:var(--text)">USD/JPY</td><td><span class="badge br">Short</span></td><td>154.80</td><td>155.30</td><td class="dn">â$210</td><td><span class="tag tr2">#FOMOTrade</span><span class="tag ta">#AgainstTrend</span></td><td class="disc-no">NO</td><td class="dn">â$280</td><td class="up">+$95</td><td style="color:var(--text3);font-size:11px">Entered without MTF confirm</td></tr>
+            <tr><td>Yesterday</td><td style="font-weight:600;color:var(--text)">Corn Futures</td><td><span class="badge bg">Long</span></td><td>481.25</td><td>487.50</td><td class="up">+$1,140</td><td><span class="tag tg">#TrendFollow</span><span class="tag tp">#HighConviction</span></td><td class="disc-yes">YES</td><td class="dn">â$60</td><td class="up">+$1,180</td><td style="color:var(--text3);font-size:11px">Perfect execution, held full position</td></tr>
+            <tr><td>Yesterday</td><td style="font-weight:600;color:var(--text)">AAPL</td><td><span class="badge bg">Long</span></td><td>182.40</td><td>181.75</td><td class="dn">â$95</td><td><span class="tag tr2">#RevengeTrade</span></td><td class="disc-no">NO</td><td class="dn">â$180</td><td class="up">+$30</td><td style="color:var(--text3);font-size:11px">Revenge after USD/JPY loss. Should not have traded</td></tr>
+            <tr><td>2 days ago</td><td style="font-weight:600;color:var(--text)">XAU/USD</td><td><span class="badge bg">Long</span></td><td>2318.00</td><td>2334.20</td><td class="up">+$820</td><td><span class="tag tg">#TrendFollow</span><span class="tag tb">#MTFConfluence</span><span class="tag tp">#HighConviction</span></td><td class="disc-yes">YES</td><td class="dn">â$50</td><td class="up">+$890</td><td style="color:var(--text3);font-size:11px">Textbook setup. Left $70 on table (early exit)</td></tr>
           </tbody>
         </table>
       </div>
@@ -1262,10 +1262,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   </div>
 </div>
 
-<!-- ═══════════════ PAGE: LOG ═══════════════ -->
+<!-- âââââââââââââââ PAGE: LOG âââââââââââââââ -->
 <div class="page" id="page-log">
   <div class="ph">
-    <div><div class="ph-t">Alert Log</div><div class="ph-s">Signal alerts · Push notifications · History</div></div>
+    <div><div class="ph-t">Alert Log</div><div class="ph-s">Signal alerts Â· Push notifications Â· History</div></div>
     <div class="ph-r">
       <button class="btn" onclick="clearAlerts()">Clear all</button>
       <button class="btn g" id="push-btn" onclick="requestPush()">Enable push alerts</button>
@@ -1283,16 +1283,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <div class="panel">
       <div class="phead"><div class="ptitle">Signal history</div><div class="pmeta" id="alert-count">0 alerts</div></div>
       <div id="alert-log-list" style="max-height:600px;overflow-y:auto">
-        <div style="padding:24px;text-align:center;color:var(--text3);font-size:12px">No alerts yet — signals will appear here when they fire</div>
+        <div style="padding:24px;text-align:center;color:var(--text3);font-size:12px">No alerts yet â signals will appear here when they fire</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════ PAGE: FLOW ═══════════════ -->
+<!-- âââââââââââââââ PAGE: FLOW âââââââââââââââ -->
 <div class="page" id="page-flow">
   <div class="ph">
-    <div><div class="ph-t">Market Flow</div><div class="ph-s">Currency strength · Correlations · Sector rotation</div></div>
+    <div><div class="ph-t">Market Flow</div><div class="ph-s">Currency strength Â· Correlations Â· Sector rotation</div></div>
     <div class="ph-r"><button class="btn g" onclick="refreshFlowData()">Refresh</button></div>
   </div>
   <div class="scroll" style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
@@ -1306,13 +1306,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     </div>
     <div class="panel" style="grid-column:1/-1">
       <div class="phead">
-        <div class="ptitle">🔗 MarketLens — Smart Money Flow</div>
+        <div class="ptitle">ð MarketLens â Smart Money Flow</div>
         <div class="pmeta" id="ml-sync-time">Install the ApexTrade Bridge extension</div>
       </div>
       <div id="ml-flow-panel" style="padding:16px">
         <div style="color:var(--text3);font-size:12px;text-align:center;padding:16px">
-          Open MarketLens and search any ASX stock — broker data syncs here automatically via the extension.<br><br>
-          <a href="https://app.marketlens.com.au" target="_blank" style="color:var(--accent)">Open MarketLens →</a>
+          Open MarketLens and search any ASX stock â broker data syncs here automatically via the extension.<br><br>
+          <a href="https://app.marketlens.com.au" target="_blank" style="color:var(--accent)">Open MarketLens â</a>
         </div>
       </div>
     </div>
@@ -1332,7 +1332,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   </div>
 </div>
 
-<!-- ═══════════════ PAGE: SETTINGS ═══════════════ -->
+<!-- âââââââââââââââ PAGE: SETTINGS âââââââââââââââ -->
 <div class="page" id="page-settings">
   <div class="ph">
     <div><div class="ph-t">Settings</div><div class="ph-s">API keys, instruments, strategy parameters</div></div>
@@ -1341,9 +1341,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <div class="scroll">
     <div class="ss">
       <div class="ss-t">Data connections</div>
-      <div class="ss-row"><div><div class="ss-l">Price feed</div><div class="ss-sub">Yahoo Finance — live, free, no key required</div></div><div style="font-size:12px;color:var(--green);font-weight:600">Auto-connected</div></div>
-      <div class="ss-row"><div><div class="ss-l">Twelve Data API key</div><div class="ss-sub">Live prices for all 20 pairs 24/7 · <a href="https://twelvedata.com/account/api-keys" target="_blank" style="color:var(--blue)">Get your key →</a></div></div><input class="ss-input" id="key-td" type="password" placeholder="Paste Twelve Data key here..."></div>
-      <div class="ss-row"><div><div class="ss-l">NewsAPI key</div><div class="ss-sub">Financial headlines · <a href="https://newsapi.org/register" target="_blank" style="color:var(--blue)">Get free key →</a></div></div><input class="ss-input" id="key-news" type="password" placeholder="Paste key here..."></div>
+      <div class="ss-row"><div><div class="ss-l">Price feed</div><div class="ss-sub">Yahoo Finance â live, free, no key required</div></div><div style="font-size:12px;color:var(--green);font-weight:600">Auto-connected</div></div>
+      <div class="ss-row"><div><div class="ss-l">Twelve Data API key</div><div class="ss-sub">Live prices for all 20 pairs 24/7 Â· <a href="https://twelvedata.com/account/api-keys" target="_blank" style="color:var(--blue)">Get your key â</a></div></div><input class="ss-input" id="key-td" type="password" placeholder="Paste Twelve Data key here..."></div>
+      <div class="ss-row"><div><div class="ss-l">NewsAPI key</div><div class="ss-sub">Financial headlines Â· <a href="https://newsapi.org/register" target="_blank" style="color:var(--blue)">Get free key â</a></div></div><input class="ss-input" id="key-news" type="password" placeholder="Paste key here..."></div>
       <div class="ss-row" style="border:none;padding-top:12px"><div style="font-size:11px;color:var(--text3)">Keys saved locally in your browser</div><button class="btn g" onclick="saveNewsKey()">Connect news</button></div>
     </div>
     <div class="ss">
@@ -1351,7 +1351,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <div class="ss-row"><div><div class="ss-l">Minimum RVOL threshold</div><div class="ss-sub">Flag only when relative volume exceeds this</div></div><input class="ss-input" id="set-rvol" type="number" value="2" min="1" max="10" step="0.5" style="width:100px"></div>
       <div class="ss-row"><div><div class="ss-l">MTF confluence required</div><div class="ss-sub">Minimum timeframes aligned before flagging</div></div><select class="ss-input" id="set-mtf" style="width:150px"><option value="2">2 of 4 TFs</option><option value="3" selected>3 of 4 TFs</option><option value="4">All 4 TFs</option></select></div>
       <div class="ss-row"><div><div class="ss-l">Signal confidence threshold</div><div class="ss-sub">Minimum % before showing as high priority</div></div><input class="ss-input" id="set-conf" type="number" value="65" min="50" max="95" style="width:100px"></div>
-      <div class="ss-row"><div><div class="ss-l">CRT hook enabled</div><div class="ss-sub">Flag assets where candle range expands 1.5×+</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="ss-row"><div><div class="ss-l">CRT hook enabled</div><div class="ss-sub">Flag assets where candle range expands 1.5Ã+</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
     </div>
     <div class="ss">
       <div class="ss-t">Risk parameters</div>
@@ -1363,35 +1363,35 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <div class="ss">
       <div class="ss-t">Notifications & display</div>
       <div class="ss-row"><div><div class="ss-l">Correlation warnings</div><div class="ss-sub">Alert when holdings are highly correlated</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-      <div class="ss-row"><div><div class="ss-l">ASX hours only</div><div class="ss-sub">Suppress ASX signals outside 10am–4pm AWST</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+      <div class="ss-row"><div><div class="ss-l">ASX hours only</div><div class="ss-sub">Suppress ASX signals outside 10amâ4pm AWST</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
       <div class="ss-row"><div><div class="ss-l">High-impact calendar alerts</div><div class="ss-sub">Warn before major news events</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-      <div class="ss-row"><div><div class="ss-l">Dark mode</div><div class="ss-sub">Always on — because 2am trading is real</div></div><div class="toggle on" style="opacity:.5;cursor:default"></div></div>
+      <div class="ss-row"><div><div class="ss-l">Dark mode</div><div class="ss-sub">Always on â because 2am trading is real</div></div><div class="toggle on" style="opacity:.5;cursor:default"></div></div>
     </div>
     <div class="ss">
       <div class="ss-t">Export & sync</div>
       <div class="ss-row"><div><div class="ss-l">Export trade journal</div><div class="ss-sub">Download all trades as CSV for Excel/Monte Carlo</div></div><button class="btn" onclick="exportCSV()">Download CSV</button></div>
       <div class="ss-row"><div><div class="ss-l">Export scanner log</div><div class="ss-sub">Download flagged signals history</div></div><button class="btn">Download CSV</button></div>
-      <div class="ss-row" style="border:none"><div><div class="ss-l">Cloud sync</div><div class="ss-sub">Coming soon — connect Google Drive for cross-device sync</div></div><button class="btn" style="opacity:.5;cursor:default">Coming soon</button></div>
+      <div class="ss-row" style="border:none"><div><div class="ss-l">Cloud sync</div><div class="ss-sub">Coming soon â connect Google Drive for cross-device sync</div></div><button class="btn" style="opacity:.5;cursor:default">Coming soon</button></div>
     </div>
   </div>
 </div>
 
 
-<!-- ═══════════════ PAGE: SECTORS / MONEY FLOW ═══════════════ -->
+<!-- âââââââââââââââ PAGE: SECTORS / MONEY FLOW âââââââââââââââ -->
 <div class="page" id="page-sectors">
   <div class="ph">
-    <div><div class="ph-t">Sector Money Flow</div><div class="ph-s" id="sector-sub">GICS sector heatmap · RS lines · RRG rotation · Outperformer filter</div></div>
+    <div><div class="ph-t">Sector Money Flow</div><div class="ph-s" id="sector-sub">GICS sector heatmap Â· RS lines Â· RRG rotation Â· Outperformer filter</div></div>
     <div class="ph-r"><button class="btn g" onclick="refreshSectors()">Refresh</button></div>
   </div>
   <div class="scroll">
 
-    <!-- ── Sector Heatmap ── -->
-    <div style="font-family:var(--fd);font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Sector heatmap — today vs benchmark</div>
+    <!-- ââ Sector Heatmap ââ -->
+    <div style="font-family:var(--fd);font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px">Sector heatmap â today vs benchmark</div>
     <div class="sector-grid" id="sector-heatmap">
       <!-- populated by JS -->
     </div>
 
-    <!-- ── Leaderboard + RRG ── -->
+    <!-- ââ Leaderboard + RRG ââ -->
     <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:12px;margin-bottom:12px">
 
       <!-- Leaderboard -->
@@ -1432,9 +1432,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
               <text x="60" y="236" text-anchor="middle" font-size="9" fill="rgba(255,61,90,0.8)" font-weight="600" font-family="DM Mono">LAGGING</text>
               <text x="180" y="236" text-anchor="middle" font-size="9" fill="rgba(255,176,32,0.7)" font-weight="600" font-family="DM Mono">WEAKENING</text>
               <!-- Axis labels -->
-              <text x="120" y="234" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.3)" font-family="DM Mono">RS-Ratio →</text>
-              <text x="8" y="120" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.3)" font-family="DM Mono" transform="rotate(-90,8,120)">Momentum ↑</text>
-              <!-- Sector dots — plotted by JS -->
+              <text x="120" y="234" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.3)" font-family="DM Mono">RS-Ratio â</text>
+              <text x="8" y="120" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.3)" font-family="DM Mono" transform="rotate(-90,8,120)">Momentum â</text>
+              <!-- Sector dots â plotted by JS -->
               <g id="rrg-dots"></g>
             </svg>
           </div>
@@ -1443,23 +1443,23 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
           </div>
         </div>
         <div style="padding:0 16px 12px;font-size:10px;color:var(--text3);line-height:1.6">
-          <span style="color:var(--green);font-weight:600">Leading:</span> ride · &nbsp;
-          <span style="color:var(--amber);font-weight:600">Weakening:</span> tighten stops · &nbsp;
-          <span style="color:var(--red);font-weight:600">Lagging:</span> avoid · &nbsp;
+          <span style="color:var(--green);font-weight:600">Leading:</span> ride Â· &nbsp;
+          <span style="color:var(--amber);font-weight:600">Weakening:</span> tighten stops Â· &nbsp;
+          <span style="color:var(--red);font-weight:600">Lagging:</span> avoid Â· &nbsp;
           <span style="color:var(--blue);font-weight:600">Improving:</span> watch for reversal
         </div>
       </div>
     </div>
 
-    <!-- ── RS Lines per stock ── -->
+    <!-- ââ RS Lines per stock ââ -->
     <div class="panel" style="margin-bottom:12px">
-      <div class="phead"><div class="ptitle">Relative strength lines — stocks vs sector</div><div class="pmeta">RS making new highs = institutional accumulation</div></div>
+      <div class="phead"><div class="ptitle">Relative strength lines â stocks vs sector</div><div class="pmeta">RS making new highs = institutional accumulation</div></div>
       <div class="rs-line-wrap" id="rs-lines">
         <!-- populated by JS -->
       </div>
     </div>
 
-    <!-- ── Outperformer Filter ── -->
+    <!-- ââ Outperformer Filter ââ -->
     <div class="panel">
       <div class="phead">
         <div class="ptitle">Outperformer filter</div>
@@ -1478,10 +1478,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 </div><!-- end layout -->
 
 
-<!-- ═══════════════ PAGE: SECTOR INTELLIGENCE ═══════════════ -->
+<!-- âââââââââââââââ PAGE: SECTOR INTELLIGENCE âââââââââââââââ -->
 <div class="page" id="page-sectors">
   <div class="ph">
-    <div><div class="ph-t">Sector Intelligence</div><div class="ph-s">GICS sector heatmap · RS lines · Relative Rotation Graph · Money flow</div></div>
+    <div><div class="ph-t">Sector Intelligence</div><div class="ph-s">GICS sector heatmap Â· RS lines Â· Relative Rotation Graph Â· Money flow</div></div>
     <div class="ph-r">
       <select id="rrg-bench" class="btn" style="padding:6px 10px;font-size:11px" onchange="renderRRG()">
         <option value="asx">vs ASX 200</option>
@@ -1493,7 +1493,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <div class="scroll">
 
     <!-- Sector heatmap cards -->
-    <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin-bottom:8px">Today's sector performance — ASX / Global</div>
+    <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin-bottom:8px">Today's sector performance â ASX / Global</div>
     <div class="sector-heatmap" id="sector-heatmap">
       <!-- populated by JS -->
     </div>
@@ -1518,14 +1518,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       </div>
 
       <div class="panel">
-        <div class="phead"><div class="ptitle">Money flow by sector</div><div class="pmeta">Inflow ← Centre → Outflow</div></div>
+        <div class="phead"><div class="ptitle">Money flow by sector</div><div class="pmeta">Inflow â Centre â Outflow</div></div>
         <div id="money-flow"></div>
       </div>
     </div>
 
     <!-- RS Lines -->
     <div class="panel">
-      <div class="phead"><div class="ptitle">Relative strength lines — your holdings vs sector</div><div class="pmeta">RS making new highs = institutional accumulation</div></div>
+      <div class="phead"><div class="ptitle">Relative strength lines â your holdings vs sector</div><div class="pmeta">RS making new highs = institutional accumulation</div></div>
       <div class="rs-chart-wrap">
         <div style="display:grid;grid-template-columns:80px 70px 1fr 70px;gap:10px;padding:4px 0 8px;border-bottom:1px solid var(--border2);font-size:9px;color:var(--text4);letter-spacing:.07em;text-transform:uppercase">
           <div>Symbol</div><div>RS vs sector</div><div>RS line (30d)</div><div>Signal</div>
@@ -1540,17 +1540,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <div class="rrg-wrap">
         <svg id="rrg-svg" class="rrg-svg" viewBox="0 0 680 420"></svg>
         <div style="display:flex;gap:20px;margin-top:10px;font-size:10px;color:var(--text3);flex-wrap:wrap">
-          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(0,232,150,.4);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Leading — ride these</span>
-          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(255,176,32,.4);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Weakening — tighten stops</span>
-          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(255,61,90,.3);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Lagging — avoid</span>
-          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(77,166,255,.3);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Improving — watch for reversals</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(0,232,150,.4);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Leading â ride these</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(255,176,32,.4);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Weakening â tighten stops</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(255,61,90,.3);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Lagging â avoid</span>
+          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(77,166,255,.3);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Improving â watch for reversals</span>
         </div>
       </div>
     </div>
 
     <!-- Outperformer Scanner -->
     <div class="panel">
-      <div class="phead"><div class="ptitle">Outperformer filter — stock > sector</div><div class="pmeta g">Strongest names in strong sectors</div></div>
+      <div class="phead"><div class="ptitle">Outperformer filter â stock > sector</div><div class="pmeta g">Strongest names in strong sectors</div></div>
       <div style="display:grid;grid-template-columns:100px 80px 80px 80px 1fr 80px;padding:7px 16px 5px;border-bottom:1px solid var(--border2)">
         <div style="font-size:9px;color:var(--text4);letter-spacing:.07em;text-transform:uppercase">Stock</div>
         <div style="font-size:9px;color:var(--text4);text-align:right;letter-spacing:.07em">Stock %</div>
@@ -1571,12 +1571,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <div class="modal-t">Connect news feed</div>
     <div class="modal-s">Prices are live automatically. Add a free NewsAPI key for real financial headlines in the Intelligence feed.</div>
     <div class="modal-step" style="background:var(--green3);border:1px solid rgba(0,232,150,.2);border-radius:8px;padding:12px 14px">
-      <div class="mstep-l" style="margin-bottom:0"><div class="mstep-n">✓</div><span style="color:var(--green)">Live prices connected — Yahoo Finance, no key needed</span></div>
+      <div class="mstep-l" style="margin-bottom:0"><div class="mstep-n">â</div><span style="color:var(--green)">Live prices connected â Yahoo Finance, no key needed</span></div>
     </div>
     <div class="modal-step">
-      <div class="mstep-l"><div class="mstep-n">1</div>NewsAPI key — real financial headlines (optional)</div>
+      <div class="mstep-l"><div class="mstep-n">1</div>NewsAPI key â real financial headlines (optional)</div>
       <input class="modal-input" id="m-key-news" type="password" placeholder="Paste your NewsAPI key...">
-      <a class="modal-link" href="https://newsapi.org/register" target="_blank">Get a free key at newsapi.org →</a>
+      <a class="modal-link" href="https://newsapi.org/register" target="_blank">Get a free key at newsapi.org â</a>
     </div>
     <div id="modal-status" style="font-size:11px;color:var(--text3);margin-top:6px"></div>
     <div class="modal-acts">
@@ -1594,20 +1594,20 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 })();
 </script>
 <script>
-// ═══════════════════════════════════════════════════════════════════
-// APEXTRADE — PROFESSIONAL STRATEGY ENGINE
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// APEXTRADE â PROFESSIONAL STRATEGY ENGINE
 // Real OHLCV data from Twelve Data across 5 timeframes
 // Indicators: RSI, Stoch RSI, MACD, MA Cross, Bollinger Bands,
 //             Candlestick Patterns, Volume Analysis, SMT Divergence
-// ═══════════════════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 const STRATEGY_ENGINE = (() => {
 
-  // ── CANDLE DATA CACHE ──
+  // ââ CANDLE DATA CACHE ââ
   const candleCache = {};  // sym_interval -> {data, timestamp}
   const CACHE_TTL = { '1min':60000, '5min':300000, '15min':900000, '1h':3600000, '4h':14400000, '1day':3600000*6, '1week':3600000*24 };
 
-  // ── TIMEFRAME DEFINITIONS ──
+  // ââ TIMEFRAME DEFINITIONS ââ
   const TIMEFRAMES = {
     '1H':  { td:'1h',    label:'1 Hour',   candles:200 },
     '4H':  { td:'4h',    label:'4 Hour',   candles:200 },
@@ -1616,7 +1616,7 @@ const STRATEGY_ENGINE = (() => {
     'M':   { td:'1month',label:'Monthly',  candles:60  },
   };
 
-  // ── FETCH CANDLES FROM TWELVE DATA ──
+  // ââ FETCH CANDLES FROM TWELVE DATA ââ
   async function fetchCandles(symbol, interval, outputsize) {
     const key = `${symbol}_${interval}`;
     const cached = candleCache[key];
@@ -1651,9 +1651,9 @@ const STRATEGY_ENGINE = (() => {
     }
   }
 
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   // TECHNICAL INDICATORS
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
 
   function closes(candles) { return candles.map(c => c.c); }
   function highs(candles)  { return candles.map(c => c.h); }
@@ -1813,9 +1813,9 @@ const STRATEGY_ENGINE = (() => {
     return { goldenCross, deathCross, bullAlign, bearAlign, crossBarsAgo };
   }
 
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   // CANDLESTICK PATTERNS
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   function detectCandlePatterns(candles) {
     const patterns = [];
     const n = candles.length - 1;
@@ -1834,79 +1834,79 @@ const STRATEGY_ENGINE = (() => {
 
     // Doji
     if (body(c) < range(c) * 0.1 && range(c) > 0) {
-      patterns.push({ name:'Doji', type:'neutral', strength:1, desc:'Indecision — momentum stalling' });
+      patterns.push({ name:'Doji', type:'neutral', strength:1, desc:'Indecision â momentum stalling' });
     }
 
     // Hammer (bullish reversal)
     if (isBull(c) && lowerWick(c) > body(c) * 2 && upperWick(c) < body(c) * 0.5 && isBear(p)) {
-      patterns.push({ name:'Hammer', type:'bull', strength:2, desc:'Bullish hammer — buyers rejecting lows' });
+      patterns.push({ name:'Hammer', type:'bull', strength:2, desc:'Bullish hammer â buyers rejecting lows' });
     }
 
     // Shooting Star (bearish reversal)
     if (isBear(c) && upperWick(c) > body(c) * 2 && lowerWick(c) < body(c) * 0.5 && isBull(p)) {
-      patterns.push({ name:'Shooting Star', type:'bear', strength:2, desc:'Shooting star — sellers rejecting highs' });
+      patterns.push({ name:'Shooting Star', type:'bear', strength:2, desc:'Shooting star â sellers rejecting highs' });
     }
 
     // Engulfing Bull
     if (isBull(c) && isBear(p) && c.o < p.c && c.c > p.o && body(c) > body(p)) {
-      patterns.push({ name:'Bull Engulf', type:'bull', strength:3, desc:'Bullish engulfing — strong reversal signal' });
+      patterns.push({ name:'Bull Engulf', type:'bull', strength:3, desc:'Bullish engulfing â strong reversal signal' });
     }
 
     // Engulfing Bear
     if (isBear(c) && isBull(p) && c.o > p.c && c.c < p.o && body(c) > body(p)) {
-      patterns.push({ name:'Bear Engulf', type:'bear', strength:3, desc:'Bearish engulfing — strong reversal signal' });
+      patterns.push({ name:'Bear Engulf', type:'bear', strength:3, desc:'Bearish engulfing â strong reversal signal' });
     }
 
     // Morning Star (3 candle bullish)
     if (p2 && isBear(p2) && body(p) < body(p2) * 0.3 && isBull(c) && c.c > (p2.o + p2.c) / 2) {
-      patterns.push({ name:'Morning Star', type:'bull', strength:4, desc:'Morning star — high probability bullish reversal' });
+      patterns.push({ name:'Morning Star', type:'bull', strength:4, desc:'Morning star â high probability bullish reversal' });
     }
 
     // Evening Star (3 candle bearish)
     if (p2 && isBull(p2) && body(p) < body(p2) * 0.3 && isBear(c) && c.c < (p2.o + p2.c) / 2) {
-      patterns.push({ name:'Evening Star', type:'bear', strength:4, desc:'Evening star — high probability bearish reversal' });
+      patterns.push({ name:'Evening Star', type:'bear', strength:4, desc:'Evening star â high probability bearish reversal' });
     }
 
     // Bullish Pinbar
     if (lowerWick(c) > range(c) * 0.6 && body(c) < range(c) * 0.35) {
-      patterns.push({ name:'Bull Pinbar', type:'bull', strength:3, desc:'Bullish pinbar — strong wick rejection at lows' });
+      patterns.push({ name:'Bull Pinbar', type:'bull', strength:3, desc:'Bullish pinbar â strong wick rejection at lows' });
     }
 
     // Bearish Pinbar
     if (upperWick(c) > range(c) * 0.6 && body(c) < range(c) * 0.35) {
-      patterns.push({ name:'Bear Pinbar', type:'bear', strength:3, desc:'Bearish pinbar — strong wick rejection at highs' });
+      patterns.push({ name:'Bear Pinbar', type:'bear', strength:3, desc:'Bearish pinbar â strong wick rejection at highs' });
     }
 
     // Three White Soldiers
     if (p2 && isBull(c) && isBull(p) && isBull(p2) &&
         c.c > p.c && p.c > p2.c &&
         body(c) > range(c)*0.6 && body(p) > range(p)*0.6) {
-      patterns.push({ name:'3 White Soldiers', type:'bull', strength:4, desc:'Three white soldiers — strong bullish momentum' });
+      patterns.push({ name:'3 White Soldiers', type:'bull', strength:4, desc:'Three white soldiers â strong bullish momentum' });
     }
 
     // Three Black Crows
     if (p2 && isBear(c) && isBear(p) && isBear(p2) &&
         c.c < p.c && p.c < p2.c &&
         body(c) > range(c)*0.6 && body(p) > range(p)*0.6) {
-      patterns.push({ name:'3 Black Crows', type:'bear', strength:4, desc:'Three black crows — strong bearish momentum' });
+      patterns.push({ name:'3 Black Crows', type:'bear', strength:4, desc:'Three black crows â strong bearish momentum' });
     }
 
     // Inside Bar
     if (c.h < p.h && c.l > p.l) {
-      patterns.push({ name:'Inside Bar', type:'neutral', strength:1, desc:'Inside bar — consolidation, breakout pending' });
+      patterns.push({ name:'Inside Bar', type:'neutral', strength:1, desc:'Inside bar â consolidation, breakout pending' });
     }
 
     // Marubozu Bull (full body, no wicks)
     if (isBull(c) && upperWick(c) < body(c)*0.05 && lowerWick(c) < body(c)*0.05 && body(c) > range(p)*0.8) {
-      patterns.push({ name:'Bull Marubozu', type:'bull', strength:3, desc:'Bullish marubozu — buyers in total control' });
+      patterns.push({ name:'Bull Marubozu', type:'bull', strength:3, desc:'Bullish marubozu â buyers in total control' });
     }
 
     return patterns;
   }
 
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   // VOLUME ANALYSIS
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   function analyzeVolume(candles) {
     const vols = volumes(candles);
     const n = vols.length - 1;
@@ -1947,10 +1947,10 @@ const STRATEGY_ENGINE = (() => {
     return { rvol: +rvol.toFixed(2), climax, expanding, contracting, bullVolDom, bearVolDom, obvTrend, avgVol20 };
   }
 
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   // SMT DIVERGENCE (Smart Money Technique)
   // Detects when correlated pairs diverge
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   async function detectSMT(symbol, candles) {
     // SMT pairs: if DXY goes up but gold holds = bullish gold divergence
     // If EUR/USD breaks high but GBP/USD doesn't = bearish EUR signal
@@ -1996,17 +1996,17 @@ const STRATEGY_ENGINE = (() => {
         corPair,
         smtBull,
         smtBear,
-        desc: smtBull ? `SMT bullish vs ${corPair} — false low detected` :
-              smtBear ? `SMT bearish vs ${corPair} — false high detected` : '',
+        desc: smtBull ? `SMT bullish vs ${corPair} â false low detected` :
+              smtBear ? `SMT bearish vs ${corPair} â false high detected` : '',
       };
     } catch(e) { return { detected: false }; }
   }
 
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   // STOCH RSI HISTORICAL PATTERNS
   // Detects oversold bounces, overbought reversals
   // across multiple timeframes
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   function analyzeStochRSIPatterns(candles, interval) {
     const cls = closes(candles);
     const stoch = stochRSI(cls);
@@ -2024,7 +2024,7 @@ const STRATEGY_ENGINE = (() => {
           type: 'bull',
           name: `Stoch RSI Oversold (${interval})`,
           strength: stoch.k < 10 ? 4 : 3,
-          desc: `${strength} oversold bounce — Stoch RSI ${stoch.k.toFixed(0)} on ${interval}`,
+          desc: `${strength} oversold bounce â Stoch RSI ${stoch.k.toFixed(0)} on ${interval}`,
         });
       }
     }
@@ -2039,7 +2039,7 @@ const STRATEGY_ENGINE = (() => {
           type: 'bear',
           name: `Stoch RSI Overbought (${interval})`,
           strength: stoch.k > 90 ? 4 : 3,
-          desc: `${strength} overbought reversal — Stoch RSI ${stoch.k.toFixed(0)} on ${interval}`,
+          desc: `${strength} overbought reversal â Stoch RSI ${stoch.k.toFixed(0)} on ${interval}`,
         });
       }
     }
@@ -2057,9 +2057,9 @@ const STRATEGY_ENGINE = (() => {
     return { stoch, signals };
   }
 
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   // RSI DIVERGENCE
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   function detectRSIDivergence(candles) {
     const cls = closes(candles);
     const rsiValues = rsi(cls, 14).filter(v => v !== null);
@@ -2101,10 +2101,10 @@ const STRATEGY_ENGINE = (() => {
     };
   }
 
-  // ═══════════════════════════════════
-  // CVD — CUMULATIVE VOLUME DELTA
+  // âââââââââââââââââââââââââââââââââââ
+  // CVD â CUMULATIVE VOLUME DELTA
   // Real volume for futures, price action proxy for forex
-  // ═══════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââ
   function calculateCVD(candles) {
     const n = candles.length;
     const hasVol = candles.some(c => c.v > 0);
@@ -2140,10 +2140,10 @@ const STRATEGY_ENGINE = (() => {
     return { line:cvdLine.slice(-50), current:cvdEnd, trend, momentum:+momentum.toFixed(2), divergence, hasRealVolume:hasVol };
   }
 
-    // ═══════════════════════════════════════════════════════════════════
+    // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   // MASTER CONFIDENCE SCORER
   // Analyses all signals across all timeframes and returns a score 0-100
-  // ═══════════════════════════════════════════════════════════════════
+  // âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   async function analyzeInstrument(symbol, primaryTF = 'D') {
     const results = {
       symbol,
@@ -2181,17 +2181,17 @@ const STRATEGY_ENGINE = (() => {
     let bullScore = 0, bearScore = 0;
     let signalLog = [];
 
-    // ── 1. RSI ANALYSIS (primary TF) ──
+    // ââ 1. RSI ANALYSIS (primary TF) ââ
     const rsiData = detectRSIDivergence(primaryCandles);
     results.tfData.rsi = rsiData;
-    if (rsiData.extremeOversold) { bullScore += 18; signalLog.push({cat:'RSI', type:'bull', pts:18, label:`RSI Extreme Oversold (${rsiData.value.toFixed(0)})`, desc:`RSI at ${rsiData.value.toFixed(0)} — historically strong bounce zone`}); }
-    else if (rsiData.oversold)   { bullScore += 12; signalLog.push({cat:'RSI', type:'bull', pts:12, label:`RSI Oversold (${rsiData.value.toFixed(0)})`, desc:`RSI below 30 — oversold, potential reversal`}); }
-    else if (rsiData.extremeOverbought){ bearScore += 18; signalLog.push({cat:'RSI', type:'bear', pts:18, label:`RSI Extreme Overbought (${rsiData.value.toFixed(0)})`, desc:`RSI at ${rsiData.value.toFixed(0)} — historically strong reversal zone`}); }
-    else if (rsiData.overbought) { bearScore += 12; signalLog.push({cat:'RSI', type:'bear', pts:12, label:`RSI Overbought (${rsiData.value.toFixed(0)})`, desc:`RSI above 70 — overbought, potential reversal`}); }
-    if (rsiData.bullDivergence)  { bullScore += 15; signalLog.push({cat:'RSI', type:'bull', pts:15, label:'RSI Bullish Divergence', desc:'Price making lower lows while RSI makes higher lows — bullish divergence'}); }
-    if (rsiData.bearDivergence)  { bearScore += 15; signalLog.push({cat:'RSI', type:'bear', pts:15, label:'RSI Bearish Divergence', desc:'Price making higher highs while RSI makes lower highs — bearish divergence'}); }
+    if (rsiData.extremeOversold) { bullScore += 18; signalLog.push({cat:'RSI', type:'bull', pts:18, label:`RSI Extreme Oversold (${rsiData.value.toFixed(0)})`, desc:`RSI at ${rsiData.value.toFixed(0)} â historically strong bounce zone`}); }
+    else if (rsiData.oversold)   { bullScore += 12; signalLog.push({cat:'RSI', type:'bull', pts:12, label:`RSI Oversold (${rsiData.value.toFixed(0)})`, desc:`RSI below 30 â oversold, potential reversal`}); }
+    else if (rsiData.extremeOverbought){ bearScore += 18; signalLog.push({cat:'RSI', type:'bear', pts:18, label:`RSI Extreme Overbought (${rsiData.value.toFixed(0)})`, desc:`RSI at ${rsiData.value.toFixed(0)} â historically strong reversal zone`}); }
+    else if (rsiData.overbought) { bearScore += 12; signalLog.push({cat:'RSI', type:'bear', pts:12, label:`RSI Overbought (${rsiData.value.toFixed(0)})`, desc:`RSI above 70 â overbought, potential reversal`}); }
+    if (rsiData.bullDivergence)  { bullScore += 15; signalLog.push({cat:'RSI', type:'bull', pts:15, label:'RSI Bullish Divergence', desc:'Price making lower lows while RSI makes higher lows â bullish divergence'}); }
+    if (rsiData.bearDivergence)  { bearScore += 15; signalLog.push({cat:'RSI', type:'bear', pts:15, label:'RSI Bearish Divergence', desc:'Price making higher highs while RSI makes lower highs â bearish divergence'}); }
 
-    // ── 2. STOCH RSI — PRIMARY + HIGHER TFs ──
+    // ââ 2. STOCH RSI â PRIMARY + HIGHER TFs ââ
     for (const [tf, candles] of Object.entries(candleData)) {
       const { stoch, signals } = analyzeStochRSIPatterns(candles, tf);
       results.tfData[`stochRSI_${tf}`] = stoch;
@@ -2204,30 +2204,30 @@ const STRATEGY_ENGINE = (() => {
       }
     }
 
-    // ── 3. MACD ──
+    // ââ 3. MACD ââ
     const macdData = macd(cls);
     results.tfData.macd = macdData;
     if (macdData.bullish && !macdData.crossing) { bullScore += 10; signalLog.push({cat:'MACD', type:'bull', pts:10, label:'MACD Bullish Momentum', desc:'MACD histogram expanding above zero line'}); }
     if (macdData.bearish && !macdData.crossing) { bearScore += 10; signalLog.push({cat:'MACD', type:'bear', pts:10, label:'MACD Bearish Momentum', desc:'MACD histogram expanding below zero line'}); }
-    if (macdData.crossing && macdData.macd > 0) { bullScore += 8; signalLog.push({cat:'MACD', type:'bull', pts:8, label:'MACD Bullish Cross', desc:'MACD crossing signal line — bullish momentum shift'}); }
-    if (macdData.crossing && macdData.macd < 0) { bearScore += 8; signalLog.push({cat:'MACD', type:'bear', pts:8, label:'MACD Bearish Cross', desc:'MACD crossing signal line — bearish momentum shift'}); }
+    if (macdData.crossing && macdData.macd > 0) { bullScore += 8; signalLog.push({cat:'MACD', type:'bull', pts:8, label:'MACD Bullish Cross', desc:'MACD crossing signal line â bullish momentum shift'}); }
+    if (macdData.crossing && macdData.macd < 0) { bearScore += 8; signalLog.push({cat:'MACD', type:'bear', pts:8, label:'MACD Bearish Cross', desc:'MACD crossing signal line â bearish momentum shift'}); }
 
-    // ── 4. BOLLINGER BANDS ──
+    // ââ 4. BOLLINGER BANDS ââ
     const bbData = bollingerBands(cls);
     results.tfData.bb = bbData;
-    if (bbData.belowLower) { bullScore += 10; signalLog.push({cat:'BB', type:'bull', pts:10, label:'BB Lower Band Touch', desc:`Price at lower Bollinger Band (${bbData.pctB.toFixed(0)}%B) — mean reversion setup`}); }
-    if (bbData.aboveUpper) { bearScore += 10; signalLog.push({cat:'BB', type:'bear', pts:10, label:'BB Upper Band Touch', desc:`Price at upper Bollinger Band (${bbData.pctB.toFixed(0)}%B) — mean reversion setup`}); }
-    if (bbData.squeeze) { signalLog.push({cat:'BB', type:'neutral', pts:0, label:'BB Squeeze', desc:'Bollinger squeeze — major move imminent, watch for breakout direction'}); results.warnings.push('BB squeeze — explosive move pending'); }
+    if (bbData.belowLower) { bullScore += 10; signalLog.push({cat:'BB', type:'bull', pts:10, label:'BB Lower Band Touch', desc:`Price at lower Bollinger Band (${bbData.pctB.toFixed(0)}%B) â mean reversion setup`}); }
+    if (bbData.aboveUpper) { bearScore += 10; signalLog.push({cat:'BB', type:'bear', pts:10, label:'BB Upper Band Touch', desc:`Price at upper Bollinger Band (${bbData.pctB.toFixed(0)}%B) â mean reversion setup`}); }
+    if (bbData.squeeze) { signalLog.push({cat:'BB', type:'neutral', pts:0, label:'BB Squeeze', desc:'Bollinger squeeze â major move imminent, watch for breakout direction'}); results.warnings.push('BB squeeze â explosive move pending'); }
 
-    // ── 5. GOLDEN/DEATH CROSS ──
+    // ââ 5. GOLDEN/DEATH CROSS ââ
     const crossData = maCross(cls);
     results.tfData.maCross = crossData;
-    if (crossData.goldenCross) { bullScore += 20; signalLog.push({cat:'Cross', type:'bull', pts:20, label:'Golden Cross', desc:'50MA crossed above 200MA — major bullish regime change'}); }
-    if (crossData.deathCross)  { bearScore += 20; signalLog.push({cat:'Cross', type:'bear', pts:20, label:'Death Cross', desc:'50MA crossed below 200MA — major bearish regime change'}); }
-    if (crossData.bullAlign && !crossData.goldenCross) { bullScore += 8; signalLog.push({cat:'Cross', type:'bull', pts:8, label:'MA Bull Regime', desc:'50MA above 200MA — bullish trend regime active'}); }
-    if (crossData.bearAlign && !crossData.deathCross)  { bearScore += 8; signalLog.push({cat:'Cross', type:'bear', pts:8, label:'MA Bear Regime', desc:'50MA below 200MA — bearish trend regime active'}); }
+    if (crossData.goldenCross) { bullScore += 20; signalLog.push({cat:'Cross', type:'bull', pts:20, label:'Golden Cross', desc:'50MA crossed above 200MA â major bullish regime change'}); }
+    if (crossData.deathCross)  { bearScore += 20; signalLog.push({cat:'Cross', type:'bear', pts:20, label:'Death Cross', desc:'50MA crossed below 200MA â major bearish regime change'}); }
+    if (crossData.bullAlign && !crossData.goldenCross) { bullScore += 8; signalLog.push({cat:'Cross', type:'bull', pts:8, label:'MA Bull Regime', desc:'50MA above 200MA â bullish trend regime active'}); }
+    if (crossData.bearAlign && !crossData.deathCross)  { bearScore += 8; signalLog.push({cat:'Cross', type:'bear', pts:8, label:'MA Bear Regime', desc:'50MA below 200MA â bearish trend regime active'}); }
 
-    // ── 6. CANDLESTICK PATTERNS ──
+    // ââ 6. CANDLESTICK PATTERNS ââ
     const patterns = detectCandlePatterns(primaryCandles);
     results.tfData.patterns = patterns;
     for (const p of patterns) {
@@ -2236,26 +2236,26 @@ const STRATEGY_ENGINE = (() => {
       if (p.type === 'neutral') results.warnings.push(p.desc);
     }
 
-    // ── 7. CVD ──
+    // ââ 7. CVD ââ
     const cvdData = calculateCVD(primaryCandles);
     results.tfData.cvd = cvdData;
-    if (cvdData.divergence === 'bull') { bullScore += 16; signalLog.push({cat:'CVD',type:'bull',pts:16,label:'CVD Bullish Divergence',desc:'Price falling but CVD rising — buyers absorbing sells. Strong accumulation.'}); }
-    else if (cvdData.divergence === 'bear') { bearScore += 16; signalLog.push({cat:'CVD',type:'bear',pts:16,label:'CVD Bearish Divergence',desc:'Price rising but CVD falling — sellers absorbing buys. Strong distribution.'}); }
-    if (cvdData.trend==='bull' && cvdData.momentum>0.5) { bullScore+=8; signalLog.push({cat:'CVD',type:'bull',pts:8,label:'CVD Bullish Trend',desc:`Net buying pressure dominant — CVD trending up (${cvdData.hasRealVolume?'real vol':'price proxy'})`}); }
-    else if (cvdData.trend==='bear' && cvdData.momentum>0.5) { bearScore+=8; signalLog.push({cat:'CVD',type:'bear',pts:8,label:'CVD Bearish Trend',desc:`Net selling pressure dominant — CVD trending down (${cvdData.hasRealVolume?'real vol':'price proxy'})`}); }
+    if (cvdData.divergence === 'bull') { bullScore += 16; signalLog.push({cat:'CVD',type:'bull',pts:16,label:'CVD Bullish Divergence',desc:'Price falling but CVD rising â buyers absorbing sells. Strong accumulation.'}); }
+    else if (cvdData.divergence === 'bear') { bearScore += 16; signalLog.push({cat:'CVD',type:'bear',pts:16,label:'CVD Bearish Divergence',desc:'Price rising but CVD falling â sellers absorbing buys. Strong distribution.'}); }
+    if (cvdData.trend==='bull' && cvdData.momentum>0.5) { bullScore+=8; signalLog.push({cat:'CVD',type:'bull',pts:8,label:'CVD Bullish Trend',desc:`Net buying pressure dominant â CVD trending up (${cvdData.hasRealVolume?'real vol':'price proxy'})`}); }
+    else if (cvdData.trend==='bear' && cvdData.momentum>0.5) { bearScore+=8; signalLog.push({cat:'CVD',type:'bear',pts:8,label:'CVD Bearish Trend',desc:`Net selling pressure dominant â CVD trending down (${cvdData.hasRealVolume?'real vol':'price proxy'})`}); }
 
-    // ── 8. VOLUME ANALYSIS ──
+    // ââ 8. VOLUME ANALYSIS ââ
     const hasVolume = primaryCandles.some(c => c.v > 0);
     if (hasVolume) {
       const volData = analyzeVolume(primaryCandles);
       results.tfData.volume = volData;
-      if (volData.rvol >= 2.0) { const pts = volData.rvol >= 3 ? 12 : 8; signalLog.push({cat:'Volume', type:'info', pts, label:`High Volume ${volData.rvol}×`, desc:`${volData.rvol}× average volume — institutional activity`}); bullScore += pts/2; bearScore += pts/2; }
-      if (volData.bullVolDom && volData.obvTrend === 'bull') { bullScore += 10; signalLog.push({cat:'Volume', type:'bull', pts:10, label:'Bull Volume Dominance', desc:'Buy volume dominating + rising OBV — institutional accumulation'}); }
-      if (volData.bearVolDom && volData.obvTrend === 'bear') { bearScore += 10; signalLog.push({cat:'Volume', type:'bear', pts:10, label:'Bear Volume Dominance', desc:'Sell volume dominating + falling OBV — institutional distribution'}); }
-      if (volData.climax) results.warnings.push('Climax volume detected — potential exhaustion/reversal');
+      if (volData.rvol >= 2.0) { const pts = volData.rvol >= 3 ? 12 : 8; signalLog.push({cat:'Volume', type:'info', pts, label:`High Volume ${volData.rvol}Ã`, desc:`${volData.rvol}Ã average volume â institutional activity`}); bullScore += pts/2; bearScore += pts/2; }
+      if (volData.bullVolDom && volData.obvTrend === 'bull') { bullScore += 10; signalLog.push({cat:'Volume', type:'bull', pts:10, label:'Bull Volume Dominance', desc:'Buy volume dominating + rising OBV â institutional accumulation'}); }
+      if (volData.bearVolDom && volData.obvTrend === 'bear') { bearScore += 10; signalLog.push({cat:'Volume', type:'bear', pts:10, label:'Bear Volume Dominance', desc:'Sell volume dominating + falling OBV â institutional distribution'}); }
+      if (volData.climax) results.warnings.push('Climax volume detected â potential exhaustion/reversal');
     }
 
-    // ── 8. SMT DIVERGENCE ──
+    // ââ 8. SMT DIVERGENCE ââ
     const smtData = await detectSMT(symbol, primaryCandles);
     results.tfData.smt = smtData;
     if (smtData.detected) {
@@ -2263,7 +2263,7 @@ const STRATEGY_ENGINE = (() => {
       if (smtData.smtBear) { bearScore += 18; signalLog.push({cat:'SMT', type:'bear', pts:18, label:`SMT Bearish vs ${smtData.corPair}`, desc:smtData.desc}); }
     }
 
-    // ── 9. HIGHER TIMEFRAME BIAS ──
+    // ââ 9. HIGHER TIMEFRAME BIAS ââ
     if (candleData['W'] && candleData['D']) {
       const wClose = closes(candleData['W']);
       const dClose = closes(candleData['D']);
@@ -2273,16 +2273,16 @@ const STRATEGY_ENGINE = (() => {
       const weeklyBull = wClose[wClose.length-1] > wEMALast && wRSILast > 50;
       const weeklyBear = wClose[wClose.length-1] < wEMALast && wRSILast < 50;
       results.tfData.weeklyBias = { bull: weeklyBull, bear: weeklyBear, rsi: wRSILast };
-      if (weeklyBull) { bullScore += 12; signalLog.push({cat:'HTF', type:'bull', pts:12, label:'Weekly Bullish Bias', desc:`Weekly RSI ${wRSILast?.toFixed(0)} — price above 20W EMA, bullish higher timeframe bias`}); }
-      if (weeklyBear) { bearScore += 12; signalLog.push({cat:'HTF', type:'bear', pts:12, label:'Weekly Bearish Bias', desc:`Weekly RSI ${wRSILast?.toFixed(0)} — price below 20W EMA, bearish higher timeframe bias`}); }
+      if (weeklyBull) { bullScore += 12; signalLog.push({cat:'HTF', type:'bull', pts:12, label:'Weekly Bullish Bias', desc:`Weekly RSI ${wRSILast?.toFixed(0)} â price above 20W EMA, bullish higher timeframe bias`}); }
+      if (weeklyBear) { bearScore += 12; signalLog.push({cat:'HTF', type:'bear', pts:12, label:'Weekly Bearish Bias', desc:`Weekly RSI ${wRSILast?.toFixed(0)} â price below 20W EMA, bearish higher timeframe bias`}); }
     }
 
-    // ── FINAL SCORING ──
+    // ââ FINAL SCORING ââ
     const totalRaw = bullScore + bearScore;
     const dominance = totalRaw > 0 ? Math.max(bullScore, bearScore) / totalRaw : 0.5;
     const direction = bullScore > bearScore ? 'long' : bullScore < bearScore ? 'short' : 'neutral';
 
-    // Confidence = signal dominance × signal strength, capped at 95
+    // Confidence = signal dominance Ã signal strength, capped at 95
     // More signals = higher confidence in direction
     const signalCount = signalLog.filter(s => s.type !== 'neutral' && s.type !== 'info').length;
     const baseConf = Math.min(dominance * 100, 92);
@@ -2318,12 +2318,12 @@ console.log('Strategy Engine loaded');
 
 </script>
 <script>
-// ═══════════════════════════════════════════════════════
-// APEXTRADE — FULL SCRIPT
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// APEXTRADE â FULL SCRIPT
 // Strategy: CRT + MTF + BOS + Volume | All timeframes | All markets
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
-// ── NAV ──
+// ââ NAV ââ
 function nav(p) {
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('.sbb').forEach(x => x.classList.remove('active'));
@@ -2340,14 +2340,14 @@ function nav(p) {
   }
 }
 
-// ── CLOCK ──
+// ââ CLOCK ââ
 function tickClock() {
   const el = document.getElementById('clock');
   if (el) el.textContent = 'AWST ' + new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'Australia/Perth'});
 }
 tickClock(); setInterval(tickClock, 1000);
 
-// ── CONFIG ──
+// ââ CONFIG ââ
 const BACKEND_URL = localStorage.getItem('apex_backend_url') || '';
 let backendConnected = false;
 
@@ -2367,16 +2367,16 @@ const CFG = {
   }
 };
 
-// ── PRICE ENGINE — Yahoo Finance (direct, CORS-safe when hosted) ──
+// ââ PRICE ENGINE â Yahoo Finance (direct, CORS-safe when hosted) ââ
 // Yahoo Finance v8 API works cross-origin from hosted sites.
 // We batch symbols in groups of 10 to stay fast.
 
 
-// ── INSTRUMENT DEFINITIONS ──
+// ââ INSTRUMENT DEFINITIONS ââ
 // Twelve Data: forex + metals (XAU prices in AUD on AU accounts)
 // Yahoo Finance: indices (real-time, free, correct values)
 const INSTRUMENTS = {
-  // Forex Majors — TD live
+  // Forex Majors â TD live
   'EUR/USD': { td:'EUR/USD', yf:null, type:'forex',     dp:4, base:1.1519  },
   'GBP/USD': { td:'GBP/USD', yf:null, type:'forex',     dp:4, base:1.3194  },
   'AUD/USD': { td:'AUD/USD', yf:null, type:'forex',     dp:4, base:0.6291  },
@@ -2384,16 +2384,16 @@ const INSTRUMENTS = {
   'USD/CAD': { td:'USD/CAD', yf:null, type:'forex',     dp:4, base:1.3850  },
   'USD/JPY': { td:'USD/JPY', yf:null, type:'forex',     dp:2, base:149.50  },
   'USD/CHF': { td:'USD/CHF', yf:null, type:'forex',     dp:4, base:0.8820  },
-  // Forex Crosses — TD live
+  // Forex Crosses â TD live
   'EUR/GBP': { td:'EUR/GBP', yf:null, type:'forex',     dp:4, base:0.8730  },
   'GBP/JPY': { td:'GBP/JPY', yf:null, type:'forex',     dp:2, base:190.20  },
   'EUR/JPY': { td:'EUR/JPY', yf:null, type:'forex',     dp:2, base:162.80  },
-  // Metals — TD live (returns AUD price, displayed as-is since user is AU)
+  // Metals â TD live (returns AUD price, displayed as-is since user is AU)
   'XAU/USD': { td:'XAU/USD', yf:null, type:'commodity', dp:2, base:4676.43 },
   'XAG/USD': { td:'XAG/USD', yf:null, type:'commodity', dp:2, base:91.20   },
   'XAU/EUR': { td:'XAU/EUR', yf:null, type:'commodity', dp:2, base:4065.00 },
   'XAU/GBP': { td:'XAU/GBP', yf:null, type:'commodity', dp:2, base:3540.00 },
-  // Indices — Yahoo Finance real-time (correct full values)
+  // Indices â Yahoo Finance real-time (correct full values)
   'NAS100':  { td:'QQQ', mult:41.10,  type:'index', dp:0, base:24045  },
   'SPX500':  { td:'SPY', mult:10.05,  type:'index', dp:0, base:6582   },
   'US30':    { td:'DIA', mult:100.0,  type:'index', dp:0, base:46500  },
@@ -2401,14 +2401,14 @@ const INSTRUMENTS = {
   'DXY':     { td:'UUP', mult:3.597,  type:'index', dp:2, base:100.19 },
 };
 
-// TD batch string — forex + metals only
+// TD batch string â forex + metals only
 const TD_SYMBOLS = Object.values(INSTRUMENTS).filter(i=>i.td).map(i=>i.td).join(',');
 
 // Price state
 let prices    = {};
 let prevPrices= {};
 let dayOpen   = {};
-let prevClose = {};  // Previous session close — used for accurate % change
+let prevClose = {};  // Previous session close â used for accurate % change
 let liveCount = 0;
 let tdLoaded  = false;
 let fetchBusy = false;
@@ -2423,7 +2423,7 @@ for (const [sym, inst] of Object.entries(INSTRUMENTS)) {
   dayOpen[sym]    = inst.base;
 }
 
-// ── SIMULATION FALLBACK ──
+// ââ SIMULATION FALLBACK ââ
 const VOLS = {
   'EUR/USD':0.007,'GBP/USD':0.008,'AUD/USD':0.009,'NZD/USD':0.010,
   'USD/CAD':0.008,'USD/JPY':0.011,'USD/CHF':0.007,'EUR/GBP':0.006,
@@ -2447,7 +2447,7 @@ function simTick() {
   }
 }
 
-// ── FETCH PREVIOUS CLOSE (for accurate % change calculation) ──
+// ââ FETCH PREVIOUS CLOSE (for accurate % change calculation) ââ
 async function fetchPrevClose() {
   const key = localStorage.getItem('apex_td_key') || '';
   if (!key || prevCloseFetched) return;
@@ -2478,7 +2478,7 @@ async function fetchPrevClose() {
   } catch(e) { console.warn('prevClose fetch error:', e.message); }
 }
 
-// ── TWELVE DATA FETCH (forex + metals) ──
+// ââ TWELVE DATA FETCH (forex + metals) ââ
 async function fetchTwelveData() {
   const key = localStorage.getItem('apex_td_key') || '';
   if (!key) return false;
@@ -2504,9 +2504,9 @@ async function fetchTwelveData() {
   } catch(e) { console.warn('TD error:', e.message); return false; }
 }
 
-// ── YAHOO FINANCE FETCH (indices) — with ETF fallback ──
+// ââ YAHOO FINANCE FETCH (indices) â with ETF fallback ââ
 
-// ── MAIN PRICE FETCH ──
+// ââ MAIN PRICE FETCH ââ
 async function fetchPrices() {
   if (fetchBusy) return;
   fetchBusy = true;
@@ -2528,15 +2528,15 @@ async function fetchPrices() {
     const t   = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'Australia/Perth'});
     const tdKey = localStorage.getItem('apex_td_key');
     const src = liveCount > 0
-      ? `${liveCount} pairs live · TD + Yahoo`
-      : tdKey ? 'Connecting...' : 'Simulation · Add TD key in Settings';
+      ? `${liveCount} pairs live Â· TD + Yahoo`
+      : tdKey ? 'Connecting...' : 'Simulation Â· Add TD key in Settings';
 
     const ds = document.getElementById('dstatus');
-    if (ds) { ds.textContent = 'LIVE · ' + t; ds.className = 'live'; }
+    if (ds) { ds.textContent = 'LIVE Â· ' + t; ds.className = 'live'; }
     const dsub = document.getElementById('dash-sub');
-    if (dsub) dsub.textContent = `${t} AWST · ${src}`;
+    if (dsub) dsub.textContent = `${t} AWST Â· ${src}`;
     const ssub = document.getElementById('scan-sub');
-    if (ssub) ssub.textContent = `Live every 5s · ${src} · CRT · MTF · BOS · VOL`;
+    if (ssub) ssub.textContent = `Live every 5s Â· ${src} Â· CRT Â· MTF Â· BOS Â· VOL`;
   } catch(e) {
     console.warn('fetchPrices error:', e);
     simTick();
@@ -2548,9 +2548,9 @@ async function fetchPrices() {
 
 function refreshPrices() { fetchBusy = false; fetchPrices(); }
 
-// ── PRICE FORMATTING ──
+// ââ PRICE FORMATTING ââ
 function fmtPrice(sym, v) {
-  if (v===undefined||v===null||isNaN(v)) return '—';
+  if (v===undefined||v===null||isNaN(v)) return 'â';
   const n   = parseFloat(v);
   const inst= INSTRUMENTS[sym];
   if (!inst) return n.toFixed(4);
@@ -2567,7 +2567,7 @@ function pctChange(sym) {
   return base ? (cur - base) / base * 100 : 0;
 }
 
-// ── UPDATE DOM ──
+// ââ UPDATE DOM ââ
 function buildTicker() {
   const syms = Object.keys(INSTRUMENTS);
   const items = [...syms, ...syms].map(sym => {
@@ -2610,11 +2610,11 @@ function updatePriceEls() {
   if (document.getElementById('page-flow')?.classList.contains('active')) updateCurrencyStrength();
 }
 
-// ═══════════════════════════════════════════════════════
-// STRATEGY ENGINE — Jake's Rules
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// STRATEGY ENGINE â Jake's Rules
 // Triggers: CRT + MTF alignment + BOS + Volume + News
 // Timeframes: 1m/3m/5m/15m/1H/4H/D/W
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const WATCHLIST = [
   // Forex majors & crosses
   { sym:'AUD/USD', market:'Forex Major',  sector:'forex',     pip:0.0001, atr:0.0045 },
@@ -2687,7 +2687,7 @@ function scoreTrade(inst, mtf) {
   const seed = inst.sym.split('').reduce((a,c)=>a+c.charCodeAt(0),0);
   const rng = (n) => ((seed*n*9301+49297)%233280)/233280;
 
-  // ── 1. MTF Confluence ──
+  // ââ 1. MTF Confluence ââ
   const bullCount = Object.values(mtf).filter(v => v === 'bull').length;
   const bearCount = Object.values(mtf).filter(v => v === 'bear').length;
   const aligned = Math.max(bullCount, bearCount);
@@ -2697,7 +2697,7 @@ function scoreTrade(inst, mtf) {
   else if (aligned >= 3) score += 12;
   else return null;
 
-  // ── 2. CRT — Candle Range Threshold ──
+  // ââ 2. CRT â Candle Range Threshold ââ
   const atrPct = (inst.atr / cur) * 100;
   const crtMult = absDrift / (atrPct || 0.1);
   const crtFired = crtMult > 0.5;
@@ -2705,42 +2705,42 @@ function scoreTrade(inst, mtf) {
   if (crtStrong) score += 25;
   else if (crtFired) score += 15;
 
-  // ── 3. Break of Structure ──
+  // ââ 3. Break of Structure ââ
   const bosFired = (dir === 'long' && drift > 0.12) || (dir === 'short' && drift < -0.12);
   const bosStrong = (dir === 'long' && drift > 0.30) || (dir === 'short' && drift < -0.30);
   if (bosStrong) score += 22;
   else if (bosFired) score += 14;
 
-  // ── 4. Relative Volume ──
+  // ââ 4. Relative Volume ââ
   const rvol = +(1.2 + absDrift * 1.2 + rng(7) * 1.5).toFixed(1);
   const rvolFired = rvol >= CFG.strategy.rvolThreshold;
   const rvolHot = rvol >= 3.0;
   if (rvolHot) score += 20;
   else if (rvolFired) score += 12;
 
-  // ── 5. Gap analysis (simulated) ──
+  // ââ 5. Gap analysis (simulated) ââ
   const gapPct = rng(8) > 0.7 ? (dir==='long'?1:-1) * (rng(9)*2+0.5) : 0;
   const gapFired = Math.abs(gapPct) > 0.5;
   if (gapFired) score += 12;
 
-  // ── 6. VWAP analysis (simulated) ──
+  // ââ 6. VWAP analysis (simulated) ââ
   // Price above VWAP = bullish, below = bearish
   const vwapBias = rng(10) > 0.5 ? 'bull' : 'bear';
   const vwapAligned = (dir==='long' && vwapBias==='bull') || (dir==='short' && vwapBias==='bear');
   if (vwapAligned) score += 8;
 
-  // ── 7. Relative Strength vs Sector ──
+  // ââ 7. Relative Strength vs Sector ââ
   const sectorKey = inst.sector;
   const sectorPct = SECTORS.find(s=>s.name.toLowerCase().includes(sectorKey))?.day || 0;
   const rsEdge = drift - sectorPct;
   const rsFired = (dir==='long' && rsEdge > 0.3) || (dir==='short' && rsEdge < -0.3);
   if (rsFired) score += 10;
 
-  // ── 8. News catalyst ──
+  // ââ 8. News catalyst ââ
   const newsCatalyst = absDrift > 0.18 && rng(11) > 0.65;
   if (newsCatalyst) score += 8;
 
-  // ── 9. Auction imbalance (ASX specific) ──
+  // ââ 9. Auction imbalance (ASX specific) ââ
   const isASX = inst.market.includes('ASX');
   const auctionImb = isASX && rng(12) > 0.75;
   if (auctionImb) score += 6;
@@ -2749,12 +2749,12 @@ function scoreTrade(inst, mtf) {
   if (confidence < CFG.strategy.minConfidence) return null;
 
   const signals = [];
-  if (crtFired || crtStrong) signals.push({type:'crt', label: crtStrong ? 'CRT ×'+crtMult.toFixed(1) : 'CRT'});
-  if (bosFired || bosStrong) signals.push({type:'bos', label: bosStrong ? 'BOS ✓' : 'BOS'});
+  if (crtFired || crtStrong) signals.push({type:'crt', label: crtStrong ? 'CRT Ã'+crtMult.toFixed(1) : 'CRT'});
+  if (bosFired || bosStrong) signals.push({type:'bos', label: bosStrong ? 'BOS â' : 'BOS'});
   if (aligned >= 4) signals.push({type:'mtf', label:`MTF ${aligned}/6`});
-  if (rvolFired) signals.push({type:'rvol', label:`RVOL ${rvol}×`});
+  if (rvolFired) signals.push({type:'rvol', label:`RVOL ${rvol}Ã`});
   if (gapFired) signals.push({type:'gap', label:`GAP ${gapPct>0?'+':''}${gapPct.toFixed(1)}%`});
-  if (vwapAligned) signals.push({type:'vwap', label:'VWAP ✓'});
+  if (vwapAligned) signals.push({type:'vwap', label:'VWAP â'});
   if (rsFired) signals.push({type:'rs', label:'RS +'});
   if (newsCatalyst) signals.push({type:'news', label:'NEWS'});
   if (auctionImb) signals.push({type:'auc', label:'AUCTION'});
@@ -2861,7 +2861,7 @@ function updateScannerUI(results) {
   if (hiSigs.length) {
     html += `<div class="scan-section-header" style="border-left:3px solid var(--red)">
       HIGH PRIORITY <span class="scan-section-count" style="background:var(--red3);color:var(--red)">${hiSigs.length}</span>
-      <span style="font-size:9px;color:var(--text3);font-weight:400">Confidence ≥80% · All triggers confirmed</span>
+      <span style="font-size:9px;color:var(--text3);font-weight:400">Confidence â¥80% Â· All triggers confirmed</span>
     </div>`;
     html += hiSigs.map(sig => renderScanRow(sig)).join('');
   }
@@ -2869,7 +2869,7 @@ function updateScannerUI(results) {
   if (medSigs.length) {
     html += `<div class="scan-section-header" style="border-left:3px solid var(--amber)">
       MEDIUM PRIORITY <span class="scan-section-count" style="background:var(--amber3);color:var(--amber)">${medSigs.length}</span>
-      <span style="font-size:9px;color:var(--text3);font-weight:400">Confidence 65–79% · Developing setup</span>
+      <span style="font-size:9px;color:var(--text3);font-weight:400">Confidence 65â79% Â· Developing setup</span>
     </div>`;
     html += medSigs.map(sig => renderScanRow(sig)).join('');
   }
@@ -2877,7 +2877,7 @@ function updateScannerUI(results) {
   if (loSigs.length) {
     html += `<div class="scan-section-header" style="border-left:3px solid var(--accent)">
       WATCHING <span class="scan-section-count" style="background:var(--accent3);color:var(--accent)">${loSigs.length}</span>
-      <span style="font-size:9px;color:var(--text3);font-weight:400">Confidence 65%+ · Below threshold</span>
+      <span style="font-size:9px;color:var(--text3);font-weight:400">Confidence 65%+ Â· Below threshold</span>
     </div>`;
     html += loSigs.map(sig => renderScanRow(sig)).join('');
   }
@@ -2916,7 +2916,7 @@ function renderScanRow(sig) {
 
   // Build description
   const descParts = [];
-  if (sig.aligned >= 5) descParts.push(`${sig.aligned}/6 TFs aligned ${sig.dir==='long'?'▲':'▼'}`);
+  if (sig.aligned >= 5) descParts.push(`${sig.aligned}/6 TFs aligned ${sig.dir==='long'?'â²':'â¼'}`);
   else descParts.push(`${sig.aligned}/6 TFs ${sig.dir==='long'?'bullish':'bearish'}`);
   if (sig.crt) descParts.push('CRT range expanding');
   if (sig.bos) descParts.push(`BOS ${sig.dir==='long'?'above resistance':'below support'}`);
@@ -2938,17 +2938,17 @@ function renderScanRow(sig) {
       <div class="sn-chg ${up?'up':'dn'}">${up?'+':''}${pct.toFixed(2)}%</div>
     </div>
     <div>
-      <div class="sn-rvol ${rvolClass}">${sig.rvol}×</div>
+      <div class="sn-rvol ${rvolClass}">${sig.rvol}Ã</div>
     </div>
     <div>
       <div class="sn-pills">${pillsHtml}</div>
-      <div class="sn-desc">${descParts.join(' · ')}</div>
+      <div class="sn-desc">${descParts.join(' Â· ')}</div>
     </div>
     <div class="sn-tfs">${tfHtml}</div>
     <div class="sn-conf-wrap">
       <div class="sn-conf-num" style="color:${confCol}">${sig.confidence}%</div>
       <div class="sn-conf-bar"><div class="sn-conf-fill" style="width:${sig.confidence}%;background:${confCol}"></div></div>
-      <div class="sn-dir" style="color:${sig.dir==='long'?'var(--green)':'var(--red)'}">${sig.dir==='long'?'▲ LONG':'▼ SHORT'}</div>
+      <div class="sn-dir" style="color:${sig.dir==='long'?'var(--green)':'var(--red)'}">${sig.dir==='long'?'â² LONG':'â¼ SHORT'}</div>
     </div>
   </div>`;
 }
@@ -2957,9 +2957,9 @@ function filterScanner() {
   updateScannerUI(strategySignals);
 }
 
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // TRADINGVIEW CHART INTEGRATION
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const TV_SYMBOL_MAP = {
   'AUD/USD':'FX:AUDUSD','EUR/USD':'FX:EURUSD','GBP/USD':'FX:GBPUSD',
   'GBP/JPY':'FX:GBPJPY','USD/JPY':'FX:USDJPY','NZD/USD':'FX:NZDUSD',
@@ -2994,7 +2994,7 @@ function openChart(sym) {
             ).join('')}
           </div>
         </div>
-        <button onclick="document.getElementById('chart-modal').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.4);font-size:22px;cursor:pointer;line-height:1;padding:0 4px">✕</button>
+        <button onclick="document.getElementById('chart-modal').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.4);font-size:22px;cursor:pointer;line-height:1;padding:0 4px">â</button>
       </div>
       <div style="flex:1;position:relative" id="${containerId}"></div>
     </div>`;
@@ -3069,9 +3069,9 @@ function changeChartTF(interval, symbol, containerId) {
 
 
 
-// ═══════════════════════════════════════════════════════
-// PUSH ALERTS — Web Push + In-app
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// PUSH ALERTS â Web Push + In-app
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 let alertedSignals = new Set();
 
 async function requestPushPermission() {
@@ -3082,9 +3082,9 @@ async function requestPushPermission() {
   const perm = await Notification.requestPermission();
   CFG.pushEnabled = perm === 'granted';
   const btn = document.getElementById('push-btn');
-  if (btn) btn.textContent = CFG.pushEnabled ? 'Alerts ON ✓' : 'Enable alerts';
+  if (btn) btn.textContent = CFG.pushEnabled ? 'Alerts ON â' : 'Enable alerts';
   const btn2 = document.getElementById('push-btn-settings');
-  if (btn2) btn2.textContent = CFG.pushEnabled ? 'Enabled ✓' : 'Enable push alerts';
+  if (btn2) btn2.textContent = CFG.pushEnabled ? 'Enabled â' : 'Enable push alerts';
   return CFG.pushEnabled;
 }
 
@@ -3093,14 +3093,14 @@ async function requestPushPermission() {
 function renderAlertHistory() {
   const el = document.getElementById('alerts-body');
   if (!el || alertHistory.length === 0) return;
-  const iconMap = {hi:'✕', med:'!', lo:'·'};
+  const iconMap = {hi:'â', med:'!', lo:'Â·'};
   const clsMap = {hi:'astop', med:'awarn', lo:'atp'};
   el.innerHTML = alertHistory.slice(0,5).map(a => `
     <div class="arow" onclick="openChart('${a.sym}')" style="cursor:pointer">
       <div class="aicon ${clsMap[a.priority]}"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
       <div>
-        <div class="atitle">${a.sym} ${a.dir.toUpperCase()} — ${a.conf}% confidence</div>
-        <div class="asub">${a.time} AWST · Click to open chart</div>
+        <div class="atitle">${a.sym} ${a.dir.toUpperCase()} â ${a.conf}% confidence</div>
+        <div class="asub">${a.time} AWST Â· Click to open chart</div>
       </div>
     </div>`).join('');
 }
@@ -3111,16 +3111,16 @@ function checkAlerts(results) {
   }
 }
 
-// ═══════════════════════════════════════════════════════
-// NEWS ENGINE — Multi-source RSS
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// NEWS ENGINE â Multi-source RSS
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 async function fetchNews() {
   // Sources confirmed to work from hosted sites (no auth, proper CORS)
   // Using cache-busting timestamp to always get fresh content
   const ts = Date.now();
 
   const sources = [
-    // Currents API — free, no key needed, financial news
+    // Currents API â free, no key needed, financial news
     () => fetchCurrents(),
     // MediaStack free tier
     () => fetchMediaStack(),
@@ -3144,7 +3144,7 @@ async function fetchNews() {
 }
 
 async function fetchCurrents() {
-  // Currents API — genuinely free, no key for basic, CORS enabled
+  // Currents API â genuinely free, no key for basic, CORS enabled
   const r = await fetch('https://api.currentsapi.services/v1/latest-news?language=en&country=AU,US&category=business,finance', {
     signal: AbortSignal.timeout(6000)
   });
@@ -3160,7 +3160,7 @@ async function fetchCurrents() {
 }
 
 async function fetchMediaStack() {
-  // MediaStack free — 500 req/month, no key needed for basic
+  // MediaStack free â 500 req/month, no key needed for basic
   const r = await fetch('https://api.mediastack.com/v1/news?access_key=free&categories=business,finance&countries=au,us&limit=8', {
     signal: AbortSignal.timeout(6000)
   });
@@ -3210,36 +3210,36 @@ function renderNewsItems(items) {
     return `<div class="iitem" onclick="window.open('${item.link||'#'}','_blank')" style="cursor:pointer">
       <div class="idot" style="background:${dotCol}"></div>
       <div><div class="itext"><strong>${title}</strong></div>
-        <div class="imeta"><span class="itime">${ago} · ${item.source}</span><span class="itag ${tagCls}">${tagLbl}</span></div>
+        <div class="imeta"><span class="itime">${ago} Â· ${item.source}</span><span class="itag ${tagCls}">${tagLbl}</span></div>
       </div>
     </div>`;
   }).join('');
   const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
   const ift = document.getElementById('intel-feed-time');
-  if (ift) ift.textContent = `Live · ${t} AWST · click to read`;
+  if (ift) ift.textContent = `Live Â· ${t} AWST Â· click to read`;
 }
 
 function renderNewsPlaceholder() {
   const feed = document.getElementById('news-feed');
   if (!feed) return;
-  // Show static curated headlines as fallback — always useful
+  // Show static curated headlines as fallback â always useful
   const fallbackItems = [
-    {title:'RBA holds rates — governor signals higher for longer stance on inflation', source:'RBA', pubDate:new Date(Date.now()-900000), link:'https://rba.gov.au', impact:'high'},
-    {title:'ASX 200 rises on materials strength — BHP and RIO lead gains on iron ore demand', source:'ASX', pubDate:new Date(Date.now()-1800000), link:'https://asx.com.au', impact:'med'},
+    {title:'RBA holds rates â governor signals higher for longer stance on inflation', source:'RBA', pubDate:new Date(Date.now()-900000), link:'https://rba.gov.au', impact:'high'},
+    {title:'ASX 200 rises on materials strength â BHP and RIO lead gains on iron ore demand', source:'ASX', pubDate:new Date(Date.now()-1800000), link:'https://asx.com.au', impact:'med'},
     {title:'Gold holds above $2,340 as USD weakens on softer US jobs data print', source:'Reuters', pubDate:new Date(Date.now()-2700000), link:'https://reuters.com', impact:'high'},
-    {title:'AUD/USD pushing higher — carry trade dynamics favour Australian dollar near-term', source:'Bloomberg', pubDate:new Date(Date.now()-3600000), link:'https://bloomberg.com', impact:'med'},
-    {title:'OPEC+ maintains output cuts — WTI crude finds support at $80 level', source:'Reuters', pubDate:new Date(Date.now()-5400000), link:'https://reuters.com', impact:'med'},
-    {title:'US CPI data due Thursday — markets pricing 0.3% monthly increase', source:'FT', pubDate:new Date(Date.now()-7200000), link:'https://ft.com', impact:'high'},
+    {title:'AUD/USD pushing higher â carry trade dynamics favour Australian dollar near-term', source:'Bloomberg', pubDate:new Date(Date.now()-3600000), link:'https://bloomberg.com', impact:'med'},
+    {title:'OPEC+ maintains output cuts â WTI crude finds support at $80 level', source:'Reuters', pubDate:new Date(Date.now()-5400000), link:'https://reuters.com', impact:'med'},
+    {title:'US CPI data due Thursday â markets pricing 0.3% monthly increase', source:'FT', pubDate:new Date(Date.now()-7200000), link:'https://ft.com', impact:'high'},
     {title:'Fed Chair Powell reiterates data-dependent approach to rate cuts timeline', source:'Fed', pubDate:new Date(Date.now()-9000000), link:'https://federalreserve.gov', impact:'high'},
   ];
   renderNewsItems(fallbackItems.map(i => ({...i})));
   const ift = document.getElementById('intel-feed-time');
-  if (ift) ift.textContent = 'Curated · Live feeds loading in background';
+  if (ift) ift.textContent = 'Curated Â· Live feeds loading in background';
 }
 
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // RISK CALCULATOR
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function calcRisk() {
   const account = parseFloat((document.getElementById('rc-account')?.value||'80000').replace(/,/g,''));
   const riskPct = parseFloat(document.getElementById('rc-risk')?.value||'1');
@@ -3255,16 +3255,16 @@ function calcRisk() {
     const rs = document.getElementById('rc-size'); if (rs) rs.textContent = size.toLocaleString() + ' units';
     const rv = document.getElementById('rc-value'); if (rv) rv.textContent = '$' + val;
   } else {
-    const rs = document.getElementById('rc-size'); if (rs) rs.textContent = '—';
-    const rv = document.getElementById('rc-value'); if (rv) rv.textContent = '—';
+    const rs = document.getElementById('rc-size'); if (rs) rs.textContent = 'â';
+    const rv = document.getElementById('rc-value'); if (rv) rv.textContent = 'â';
   }
   CFG.strategy.account = account || 80000;
   CFG.strategy.riskPct = riskPct || 1;
 }
 
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // JOURNAL
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 let journalTrades = JSON.parse(localStorage.getItem('apex_journal') || '[]');
 
 function showAddTrade() {
@@ -3311,7 +3311,7 @@ function addJournalRow(t) {
   const tc   = {'#TrendFollowing':'tg','#MTFConfluence':'tb','#HighConviction':'tp','#FOMOTrade':'ta','#RevengeTrade':'tr2','#AgainstTrend':'tr2','#CRTSetup':'tb','#NewsPlay':'ta'};
   const tagHtml = (t.tags || []).map(tag => `<span class="tag ${tc[tag]||'ta'}">${tag}</span>`).join('');
   const row = document.createElement('tr');
-  row.innerHTML = `<td>${t.date}</td><td style="font-weight:700;color:var(--text)">${t.sym}</td><td><span class="badge ${t.dir==='Long'?'bg':'br'}">${t.dir}</span></td><td>${t.entry}</td><td>${t.exit}</td><td class="${pUp?'up':'dn'}">${pStr}</td><td>${tagHtml}</td><td class="disc-${t.plan==='YES'?'yes':'no'}">${t.plan}</td><td class="dn">${t.mae||'—'}</td><td class="up">${t.mfe||'—'}</td><td style="color:var(--text3);font-size:11px">${t.notes||''}</td>`;
+  row.innerHTML = `<td>${t.date}</td><td style="font-weight:700;color:var(--text)">${t.sym}</td><td><span class="badge ${t.dir==='Long'?'bg':'br'}">${t.dir}</span></td><td>${t.entry}</td><td>${t.exit}</td><td class="${pUp?'up':'dn'}">${pStr}</td><td>${tagHtml}</td><td class="disc-${t.plan==='YES'?'yes':'no'}">${t.plan}</td><td class="dn">${t.mae||'â'}</td><td class="up">${t.mfe||'â'}</td><td style="color:var(--text3);font-size:11px">${t.notes||''}</td>`;
   tbody.prepend(row);
 }
 
@@ -3325,9 +3325,9 @@ function exportCSV() {
   a.click();
 }
 
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // MODAL
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function openModal() { const el = document.getElementById('modal-wrap'); if (el) el.classList.add('open'); }
 function closeModal() { const el = document.getElementById('modal-wrap'); if (el) el.classList.remove('open'); }
 
@@ -3357,29 +3357,29 @@ function saveSettings() {
   alert('Settings saved. Live prices activating...');
 }
 
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // UI HELPERS
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function setTab(el) {
   el.closest('.stabs').querySelectorAll('.stab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
 }
 
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // SECTORS
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const SECTORS = [
-  {name:'Materials',   icon:'⛏', day:+2.8, week:+4.1, month:+7.2, flow:+2.4, rs:102.4, mom:101.8},
-  {name:'Financials',  icon:'🏦', day:+1.4, week:+2.8, month:+5.1, flow:+1.1, rs:101.8, mom:100.9},
-  {name:'Energy',      icon:'⚡', day:+0.6, week:+1.2, month:+2.3, flow:+0.3, rs:100.6, mom:100.2},
-  {name:'Healthcare',  icon:'💊', day:+0.3, week:-0.4, month:+1.1, flow:-0.1, rs:100.3, mom:99.8},
-  {name:'Cons Disc',   icon:'🛍', day:-0.2, week:+0.8, month:-0.5, flow:-0.2, rs:99.8,  mom:100.4},
-  {name:'Industrials', icon:'🏗', day:-0.5, week:-1.1, month:-0.8, flow:-0.4, rs:99.5,  mom:99.3},
-  {name:'IT / Tech',   icon:'💻', day:-0.8, week:+3.2, month:+9.4, flow:+0.8, rs:103.2, mom:102.1},
-  {name:'Real Estate', icon:'🏠', day:-1.2, week:-2.3, month:-3.1, flow:-1.3, rs:98.8,  mom:98.2},
-  {name:'Utilities',   icon:'💡', day:-1.6, week:-1.8, month:-2.4, flow:-1.5, rs:98.4,  mom:98.6},
-  {name:'Comm Svcs',   icon:'📡', day:-2.1, week:-3.4, month:-4.8, flow:-2.2, rs:97.9,  mom:97.4},
-  {name:'Cons Staples',icon:'🛒', day:-2.6, week:-0.9, month:-1.2, flow:-0.9, rs:99.1,  mom:98.5},
+  {name:'Materials',   icon:'â', day:+2.8, week:+4.1, month:+7.2, flow:+2.4, rs:102.4, mom:101.8},
+  {name:'Financials',  icon:'ð¦', day:+1.4, week:+2.8, month:+5.1, flow:+1.1, rs:101.8, mom:100.9},
+  {name:'Energy',      icon:'â¡', day:+0.6, week:+1.2, month:+2.3, flow:+0.3, rs:100.6, mom:100.2},
+  {name:'Healthcare',  icon:'ð', day:+0.3, week:-0.4, month:+1.1, flow:-0.1, rs:100.3, mom:99.8},
+  {name:'Cons Disc',   icon:'ð', day:-0.2, week:+0.8, month:-0.5, flow:-0.2, rs:99.8,  mom:100.4},
+  {name:'Industrials', icon:'ð', day:-0.5, week:-1.1, month:-0.8, flow:-0.4, rs:99.5,  mom:99.3},
+  {name:'IT / Tech',   icon:'ð»', day:-0.8, week:+3.2, month:+9.4, flow:+0.8, rs:103.2, mom:102.1},
+  {name:'Real Estate', icon:'ð ', day:-1.2, week:-2.3, month:-3.1, flow:-1.3, rs:98.8,  mom:98.2},
+  {name:'Utilities',   icon:'ð¡', day:-1.6, week:-1.8, month:-2.4, flow:-1.5, rs:98.4,  mom:98.6},
+  {name:'Comm Svcs',   icon:'ð¡', day:-2.1, week:-3.4, month:-4.8, flow:-2.2, rs:97.9,  mom:97.4},
+  {name:'Cons Staples',icon:'ð', day:-2.6, week:-0.9, month:-1.2, flow:-0.9, rs:99.1,  mom:98.5},
 ];
 const HOLDINGS = [
   {sym:'BHP.ASX', sector:'Materials',  stockDay:+1.22, rs:104.1, mom:103.2},
@@ -3473,7 +3473,7 @@ function renderRS() {
     return `<div class="rs-chart-row" onclick="openChart('${h.sym}')" style="cursor:pointer">
       <div class="rs-sym">${h.sym}<br><span style="font-size:9px;color:var(--text3)">${h.sector}</span></div>
       <div class="rs-trend" style="color:${edge>=0?'var(--green)':'var(--red)'}">
-        ${edge>=0?'▲':'▼'} ${Math.abs(edge).toFixed(2)}%<br><span style="color:var(--text3);font-size:9px">vs sector</span>
+        ${edge>=0?'â²':'â¼'} ${Math.abs(edge).toFixed(2)}%<br><span style="color:var(--text3);font-size:9px">vs sector</span>
       </div>
       <div class="rs-sparkwrap">
         <svg class="rs-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
@@ -3529,7 +3529,7 @@ function renderOutperformers() {
   }).sort((a,b) => b.edge - a.edge);
   el.innerHTML = list.map(h => {
     const out = h.edge > 0;
-    const status = h.edge>1.5?'Strong outperformer':h.edge>0.5?'Outperforming sector':h.edge>-0.5?'In line':h.edge>-1.5?'Lagging — caution':'Significant laggard';
+    const status = h.edge>1.5?'Strong outperformer':h.edge>0.5?'Outperforming sector':h.edge>-0.5?'In line':h.edge>-1.5?'Lagging â caution':'Significant laggard';
     const sig = h.edge>1?'BUY':h.edge>0?'WATCH':h.edge>-1?'HOLD':'AVOID';
     const sc2 = h.edge>1?'bg':h.edge>0?'ba':h.edge>-1?'bb':'br';
     return `<div class="op-row" onclick="openChart('${h.sym}')" style="cursor:pointer">
@@ -3546,9 +3546,9 @@ function renderOutperformers() {
 function highlightSector(name) { console.log('Sector:', name); }
 function refreshSectorData() { renderHeatmap(); renderLeaderboard(); renderMoneyFlow(); renderRS(); renderRRG(); renderOutperformers(); }
 
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // FLASH ANIMATION CSS (injected)
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const flashStyle = document.createElement('style');
 flashStyle.textContent = `
   @keyframes flashUp { 0%{background:rgba(0,212,168,.35)} 100%{background:transparent} }
@@ -3558,15 +3558,15 @@ flashStyle.textContent = `
 `;
 document.head.appendChild(flashStyle);
 
-// ═══════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════
-// INTELLIGENCE CARDS — Live prices + dynamic sentiment
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// INTELLIGENCE CARDS â Live prices + dynamic sentiment
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 const INTEL_INSTRUMENTS = [
   { sym:'AUD/USD', name:'AUD/USD', desc: {
-    bull:'RBA policy divergence supporting AUD. USD softening. Full MTF alignment bullish. CRT signal active — all conditions met.',
+    bull:'RBA policy divergence supporting AUD. USD softening. Full MTF alignment bullish. CRT signal active â all conditions met.',
     bear:'AUD under pressure. USD strength dominating. MTF bearish. Below key support. Avoid longs until structure recovers.',
-    neut:'Mixed signals. RBA on hold. USD data-dependent. MTF conflicted — wait for clearer directional bias.'
+    neut:'Mixed signals. RBA on hold. USD data-dependent. MTF conflicted â wait for clearer directional bias.'
   }},
   { sym:'XAU/USD', name:'XAU/USD', desc: {
     bull:'Safe-haven bid intact. USD weakness supporting gold. RVOL elevated. Watching for breakout continuation above key resistance.',
@@ -3576,7 +3576,7 @@ const INTEL_INSTRUMENTS = [
   { sym:'EUR/USD', name:'EUR/USD', desc: {
     bull:'ECB hawkish tone supporting EUR. USD softening on weak data. MTF aligning bullish. CRT setup forming on 4H.',
     bear:'ECB dovish pivot risk. USD demand returning. MTF bearish. Below 200MA. Short bias on bounces.',
-    neut:'ECB vs Fed uncertainty creating mixed signals. MTF conflicted — no clear setup. Wait for catalyst.'
+    neut:'ECB vs Fed uncertainty creating mixed signals. MTF conflicted â no clear setup. Wait for catalyst.'
   }},
   { sym:'GBP/USD', name:'GBP/USD', desc: {
     bull:'BoE hawkish. UK data outperforming. Weekly + daily aligned. CRT pattern forming on 4H. RS vs EUR: GBP outperforming.',
@@ -3584,12 +3584,12 @@ const INTEL_INSTRUMENTS = [
     neut:'BoE on hold. UK growth mixed. GBP range-bound. Waiting for clearer macro catalyst.'
   }},
   { sym:'NAS100', name:'NAS100', desc: {
-    bull:'Tech momentum strong. AI sector driving upside. Breadth expanding. MTF bullish — trend continuation setup.',
-    bear:'Tech selling off. Yield pressure headwind. Breadth narrowing. MTF bearish — avoid longs.',
+    bull:'Tech momentum strong. AI sector driving upside. Breadth expanding. MTF bullish â trend continuation setup.',
+    bear:'Tech selling off. Yield pressure headwind. Breadth narrowing. MTF bearish â avoid longs.',
     neut:'NAS100 consolidating near highs. Earnings season mixed. Watching for breakout direction.'
   }},
   { sym:'XAG/USD', name:'XAG/USD', desc: {
-    bull:'Silver following gold higher. Industrial demand supporting. RVOL 2×+. Outperforming gold ratio. CRT expanding.',
+    bull:'Silver following gold higher. Industrial demand supporting. RVOL 2Ã+. Outperforming gold ratio. CRT expanding.',
     bear:'Silver underperforming gold. Industrial demand concerns. Break below key support. Short bias.',
     neut:'Silver coiling between key levels. Gold/silver ratio at inflection. Wait for directional catalyst.'
   }},
@@ -3600,7 +3600,7 @@ const INTEL_INSTRUMENTS = [
 function getConfidence(sym) {
   const pct = Math.abs(pctChange(sym));
   if (pct === 0) {
-    // Market closed or no change — use a varied base from price position
+    // Market closed or no change â use a varied base from price position
     const p = prices[sym] || 0;
     const pc = prevClose[sym] || INSTRUMENTS[sym]?.base || p;
     const seed = sym.split('').reduce((a,c) => a+c.charCodeAt(0), 0);
@@ -3635,7 +3635,7 @@ async function fetchBackendSignals() {
     backendConnected = true;
     renderBackendSignals(data);
     const ssub = document.getElementById('scan-sub');
-    if (ssub) ssub.textContent = `Backend live · ${data.total_signals} signals from ${data.total_scanned} instruments`;
+    if (ssub) ssub.textContent = `Backend live Â· ${data.total_signals} signals from ${data.total_scanned} instruments`;
   } catch(e) {
     backendConnected = false;
     console.warn('Backend offline:', e.message);
@@ -3682,13 +3682,13 @@ function renderBackendSignals(data) {
         <div><div class="sn-sym">${sig.sym}</div><div class="sn-mkt">${sig.market}</div></div>
         <div><div class="sn-price">${sig.price}</div></div>
         <div><div class="sn-chg ${up?'up':'dn'}">${up?'+':''}${sig.pct}%</div></div>
-        <div><div class="sn-rvol ${rvc}">${sig.rvol}×</div></div>
-        <div><div class="sn-pills">${pills}</div><div class="sn-desc">${sig.dir==='long'?'▲':'▼'} ${(sig.signals||[]).map(s=>s.label).join(' · ')}</div></div>
+        <div><div class="sn-rvol ${rvc}">${sig.rvol}Ã</div></div>
+        <div><div class="sn-pills">${pills}</div><div class="sn-desc">${sig.dir==='long'?'â²':'â¼'} ${(sig.signals||[]).map(s=>s.label).join(' Â· ')}</div></div>
         <div style="text-align:center;font-size:10px;color:var(--text3)">Live<br>backend</div>
         <div class="sn-conf-wrap">
           <div class="sn-conf-num" style="color:${confCol}">${sig.confidence}%</div>
           <div class="sn-conf-bar"><div class="sn-conf-fill" style="width:${sig.confidence}%;background:${confCol}"></div></div>
-          <div class="sn-dir" style="color:${sig.dir==='long'?'var(--green)':'var(--red)'}">${sig.dir==='long'?'▲ LONG':'▼ SHORT'}</div>
+          <div class="sn-dir" style="color:${sig.dir==='long'?'var(--green)':'var(--red)'}">${sig.dir==='long'?'â² LONG':'â¼ SHORT'}</div>
         </div>
       </div>`;
     }).join('');
@@ -3704,10 +3704,10 @@ function saveBackendURL() {
 }
 
 // INIT
-// ═══════════════════════════════════════════════════════
-// ═══════════════════════════════════════════════════════
-// MARKET SESSIONS — ASX, London, New York
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// MARKET SESSIONS â ASX, London, New York
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function updateSessions() {
   const now = new Date();
   const utcH = now.getUTCHours();
@@ -3732,7 +3732,7 @@ function updateSessions() {
     const el = document.getElementById(id);
     if (!el) return;
     el.className = 'session-pill ' + (open ? 'open' : pre ? 'pre' : 'closed');
-    el.textContent = id.replace('sess-','').toUpperCase() + (open ? ' ●' : pre ? ' ◑' : '');
+    el.textContent = id.replace('sess-','').toUpperCase() + (open ? ' â' : pre ? ' â' : '');
   };
   setSession('sess-asx', asxOpen, asxPre);
   setSession('sess-lon', lonOpen, lonPre);
@@ -3741,9 +3741,9 @@ function updateSessions() {
 updateSessions();
 setInterval(updateSessions, 60000);
 
-// ═══════════════════════════════════════════════════════
-// MOMENTUM BAR — top movers in scanner
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// MOMENTUM BAR â top movers in scanner
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function updateMomentumBar() {
   const bar = document.getElementById('momentum-bar');
   if (!bar) return;
@@ -3763,18 +3763,18 @@ function updateMomentumBar() {
   }).join('');
 }
 
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // TOAST NOTIFICATIONS
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function showToast(title, subtitle, type='info', duration=4000) {
   const existing = document.getElementById('apex-toast');
   if (existing) existing.remove();
 
   const colors = {
-    info:    {bg:'rgba(45,142,255,.2)',  icon:'ℹ️'},
-    success: {bg:'rgba(0,212,168,.2)',   icon:'✓'},
-    warning: {bg:'rgba(255,176,32,.2)', icon:'⚠'},
-    signal:  {bg:'rgba(255,68,102,.2)', icon:'🎯'},
+    info:    {bg:'rgba(45,142,255,.2)',  icon:'â¹ï¸'},
+    success: {bg:'rgba(0,212,168,.2)',   icon:'â'},
+    warning: {bg:'rgba(255,176,32,.2)', icon:'â '},
+    signal:  {bg:'rgba(255,68,102,.2)', icon:'ð¯'},
   };
   const c = colors[type] || colors.info;
   const toast = document.createElement('div');
@@ -3786,7 +3786,7 @@ function showToast(title, subtitle, type='info', duration=4000) {
       <div class="toast-title">${title}</div>
       ${subtitle ? `<div class="toast-sub">${subtitle}</div>` : ''}
     </div>
-    <button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:var(--text3);cursor:pointer;margin-left:auto;font-size:16px;padding:0 4px">✕</button>
+    <button onclick="this.parentElement.remove()" style="background:transparent;border:none;color:var(--text3);cursor:pointer;margin-left:auto;font-size:16px;padding:0 4px">â</button>
   `;
   document.body.appendChild(toast);
   setTimeout(() => {
@@ -3797,9 +3797,9 @@ function showToast(title, subtitle, type='info', duration=4000) {
   }, duration);
 }
 
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // JOURNAL STATISTICS
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function updateJournalStats() {
   if (!journalTrades.length) return;
   const wins   = journalTrades.filter(t => parseFloat(t.pnl) > 0);
@@ -3824,9 +3824,9 @@ function updateJournalStats() {
   if (wrEl) wrEl.style.color = winRate >= 55 ? 'var(--green)' : winRate >= 45 ? 'var(--amber)' : 'var(--red)';
 }
 
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // IMPROVED SIGNAL ALERTS with Toast
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function fireAlert(sig) {
   const key = sig.sym + sig.dir + Math.floor(Date.now() / 300000);
   if (alertedSignals.has(key)) return;
@@ -3835,23 +3835,23 @@ function fireAlert(sig) {
   // In-app toast
   showToast(
     `${sig.sym} ${sig.dir.toUpperCase()} Signal`,
-    `${sig.confidence}% confidence · ${sig.signals.map(s=>s.label).join(' · ')}`,
+    `${sig.confidence}% confidence Â· ${sig.signals.map(s=>s.label).join(' Â· ')}`,
     'signal',
     6000
   );
 
-  addInAppAlert(sig, `${sig.sym} ${sig.dir.toUpperCase()} — ${sig.confidence}%`);
+  addInAppAlert(sig, `${sig.sym} ${sig.dir.toUpperCase()} â ${sig.confidence}%`);
 
   if (CFG.pushEnabled && Notification.permission === 'granted') {
     new Notification(`ApexTrade: ${sig.sym} ${sig.dir.toUpperCase()}`, {
-      body: `${sig.confidence}% confidence · ${sig.signals.map(s=>s.label).join(' · ')}`,
+      body: `${sig.confidence}% confidence Â· ${sig.signals.map(s=>s.label).join(' Â· ')}`,
       tag: key,
       requireInteraction: sig.confidence >= 80,
     });
   }
 }
 
-// ── ALERT LOG ──
+// ââ ALERT LOG ââ
 let alertHistory = [];
 
 function renderAlertLog() {
@@ -3877,7 +3877,7 @@ function renderAlertLog() {
     return '<div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;gap:12px">'
       + '<div style="width:8px;height:8px;border-radius:50%;background:' + col + ';margin-top:4px;flex-shrink:0"></div>'
       + '<div><div style="display:flex;justify-content:space-between"><span style="font-size:13px;font-weight:700">' + a.sym + '</span><span style="font-size:10px;color:var(--text3)">' + a.timeStr + '</span></div>'
-      + '<div style="font-size:11px;color:' + dirCol + ';font-weight:700;margin:2px 0">' + a.dir.toUpperCase() + ' · ' + a.confidence + '%</div>'
+      + '<div style="font-size:11px;color:' + dirCol + ';font-weight:700;margin:2px 0">' + a.dir.toUpperCase() + ' Â· ' + a.confidence + '%</div>'
       + '<div style="font-size:10px;color:var(--text3)">' + (a.desc || '') + '</div></div></div>';
   }).join('');
 }
@@ -3885,7 +3885,7 @@ function renderAlertLog() {
 function addInAppAlert(sig, msg) {
   alertHistory.unshift({
     sym: sig.sym, dir: sig.dir, confidence: sig.confidence,
-    desc: (sig.signals||[]).map(s=>s.label).join(' · ') || msg,
+    desc: (sig.signals||[]).map(s=>s.label).join(' Â· ') || msg,
     timeStr: new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'}),
   });
   alertHistory = alertHistory.slice(0, 100);
@@ -3909,12 +3909,12 @@ async function requestPush() {
   showToast(CFG.pushEnabled ? 'Push enabled' : 'Permission denied', CFG.pushEnabled ? 'Signal alerts active' : 'Enable in browser settings', CFG.pushEnabled ? 'success' : 'warning');
 }
 
-// ── FLOW PAGE ──
-// ═══════════════════════════════════════════════════════
+// ââ FLOW PAGE ââ
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 // MARKETLENS INTEGRATION
 // Receives broker data from the MarketLens Bridge extension
 // and integrates smart money signals into scanner + intel
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 let mlData = {}; // { TICKER: { netVal, buyVal, sellVal, sentiment, smartMoneyScore, topBuyer } }
 let mlScreener = []; // sorted by institutional net buying
 let mlLastSync = null;
@@ -3975,7 +3975,7 @@ function processMlData(data) {
   const netM = (mlData[ticker].netVal / 1e6).toFixed(0);
   showToast(
     `MarketLens: ${ticker}`,
-    `${mlData[ticker].sentiment === 'accumulation' ? '▲ Institutional accumulating' : mlData[ticker].sentiment === 'distribution' ? '▼ Institutional distributing' : '◆ Neutral'} · Net ${sign}$${netM}M`,
+    `${mlData[ticker].sentiment === 'accumulation' ? 'â² Institutional accumulating' : mlData[ticker].sentiment === 'distribution' ? 'â¼ Institutional distributing' : 'â Neutral'} Â· Net ${sign}$${netM}M`,
     mlData[ticker].sentiment === 'accumulation' ? 'success' : mlData[ticker].sentiment === 'distribution' ? 'signal' : 'info',
     5000
   );
@@ -3988,7 +3988,7 @@ function processMlScreener(screenerArr) {
   showToast('MarketLens', `${screenerArr.length} stocks loaded from screener`, 'success', 3000);
 }
 
-// ── ML SMART MONEY BADGE in scanner rows ──
+// ââ ML SMART MONEY BADGE in scanner rows ââ
 function getMlBadge(sym) {
   // sym could be like "BHP.ASX" or "BHP"
   const ticker = sym.replace('.ASX','').replace('.AX','').toUpperCase();
@@ -4002,14 +4002,14 @@ function getMlBadge(sym) {
   const col = bull ? 'rgba(0,212,168,.15)' : 'rgba(255,68,102,.1)';
   const border = bull ? 'rgba(0,212,168,.3)' : 'rgba(255,68,102,.25)';
   const textCol = bull ? '#00d4a8' : '#ff4466';
-  const icon = bull ? '▲' : '▼';
+  const icon = bull ? 'â²' : 'â¼';
   const netM = ((d.netVal || (d.smartMoneyScore||0) * 5e6) / 1e6).toFixed(0);
   const label = bull ? `Inst +$${Math.abs(netM)}M` : `Inst -$${Math.abs(netM)}M`;
   
   return `<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:3px;background:${col};color:${textCol};border:1px solid ${border};margin-left:4px">${icon} ${label}</span>`;
 }
 
-// ── ML FLOW PANEL ──
+// ââ ML FLOW PANEL ââ
 function updateMlFlowPanel() {
   const el = document.getElementById('ml-flow-panel');
   if (!el) return;
@@ -4017,7 +4017,7 @@ function updateMlFlowPanel() {
   const hasData = Object.keys(mlData).length > 0 || mlScreener.length > 0;
   
   if (!hasData) {
-    el.innerHTML = '<div style="padding:16px;color:var(--text3);font-size:12px;text-align:center">Open MarketLens and search a stock to see broker data here.<br><br><a href="https://app.marketlens.com.au" target="_blank" style="color:var(--accent)">Open MarketLens →</a></div>';
+    el.innerHTML = '<div style="padding:16px;color:var(--text3);font-size:12px;text-align:center">Open MarketLens and search a stock to see broker data here.<br><br><a href="https://app.marketlens.com.au" target="_blank" style="color:var(--accent)">Open MarketLens â</a></div>';
     return;
   }
   
@@ -4026,7 +4026,7 @@ function updateMlFlowPanel() {
   // Individual stock data
   const stockCards = Object.entries(mlData).map(([ticker, d]) => {
     const col = d.sentiment === 'accumulation' ? 'var(--green)' : d.sentiment === 'distribution' ? 'var(--red)' : 'var(--text3)';
-    const icon = d.sentiment === 'accumulation' ? '▲' : d.sentiment === 'distribution' ? '▼' : '◆';
+    const icon = d.sentiment === 'accumulation' ? 'â²' : d.sentiment === 'distribution' ? 'â¼' : 'â';
     return `<div style="background:var(--bg4);border-radius:8px;padding:12px;border:1px solid var(--border2)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <span style="font-size:14px;font-weight:800;color:#fff">${ticker}</span>
@@ -4037,7 +4037,7 @@ function updateMlFlowPanel() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px">
         <div style="font-size:10px"><span style="color:var(--text3)">Buy</span> <span style="color:var(--green);font-weight:700">${fmtM(d.buyVal)}</span></div>
         <div style="font-size:10px"><span style="color:var(--text3)">Sell</span> <span style="color:var(--red);font-weight:700">${fmtM(d.sellVal)}</span></div>
-        <div style="font-size:10px"><span style="color:var(--text3)">Top buyer</span> <span style="color:#fff;font-weight:600">${d.topBuyer||'—'}</span></div>
+        <div style="font-size:10px"><span style="color:var(--text3)">Top buyer</span> <span style="color:#fff;font-weight:600">${d.topBuyer||'â'}</span></div>
         <div style="font-size:10px"><span style="color:var(--text3)">Brokers</span> <span style="color:#fff">${d.brokerCount}</span></div>
       </div>
       ${d.smartMoneyScore !== 0 ? `<div style="margin-top:8px;font-size:10px;font-weight:700;color:${col}">Smart Money Score: ${d.smartMoneyScore > 0 ? '+' : ''}${d.smartMoneyScore}</div>` : ''}
@@ -4062,7 +4062,7 @@ function updateMlFlowPanel() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">${stockCards}</div>
     </div>` : ''}
     ${mlScreener.length ? `<div>
-      <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Top Institutional Buys (Screener · ${mlLastSync ? new Date(mlLastSync).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'})+' AWST' : ''})</div>
+      <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Top Institutional Buys (Screener Â· ${mlLastSync ? new Date(mlLastSync).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'})+' AWST' : ''})</div>
       ${topPicks}
     </div>` : ''}`;
 }
@@ -4118,8 +4118,8 @@ function updateCorrelations() {
     const col = aligned ? 'var(--green)' : 'var(--red)';
     return '<div style="padding:8px 0;border-bottom:1px solid var(--border)">'
       + '<div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:600">' + label + '</span>'
-      + '<span style="font-size:10px;font-weight:700;color:' + col + '">' + (aligned?'✓ Aligned':'✗ Diverging') + '</span></div>'
-      + '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + s1 + ': ' + (p1>=0?'+':'') + p1.toFixed(2) + '% · ' + s2 + ': ' + (p2>=0?'+':'') + p2.toFixed(2) + '%</div></div>';
+      + '<span style="font-size:10px;font-weight:700;color:' + col + '">' + (aligned?'â Aligned':'â Diverging') + '</span></div>'
+      + '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + s1 + ': ' + (p1>=0?'+':'') + p1.toFixed(2) + '% Â· ' + s2 + ': ' + (p2>=0?'+':'') + p2.toFixed(2) + '%</div></div>';
   }).join('');
 }
 
@@ -4130,14 +4130,14 @@ function updateFlowSessions() {
   const wd = now.getUTCDay();
   const isWd = wd >= 1 && wd <= 5;
   const sessions = [
-    ['flow-asx-status',  isWd && mins >= 0   && mins < 360,  'Open 10am–4pm AEST'],
-    ['flow-lon-status',  isWd && mins >= 480  && mins < 990,  'Open 8am–4:30pm GMT'],
-    ['flow-ny-status',   isWd && mins >= 870  && mins < 1260, 'Open 9:30am–4pm EST'],
-    ['flow-tok-status',  isWd && mins >= 0   && mins < 360,  'Open 9am–3pm JST'],
+    ['flow-asx-status',  isWd && mins >= 0   && mins < 360,  'Open 10amâ4pm AEST'],
+    ['flow-lon-status',  isWd && mins >= 480  && mins < 990,  'Open 8amâ4:30pm GMT'],
+    ['flow-ny-status',   isWd && mins >= 870  && mins < 1260, 'Open 9:30amâ4pm EST'],
+    ['flow-tok-status',  isWd && mins >= 0   && mins < 360,  'Open 9amâ3pm JST'],
   ];
   sessions.forEach(([id, open, label]) => {
     const el = document.getElementById(id);
-    if (el) el.innerHTML = '<span style="color:' + (open?'var(--green)':'var(--text4)') + ';font-weight:700">' + (open?'● OPEN':'○ Closed') + '</span><div style="font-size:10px;color:var(--text3);margin-top:2px">' + label + '</div>';
+    if (el) el.innerHTML = '<span style="color:' + (open?'var(--green)':'var(--text4)') + ';font-weight:700">' + (open?'â OPEN':'â Closed') + '</span><div style="font-size:10px;color:var(--text3);margin-top:2px">' + label + '</div>';
   });
 }
 
@@ -4167,9 +4167,9 @@ if (ktd) ktd.value = localStorage.getItem('apex_td_key') || '';
 const mw = document.getElementById('modal-wrap');
 if (mw) mw.addEventListener('click', e => { if (e.target === mw) closeModal(); });
 
-// ═══════════════════════════════════════════════════════
-// INTELLIGENCE ANALYSIS — Full multi-indicator engine
-// ═══════════════════════════════════════════════════════
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// INTELLIGENCE ANALYSIS â Full multi-indicator engine
+// âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 let currentIntelTF = 'D';
 let intelAnalysisRunning = false;
 
@@ -4235,8 +4235,8 @@ function updateIntelCard(sym, result) {
   const sentCls   = up ? 'sbull' : direction === 'short' ? 'sbear' : 'sneut';
   const confCol   = confidence >= 75 ? 'var(--green)' : confidence >= 55 ? 'var(--accent)' : 'var(--amber)';
   const topSig    = signals?.[0];
-  const rsiVal    = tfData?.rsi?.value?.toFixed(0) || '—';
-  const stochK    = tfData?.[`stochRSI_${currentIntelTF}`]?.k?.toFixed(0) || '—';
+  const rsiVal    = tfData?.rsi?.value?.toFixed(0) || 'â';
+  const stochK    = tfData?.[`stochRSI_${currentIntelTF}`]?.k?.toFixed(0) || 'â';
   const cvdDir    = tfData?.cvd?.divergence !== 'none' ? `CVD ${tfData.cvd.divergence}` : '';
   const pct       = pctChange(sym);
   const pctUp     = pct >= 0;
@@ -4253,8 +4253,8 @@ function updateIntelCard(sym, result) {
     <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
       <span style="font-size:9px;background:var(--bg5);padding:2px 6px;border-radius:3px;color:var(--text3)">RSI ${rsiVal}</span>
       <span style="font-size:9px;background:var(--bg5);padding:2px 6px;border-radius:3px;color:var(--text3)">Stoch ${stochK}</span>
-      ${tfData?.maCross?.goldenCross ? '<span style="font-size:9px;background:rgba(0,212,168,.15);padding:2px 6px;border-radius:3px;color:var(--green)">Golden ✕</span>' : ''}
-      ${tfData?.maCross?.deathCross  ? '<span style="font-size:9px;background:rgba(255,68,102,.1);padding:2px 6px;border-radius:3px;color:var(--red)">Death ✕</span>'   : ''}
+      ${tfData?.maCross?.goldenCross ? '<span style="font-size:9px;background:rgba(0,212,168,.15);padding:2px 6px;border-radius:3px;color:var(--green)">Golden â</span>' : ''}
+      ${tfData?.maCross?.deathCross  ? '<span style="font-size:9px;background:rgba(255,68,102,.1);padding:2px 6px;border-radius:3px;color:var(--red)">Death â</span>'   : ''}
       ${tfData?.smt?.detected ? `<span style="font-size:9px;background:rgba(255,176,32,.15);padding:2px 6px;border-radius:3px;color:var(--amber)">SMT ${tfData.smt.type}</span>` : ''}
     </div>
     <div class="pc2-bot" style="margin-top:8px">
@@ -4285,7 +4285,7 @@ async function runIntelAnalysis(symbolOverride) {
   // Check TD key
   const tdKey = localStorage.getItem('apex_td_key');
   if (!tdKey) {
-    if (scorePanel) scorePanel.innerHTML = `<div style="padding:20px;color:var(--red);font-size:12px">⚠ Add your Twelve Data key in Settings to enable real analysis.</div>`;
+    if (scorePanel) scorePanel.innerHTML = `<div style="padding:20px;color:var(--red);font-size:12px">â  Add your Twelve Data key in Settings to enable real analysis.</div>`;
     intelAnalysisRunning = false;
     return;
   }
@@ -4293,7 +4293,7 @@ async function runIntelAnalysis(symbolOverride) {
   // Show loading
   if (scorePanel) scorePanel.innerHTML = `
     <div style="text-align:center;padding:40px 20px">
-      <div style="font-size:32px;margin-bottom:12px">⏳</div>
+      <div style="font-size:32px;margin-bottom:12px">â³</div>
       <div style="font-size:13px;font-weight:600;color:var(--text2)">Fetching candle data...</div>
       <div style="font-size:11px;color:var(--text3);margin-top:8px">Loading ${currentIntelTF} candles + higher timeframes</div>
       <div class="skeleton" style="height:4px;border-radius:2px;margin-top:20px"></div>
@@ -4318,27 +4318,27 @@ function renderIntelResults(result, scorePanel, detailPanel) {
   const { symbol, direction, confidence, grade, signals, bullScore, bearScore, tfData, warnings, conflictPenalty } = result;
   const up = direction === 'long';
   const dirColor = up ? 'var(--green)' : direction === 'short' ? 'var(--red)' : 'var(--text3)';
-  const dirLabel = up ? '▲ LONG' : direction === 'short' ? '▼ SHORT' : '— NEUTRAL';
+  const dirLabel = up ? 'â² LONG' : direction === 'short' ? 'â¼ SHORT' : 'â NEUTRAL';
 
   // Grade color
   const gradeCol = grade.startsWith('A') ? 'var(--green)' : grade === 'B' ? 'var(--accent)' : grade === 'C' ? 'var(--amber)' : 'var(--red)';
 
-  // ── LEFT PANEL: Score ──
-  const rsiVal = tfData.rsi?.value?.toFixed(0) || '—';
-  const stochK = tfData.stochRSI_D?.k?.toFixed(0) || '—';
-  const macdHist = tfData.macd?.histogram?.toFixed(5) || '—';
-  const bbPctB = tfData.bb?.pctB?.toFixed(0) || '—';
+  // ââ LEFT PANEL: Score ââ
+  const rsiVal = tfData.rsi?.value?.toFixed(0) || 'â';
+  const stochK = tfData.stochRSI_D?.k?.toFixed(0) || 'â';
+  const macdHist = tfData.macd?.histogram?.toFixed(5) || 'â';
+  const bbPctB = tfData.bb?.pctB?.toFixed(0) || 'â';
   const maCrossData = tfData.maCross;
-  const weeklyRSI = tfData.weeklyBias?.rsi?.toFixed(0) || '—';
+  const weeklyRSI = tfData.weeklyBias?.rsi?.toFixed(0) || 'â';
 
   scorePanel.innerHTML = `
     <!-- Main confidence display -->
     <div style="text-align:center;padding:24px 16px;border-bottom:1px solid var(--border2)">
-      <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">${symbol} · ${currentIntelTF}</div>
+      <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">${symbol} Â· ${currentIntelTF}</div>
       <div style="font-family:'Inter',sans-serif;font-size:72px;font-weight:900;letter-spacing:-.04em;line-height:1;color:${dirColor}">${confidence}%</div>
       <div style="font-size:16px;font-weight:700;color:${dirColor};margin-top:6px">${dirLabel}</div>
       <div style="font-size:20px;font-weight:800;color:${gradeCol};margin-top:4px">Grade: ${grade}</div>
-      ${conflictPenalty > 0 ? `<div style="font-size:10px;color:var(--amber);margin-top:6px">⚠ -${conflictPenalty}pts conflict penalty (mixed signals)</div>` : ''}
+      ${conflictPenalty > 0 ? `<div style="font-size:10px;color:var(--amber);margin-top:6px">â  -${conflictPenalty}pts conflict penalty (mixed signals)</div>` : ''}
       <!-- Score bar -->
       <div style="margin-top:14px;background:var(--bg5);border-radius:99px;height:6px;overflow:hidden">
         <div style="height:6px;border-radius:99px;background:linear-gradient(90deg,${dirColor},${dirColor}aa);width:${confidence}%;transition:width 1s ease"></div>
@@ -4369,7 +4369,7 @@ function renderIntelResults(result, scorePanel, detailPanel) {
 
     <!-- Warnings -->
     ${warnings.length ? `<div style="padding:10px 16px;border-bottom:1px solid var(--border2)">
-      ${warnings.map(w => `<div style="font-size:10px;color:var(--amber);padding:3px 0">⚠ ${w}</div>`).join('')}
+      ${warnings.map(w => `<div style="font-size:10px;color:var(--amber);padding:3px 0">â  ${w}</div>`).join('')}
     </div>` : ''}
 
     <!-- Signal breakdown -->
@@ -4377,7 +4377,7 @@ function renderIntelResults(result, scorePanel, detailPanel) {
       <div style="font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px">Signal Breakdown (${signals.filter(s=>s.type!=='neutral'&&s.type!=='info').length} active)</div>
       ${signals.slice(0,12).map(sig => {
         const col = sig.type==='bull'?'var(--green)':sig.type==='bear'?'var(--red)':sig.type==='info'?'var(--accent)':'var(--amber)';
-        const icon = sig.type==='bull'?'▲':sig.type==='bear'?'▼':sig.type==='info'?'◆':'●';
+        const icon = sig.type==='bull'?'â²':sig.type==='bear'?'â¼':sig.type==='info'?'â':'â';
         return `<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04)">
           <span style="color:${col};font-size:11px;margin-top:1px;flex-shrink:0">${icon}</span>
           <div style="flex:1;min-width:0">
@@ -4388,7 +4388,7 @@ function renderIntelResults(result, scorePanel, detailPanel) {
       }).join('')}
     </div>`;
 
-  // ── RIGHT PANEL: Live pair cards ──
+  // ââ RIGHT PANEL: Live pair cards ââ
   const pairGridEl = document.getElementById('intel-pair-grid');
   if (pairGridEl) {
     // Intel pair cards already populated by updateIntelCards
@@ -4463,7 +4463,7 @@ function updateIntelCards(analysisResult) {
     const flag      = i === 0 || i === 5 ? ' flag' : '';
     return `<div class="pc2${flag}" data-sym="${inst.sym}" onclick="runIntelAnalysis('${inst.sym}')" style="cursor:pointer">
       <div class="pc2-head"><div class="pc2-name">${inst.name}</div><span class="sent ${sentCls}">${sentLabel}</span></div>
-      <div class="pc2-body">${desc}<div style="font-size:9px;color:var(--accent);margin-top:4px">Click to run full analysis →</div></div>
+      <div class="pc2-body">${desc}<div style="font-size:9px;color:var(--accent);margin-top:4px">Click to run full analysis â</div></div>
       <div class="pc2-bot">
         <div class="pc2-price ${up?'up':'dn'}">${fmtPrice(inst.sym, price)}</div>
         <div style="font-size:10px;color:var(--text3)">${up?'+':''}${pct.toFixed(2)}%</div>
@@ -4484,6 +4484,17 @@ window.apexTrade = {
   version: '3.0',
 };
 
+// ── LOAD PERSISTED MARKETLENS DATA ──
+(function() {
+  try {
+    const saved = localStorage.getItem('apex_ml_screener');
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (Array.isArray(data) && data.length > 0) { processMlScreener(data); }
+    }
+  } catch(e) {}
+})();
+
 // Start price feed
 fetchPrices();
 priceTimer = setInterval(fetchPrices, CFG.priceInterval);
@@ -4492,7 +4503,7 @@ priceTimer = setInterval(fetchPrices, CFG.priceInterval);
 setTimeout(() => {
   const tdKey = localStorage.getItem('apex_td_key');
   if (tdKey) {
-    showToast('ApexTrade Live', 'All systems connected · Scanning markets', 'success', 3000);
+    showToast('ApexTrade Live', 'All systems connected Â· Scanning markets', 'success', 3000);
   } else {
     showToast('Setup Required', 'Add Twelve Data key in Settings for live prices', 'warning', 5000);
   }
