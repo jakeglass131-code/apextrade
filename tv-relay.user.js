@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         ApexTrade TV Relay
 // @namespace    https://apextrade-proxy.netlify.app
-// @version      2.1
+// @version      3.0
 // @description  Captures TradingView candle data and auto-cycles through watchlist
 // @match        https://www.tradingview.com/*
 // @match        https://tradingview.com/*
 // @grant        none
 // @run-at       document-start
+// @updateURL    https://raw.githubusercontent.com/jakeglass131-code/apextrade/main/tv-relay.user.js
+// @downloadURL  https://raw.githubusercontent.com/jakeglass131-code/apextrade/main/tv-relay.user.js
 // ==/UserScript==
 
 (function () {
@@ -14,24 +16,29 @@
 
   var CACHE_ENDPOINT = 'https://apextrade-proxy.netlify.app/.netlify/functions/cache';
   var SEND_INTERVAL = 5000;
-  var CYCLE_DELAY = 6000; // 6s per ticker when auto-cycling
+  var CYCLE_DELAY = 8000; // 8s per ticker
   var DEBUG = true;
   var pendingData = {};
   var lastKnownSymbol = '';
   var autoCycling = false;
   var cycleCount = 0;
   var totalSent = 0;
+  var watchlistRows = [];
+  var currentRowIndex = 0;
 
   function log(msg) { if (DEBUG) console.log('[ApexTrade Relay] ' + msg); }
-  log('Script starting...');
+  log('v3.0 starting...');
 
-  // ── Intercept WebSocket ──
+  // ══════════════════════════════════════════════
+  // WEBSOCKET / XHR / FETCH INTERCEPTORS (proven working)
+  // ══════════════════════════════════════════════
+
   var OrigWebSocket = window.WebSocket;
   window.WebSocket = function () {
     var ws = new (Function.prototype.bind.apply(OrigWebSocket, [null].concat(Array.prototype.slice.call(arguments))))();
     var url = arguments[0] || '';
     if (url.indexOf('tradingview.com') !== -1) {
-      log('Hooked WebSocket: ' + url);
+      log('Hooked WebSocket: ' + url.substring(0, 80));
       ws.addEventListener('message', function (e) { try { parseWSMessage(e.data); } catch(x){} });
     }
     return ws;
@@ -42,22 +49,17 @@
   window.WebSocket.CLOSING = OrigWebSocket.CLOSING;
   window.WebSocket.CLOSED = OrigWebSocket.CLOSED;
 
-  // ── Intercept XHR ──
   var origXHROpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (method, url) {
     this._tvUrl = typeof url === 'string' ? url : (url ? url.toString() : '');
     if (this._tvUrl.indexOf('/history') !== -1) {
       this.addEventListener('load', function () {
-        try {
-          var d = JSON.parse(this.responseText);
-          if (d && d.t && d.s === 'ok') handleUDF(d, this._tvUrl);
-        } catch(e){}
+        try { var d = JSON.parse(this.responseText); if (d && d.t && d.s === 'ok') handleUDF(d, this._tvUrl); } catch(e){}
       });
     }
     return origXHROpen.apply(this, arguments);
   };
 
-  // ── Intercept fetch ──
   var origFetch = window.fetch;
   window.fetch = function () {
     var url = typeof arguments[0] === 'string' ? arguments[0] : (arguments[0] && arguments[0].url) || '';
@@ -84,7 +86,6 @@
     if (candles.length) { bufferCandles(ticker, candles); log('UDF: ' + candles.length + ' candles for ' + ticker); }
   }
 
-  // ── Parse WebSocket ──
   function parseWSMessage(raw) {
     if (typeof raw !== 'string') return;
     var parts = raw.split(/~m~\d+~m~/);
@@ -114,7 +115,7 @@
   function processSeries(seriesObj) {
     var ticker = '';
     if (seriesObj.ns) ticker = seriesObj.ns.short_name || seriesObj.ns.name || '';
-    if (!ticker) { var s = JSON.stringify(seriesObj); var m = s.match(/"(?:short_name|name|symbol)"\s*:\s*"([A-Z][A-Z0-9.:]*)"/); if (m) ticker = m[1]; }
+    if (!ticker) { var s = JSON.stringify(seriesObj).substring(0, 2000); var m = s.match(/"(?:short_name|name|symbol)"\s*:\s*"([A-Z][A-Z0-9.:]*)"/); if (m) ticker = m[1]; }
     if (!ticker && lastKnownSymbol) ticker = lastKnownSymbol;
     var candles = [];
     for (var i = 0; i < seriesObj.s.length; i++) { var v = seriesObj.s[i].v; if (v && v.length >= 5) candles.push({ t: v[0]*1000, o: v[1], h: v[2], l: v[3], c: v[4], v: v[5]||0 }); }
@@ -138,7 +139,10 @@
     pendingData[ticker] = { candles: merged };
   }
 
-  // ── Send to cache ──
+  // ══════════════════════════════════════════════
+  // SEND TO CACHE
+  // ══════════════════════════════════════════════
+
   setInterval(flushCache, SEND_INTERVAL);
 
   function flushCache() {
@@ -159,74 +163,196 @@
     updateBadge();
   }
 
-  // ── AUTO-CYCLE: click watchlist rows directly ──
-  function nextWatchlistItem() {
-    // Find all watchlist rows and click the next one
-    var rows = document.querySelectorAll('[class*="listRow"]');
-    if (!rows.length) rows = document.querySelectorAll('[data-symbol-full]');
-    if (!rows.length) rows = document.querySelectorAll('.symbol-list .row, .watchlist .row, [class*="symbolRow"], [class*="itemRow"]');
+  // ══════════════════════════════════════════════
+  // AUTO-CYCLE: SMART WATCHLIST ROW DISCOVERY
+  // ══════════════════════════════════════════════
 
-    // Try broader selector - TV watchlist items are usually in the right panel
-    if (!rows.length) {
-      var rightPanel = document.querySelector('[class*="watchlist"]') || document.querySelector('[data-name="watchlist"]') || document.querySelector('.widgetbar-widget');
-      if (rightPanel) {
-        rows = rightPanel.querySelectorAll('[class*="row"]:not([class*="header"])');
+  function discoverWatchlistRows() {
+    // Use [class*="cell-"] which we confirmed has 348 matches on TV
+    var cells = document.querySelectorAll('[class*="cell-"]');
+    log('Found ' + cells.length + ' cell elements');
+
+    if (cells.length > 10) {
+      // These are individual cells — we need to find the row containers
+      // Group cells by their parent elements
+      var parents = new Set();
+      for (var i = 0; i < cells.length; i++) {
+        var p = cells[i].parentElement;
+        if (p) parents.add(p);
+      }
+      var rows = Array.from(parents);
+      // Filter to just visible rows in the right panel
+      rows = rows.filter(function(el) {
+        var r = el.getBoundingClientRect();
+        return r.width > 100 && r.height > 10 && r.height < 80;
+      });
+      if (rows.length > 5) {
+        log('Discovered ' + rows.length + ' watchlist rows from cell parents');
+        return rows;
       }
     }
 
-    if (!rows.length) {
-      log('No watchlist rows found, trying fallback...');
-      // Last resort: find any clickable element with a ticker symbol
-      rows = document.querySelectorAll('[class*="symbolNameText"], [class*="tickerName"]');
+    // Fallback: find the scrollable list container in the right panel
+    var allEls = document.querySelectorAll('div');
+    var listContainer = null;
+    for (var j = 0; j < allEls.length; j++) {
+      var el = allEls[j];
+      var rect = el.getBoundingClientRect();
+      if (rect.left > window.innerWidth * 0.5 &&
+          el.scrollHeight > el.clientHeight + 100 &&
+          el.children.length > 10) {
+        listContainer = el;
+        break;
+      }
     }
 
-    if (rows.length > 0) {
-      var targetIdx = cycleCount % rows.length;
-      var row = rows[targetIdx];
-      log('Clicking watchlist row ' + targetIdx + '/' + rows.length);
-      row.click();
-      cycleCount++;
-      updateBadge();
-    } else {
-      log('Could not find watchlist items to click');
+    if (listContainer) {
+      var found = [];
+      for (var k = 0; k < listContainer.children.length; k++) {
+        var child = listContainer.children[k];
+        var cr = child.getBoundingClientRect();
+        if (cr.height > 10 && cr.height < 80 && cr.width > 100) {
+          found.push(child);
+        }
+      }
+      log('Discovered ' + found.length + ' rows from scrollable container');
+      return found;
     }
+
+    log('WARNING: Could not discover watchlist rows');
+    return [];
+  }
+
+  function nextWatchlistItem() {
+    // Re-discover rows periodically (DOM may change as we scroll)
+    if (watchlistRows.length === 0 || currentRowIndex >= watchlistRows.length || cycleCount % 20 === 0) {
+      watchlistRows = discoverWatchlistRows();
+      if (currentRowIndex >= watchlistRows.length) currentRowIndex = 0;
+    }
+
+    if (watchlistRows.length === 0) {
+      log('ERROR: No watchlist rows found. Make sure a watchlist is visible in the right panel.');
+      return;
+    }
+
+    // Click the current row
+    var row = watchlistRows[currentRowIndex];
+    try {
+      // Try clicking different parts of the row
+      row.click();
+      // Also try mousedown+mouseup (some TV elements need this)
+      row.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+      row.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+
+      var rowText = row.textContent.trim().substring(0, 30);
+      log('Clicked row ' + currentRowIndex + '/' + watchlistRows.length + ': "' + rowText + '"');
+    } catch(e) {
+      log('Click failed: ' + e.message);
+    }
+
+    currentRowIndex++;
+    cycleCount++;
+
+    // If we've gone through all visible rows, scroll down to reveal more
+    if (currentRowIndex >= watchlistRows.length) {
+      log('Reached end of visible rows, scrolling watchlist...');
+      scrollWatchlist();
+      currentRowIndex = 0;
+      // Re-discover after scroll
+      setTimeout(function() { watchlistRows = discoverWatchlistRows(); }, 1000);
+    }
+
+    updateBadge();
+  }
+
+  function scrollWatchlist() {
+    // Find scrollable container in right panel
+    var scrollables = document.querySelectorAll('div');
+    for (var i = 0; i < scrollables.length; i++) {
+      var el = scrollables[i];
+      var rect = el.getBoundingClientRect();
+      if (rect.left > window.innerWidth * 0.6 &&
+          rect.height > 200 &&
+          el.scrollHeight > el.clientHeight + 50) {
+        el.scrollTop += 500; // Scroll down
+        log('Scrolled watchlist container (scrollTop=' + el.scrollTop + '/' + el.scrollHeight + ')');
+        return;
+      }
+    }
+    log('No scrollable watchlist container found');
   }
 
   var cycleTimer = null;
   function startCycle() {
     if (autoCycling) return;
     autoCycling = true;
-    cycleCount = 0;
-    log('Auto-cycle started — pressing Alt+Down every ' + (CYCLE_DELAY/1000) + 's');
-    cycleTimer = setInterval(nextWatchlistItem, CYCLE_DELAY);
+    cycleCount = parseInt(localStorage.getItem('apextrade_cycle_count') || '0');
+    totalSent = parseInt(localStorage.getItem('apextrade_total_sent') || '0');
+
+    // Discover rows first
+    watchlistRows = discoverWatchlistRows();
+
+    if (watchlistRows.length === 0) {
+      log('No watchlist rows found! Make sure a watchlist panel is visible on the right side.');
+      autoCycling = false;
+      return;
+    }
+
+    log('Auto-cycle started: ' + watchlistRows.length + ' rows found, cycling every ' + (CYCLE_DELAY/1000) + 's');
+    localStorage.setItem('apextrade_autocycle', 'true');
+    cycleTimer = setInterval(function() {
+      nextWatchlistItem();
+      // Persist progress
+      localStorage.setItem('apextrade_cycle_count', cycleCount);
+      localStorage.setItem('apextrade_total_sent', totalSent);
+    }, CYCLE_DELAY);
     updateBadge();
   }
+
   function stopCycle() {
     autoCycling = false;
     if (cycleTimer) clearInterval(cycleTimer);
     cycleTimer = null;
-    log('Auto-cycle stopped after ' + cycleCount + ' tickers');
+    localStorage.setItem('apextrade_autocycle', 'false');
+    log('Auto-cycle stopped. Cycled: ' + cycleCount + ', Sent: ' + totalSent);
     updateBadge();
   }
 
-  // ── Badge ──
+  // ══════════════════════════════════════════════
+  // BADGE UI
+  // ══════════════════════════════════════════════
+
   function addBadge() {
     if (document.getElementById('apextrade-relay-badge')) return;
     var b = document.createElement('div');
     b.id = 'apextrade-relay-badge';
     b.textContent = 'ApexTrade Relay';
-    b.style.cssText = 'position:fixed;bottom:10px;left:10px;z-index:99999;background:#1a1a2e;color:#00d4aa;border:1px solid #00d4aa;padding:6px 12px;border-radius:12px;font-size:12px;font-family:-apple-system,sans-serif;cursor:pointer;opacity:0.8;';
+    b.style.cssText = 'position:fixed;bottom:10px;left:10px;z-index:99999;background:#1a1a2e;color:#00d4aa;border:1px solid #00d4aa;padding:6px 12px;border-radius:12px;font-size:12px;font-family:-apple-system,sans-serif;cursor:pointer;opacity:0.85;';
     b.onclick = function () {
-      if (autoCycling) { stopCycle(); }
-      else if (confirm('Start auto-cycling through your watchlist?\n\nUses Alt+Down to move through watchlist items.\nCaptures candle data for each ticker.\n\nMake sure a watchlist with ASX tickers is selected.\nSent so far: ' + totalSent + ' tickers')) { startCycle(); }
+      if (autoCycling) {
+        stopCycle();
+        alert('Auto-cycle stopped.\n\nCycled: ' + cycleCount + '\nSent: ' + totalSent);
+      } else {
+        if (confirm('Start auto-cycling through watchlist?\n\nMake sure an ASX watchlist is visible in the right panel.\n\nPrevious progress — Cycled: ' + cycleCount + ', Sent: ' + totalSent)) {
+          startCycle();
+        }
+      }
     };
     document.body.appendChild(b);
   }
+
   function updateBadge() {
     var b = document.getElementById('apextrade-relay-badge');
     if (!b) return;
-    if (autoCycling) { b.textContent = 'Cycling: ' + cycleCount + ' | Sent: ' + totalSent; b.style.color = '#ffaa00'; b.style.borderColor = '#ffaa00'; }
-    else { b.textContent = 'Relay (sent: ' + totalSent + ')'; b.style.color = '#00d4aa'; b.style.borderColor = '#00d4aa'; }
+    if (autoCycling) {
+      b.textContent = 'Cycling: ' + cycleCount + ' | Sent: ' + totalSent + ' | Rows: ' + watchlistRows.length;
+      b.style.color = '#ffaa00';
+      b.style.borderColor = '#ffaa00';
+    } else {
+      b.textContent = 'Relay (sent: ' + totalSent + ')';
+      b.style.color = '#00d4aa';
+      b.style.borderColor = '#00d4aa';
+    }
   }
 
   // Track symbol from DOM
@@ -237,9 +363,25 @@
     } catch(e){}
   }, 2000);
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', addBadge);
-  else addBadge();
-  setTimeout(addBadge, 3000);
+  // ══════════════════════════════════════════════
+  // INIT
+  // ══════════════════════════════════════════════
 
-  log('ApexTrade TV Relay v2.1 loaded — click badge to auto-cycle watchlist');
+  function init() {
+    addBadge();
+    totalSent = parseInt(localStorage.getItem('apextrade_total_sent') || '0');
+    cycleCount = parseInt(localStorage.getItem('apextrade_cycle_count') || '0');
+    updateBadge();
+
+    // Auto-resume if was cycling before
+    if (localStorage.getItem('apextrade_autocycle') === 'true') {
+      log('Auto-resuming cycle from previous session...');
+      setTimeout(startCycle, 5000);
+    }
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function() { setTimeout(init, 3000); });
+  else setTimeout(init, 3000);
+
+  log('ApexTrade TV Relay v3.0 loaded');
 })();
