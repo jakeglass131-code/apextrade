@@ -1,4 +1,4 @@
-// CRT Scanner v11 â Jake's exact rules
+// CRT Scanner v11 Ã¢ÂÂ Jake's exact rules
 // 
 // Rules:
 // 1. CRT candle = completed calendar period (year/quarter/half/month)
@@ -108,7 +108,7 @@ exports.handler = async (event) => {
             var sweepingNow = !tbosC && last.l < crt.l && last.c >= crt.l;
             var tbosForming = !tbosC && !sweepingNow && last.c > tbosLvl;
             // Invalidate if current price already hit the CRT high (target reached)
-            var targetHit = last.c > crt.h;
+            var targetHit = tbos.some(function(x){return x.c>crt.h;});
             if (!targetHit && (tbosC || sweepingNow || tbosForming)) {
               if (!tbosC || tbosAge <= 5) {
                 var conf = 60; if (purges >= 2) conf += 10;
@@ -128,7 +128,7 @@ exports.handler = async (event) => {
             for (var j = 0; j < tbos.length; j++) { var c = tbos[j]; if (c.h > crt.h) purges++; if (c.c < tbosLvl && !tbosC) { tbosC = c; tbosAge = tbos.length - 1 - j; } }
             var last = tbos[tbos.length - 1]; var sweepingNow = !tbosC && last.h > crt.h && last.c <= crt.h; var tbosForming = !tbosC && !sweepingNow && last.c < tbosLvl;
             // Invalidate if current price already hit the CRT low (target reached)
-            var targetHit = last.c < crt.l;
+            var targetHit = tbos.some(function(x){return x.c<crt.l;});
             if (!targetHit && ((tbosC && tbosAge <= 5) || sweepingNow || tbosForming)) {
               var conf = 60; if (purges >= 2) conf += 10; if (tbosForming) conf += 15; else if (tbosC && tbosAge === 0) conf += 15; else if (tbosC && tbosAge === 1) conf += 10; else if (tbosC && tbosAge === 2) conf += 5; if (sweepingNow) conf += 5; conf = Math.min(conf, 85);
               signals.push({ type: purges >= 2 ? 'Double Purge CRT' : 'Classic CRT', model: m.label, direction: 'SHORT', crtHigh: crt.h, crtLow: crt.l, crtDate: crt.date, innerClose: inner.c, innerDate: inner.date, sweepHigh: inner.h, tbosLevel: tbosLvl, tbosDate: tbosC ? tbosC.date : (tbosForming ? 'Forming now' : (sweepingNow ? 'Sweep forming' : null)), tbosAge: tbosC ? tbosAge : -1, purgeCount: purges, entryTFs: m.entryTFs, baseConfidence: conf, sweepingNow: sweepingNow, tbosForming: tbosForming });
