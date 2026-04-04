@@ -1,4 +1,5 @@
-// CRT Scanner — evaluates all 4 CRT models across all 5 timeframes
+// CRT Scanner - Jake's exact rules
+// CRT = C[-2] establishes range; C[-1] closes inside C[-2]; C[0] wicks below low (no close below), then closes above TBOS level
 exports.handler = async (event) => {
   const headers = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
@@ -9,58 +10,110 @@ exports.handler = async (event) => {
     const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + symbol + '?interval=1d&range=2y', { headers: { 'User-Agent': 'Mozilla/5.0' } });
     if (!r.ok) throw new Error('Yahoo ' + r.status);
     const data = await r.json();
-    const result = data.chart?.result?.[0];
+    const result = data.chart && data.chart.result && data.chart.result[0];
     if (!result) throw new Error('no data');
     const ts = result.timestamp || [];
-    const q = result.indicators?.quote?.[0] || {};
-    const raw = ts.map((t,i) => ({ t:t*1000, date:new Date(t*1000).toISOString().slice(0,10), o:q.open?.[i], h:q.high?.[i], l:q.low?.[i], c:q.close?.[i], v:q.volume?.[i]||0 })).filter(c=>c.o&&c.c);
+    const q = result.indicators && result.indicators.quote && result.indicators.quote[0] || {};
+    const raw = ts.map((t, i) => ({ t: t*1000, date: new Date(t*1000).toISOString().slice(0,10), o: q.open && q.open[i], h: q.high && q.high[i], l: q.low && q.low[i], c: q.close && q.close[i], v: q.volume && q.volume[i] || 0 })).filter(c => c.o != null && c.c != null && c.h != null && c.l != null);
     if (raw.length < 20) throw new Error('insufficient data');
-    const agg = (d,n) => { const o=[]; for(let i=0;i<d.length;i+=n){const s=d.slice(i,i+n);if(!s.length)continue;o.push({t:s[0].t,date:s[0].date,o:s[0].o,h:Math.max(...s.map(x=>x.h)),l:Math.min(...s.map(x=>x.l)),c:s[s.length-1].c,v:s.reduce((a,x)=>a+x.v,0)});}return o; };
-    const C = { '1D':raw,'2D':agg(raw,2),'3D':agg(raw,3),'4D':agg(raw,4),'1W':agg(raw,5),'2W':agg(raw,10),'3W':agg(raw,15),'1M':agg(raw,21),'3M':agg(raw,63),'6M':agg(raw,126),'9M':agg(raw,189),'12M':agg(raw,252) };
+    function agg(days) {
+      const out = [];
+      for (let i = 0; i < raw.length; i += days) {
+        const s = raw.slice(i, i + days);
+        if (!s.length) continue;
+        out.push({ t: s[0].t, date: s[0].date, o: s[0].o, h: Math.max.apply(null, s.map(x => x.h)), l: Math.min.apply(null, s.map(x => x.l)), c: s[s.length-1].c, v: s.reduce((a,x) => a+x.v, 0) });
+      }
+      return out;
+    }
     const MODELS = [
-      {label:'1M CRT',crtTF:'1M',tbosTF:'2D',entryTFs:['1D','4H']},
-      {label:'3M CRT',crtTF:'3M',tbosTF:'4D',entryTFs:['2D','3D']},
-      {label:'6M CRT',crtTF:'6M',tbosTF:'2W',entryTFs:['2W','1W']},
-      {label:'9M CRT',crtTF:'9M',tbosTF:'2W',entryTFs:['2W','1W']},
-      {label:'12M CRT',crtTF:'12M',tbosTF:'1M',entryTFs:['3W','2W']},
+      { label: '1M CRT', crt: agg(21), tbos: agg(2), entryTFs: ['1D','4H'] },
+      { label: '3M CRT', crt: agg(63), tbos: agg(4), entryTFs: ['2D','3D'] },
+      { label: '6M CRT', crt: agg(126), tbos: agg(10), entryTFs: ['2W','1W'] },
+      { label: '9M CRT', crt: agg(189), tbos: agg(10), entryTFs: ['2W','1W'] },
+      { label: '12M CRT', crt: agg(252), tbos: agg(21), entryTFs: ['3W','2W'] },
     ];
     const signals = [];
-    for (const m of MODELS) {
-      const crtC = C[m.crtTF], tbosC = C[m.tbosTF];
-      if (!crtC||crtC.length<3||!tbosC||tbosC.length<3) continue;
-      for (let i=Math.max(1,crtC.length-4);i<crtC.length-1;i++) {
-        const cc=crtC[i], rel=tbosC.filter(x=>x.t>=cc.t);
-        if (rel.length<2) continue;
-        // BULLISH: sweep low then BOS above swing high
-        let swHi=null; for(let j=0;j<Math.min(rel.length,15);j++){if(rel[j].h>cc.l&&rel[j].h<cc.h){swHi=rel[j];break;}}
-        if (swHi) {
-          let swIdx=null,purge=0; for(let j=0;j<rel.length;j++){if(rel[j].l<cc.l){if(swIdx===null)swIdx=j;purge++;}}
-          if (swIdx!==null) {
-            let tbos=null,tIdx=null; for(let j=swIdx+1;j<rel.length;j++){if(rel[j].c>swHi.h){tbos=rel[j];tIdx=j;break;}}
-            if (tbos) {
-              const age=rel.length-1-tIdx;
-              if(age<=5){let conf=60;if(purge>=2)conf+=5;if(age<=2)conf+=10;if(age===0)conf+=5;
-              signals.push({type:purge>=2?'Double Purge CRT':'Classic CRT',model:m.label,direction:'LONG',crtHigh:cc.h,crtLow:cc.l,tbosLevel:swHi.h,tbosDate:tbos.date,tbosAge:age,purgeCount:purge,sweepLow:Math.min(...rel.slice(swIdx,swIdx+3).map(x=>x.l)),baseConfidence:Math.min(conf,85),entryTFs:m.entryTFs});}
-            }
+    for (let mi = 0; mi < MODELS.length; mi++) {
+      const m = MODELS[mi];
+      const C = m.crt, T = m.tbos;
+      if (C.length < 3) continue;
+      for (let dir = 0; dir < 2; dir++) {
+        const bullish = dir === 0;
+        for (let i = C.length - 3; i < C.length - 1; i++) {
+          const crt = C[i], inner = C[i+1];
+          const bodyHigh = Math.max(inner.o, inner.c);
+          const bodyLow = Math.min(inner.o, inner.c);
+          // Rule 1: inner body must be fully inside CRT range
+          if (bodyHigh > crt.h || bodyLow < crt.l) continue;
+          const crtRange = crt.h - crt.l;
+          if (crtRange <= 0) continue;
+          // Rule 2: sweep level
+          const sweepLevel = bullish ? Math.min(crt.l, inner.l) : Math.max(crt.h, inner.h);
+          // Get TBOS candles after CRT
+          const tbosCandles = T.filter(x => x.t >= crt.t);
+          if (tbosCandles.length < 2) continue;
+          // Find first sweep (wick only - no close beyond sweep level)
+          let firstSweepIdx = null;
+          for (let j = 0; j < tbosCandles.length; j++) {
+            const swept = bullish ? tbosCandles[j].l < sweepLevel : tbosCandles[j].h > sweepLevel;
+            const closedBeyond = bullish ? tbosCandles[j].c < sweepLevel : tbosCandles[j].c > sweepLevel;
+            if (swept && !closedBeyond) { firstSweepIdx = j; break; }
+            if (closedBeyond) break; // closed beyond = invalid
           }
-        }
-        // BEARISH: sweep high then BOS below swing low
-        let swLo=null; for(let j=0;j<Math.min(rel.length,15);j++){if(rel[j].l>cc.l&&rel[j].l<cc.h){swLo=rel[j];break;}}
-        if (swLo) {
-          let swIdx=null,purge=0; for(let j=0;j<rel.length;j++){if(rel[j].h>cc.h){if(swIdx===null)swIdx=j;purge++;}}
-          if (swIdx!==null) {
-            let tbos=null,tIdx=null; for(let j=swIdx+1;j<rel.length;j++){if(rel[j].c<swLo.l){tbos=rel[j];tIdx=j;break;}}
-            if (tbos) {
-              const age=rel.length-1-tIdx;
-              if(age<=5){let conf=60;if(purge>=2)conf+=5;if(age<=2)conf+=10;if(age===0)conf+=5;
-              signals.push({type:purge>=2?'Double Purge CRT':'Classic CRT',model:m.label,direction:'SHORT',crtHigh:cc.h,crtLow:cc.l,tbosLevel:swLo.l,tbosDate:tbos.date,tbosAge:age,purgeCount:purge,sweepHigh:Math.max(...rel.slice(swIdx,swIdx+3).map(x=>x.h)),baseConfidence:Math.min(conf,85),entryTFs:m.entryTFs});}
-            }
+          if (firstSweepIdx === null) continue;
+          // Find TBOS level = last swing high/low BEFORE first sweep
+          let tbosLevel = null;
+          for (let j = 0; j < firstSweepIdx; j++) {
+            if (bullish) { if (tbosLevel === null || tbosCandles[j].h > tbosLevel) tbosLevel = tbosCandles[j].h; }
+            else { if (tbosLevel === null || tbosCandles[j].l < tbosLevel) tbosLevel = tbosCandles[j].l; }
           }
+          if (tbosLevel === null) continue;
+          // Count purges after first sweep (wick only sweeps)
+          let purgeCount = 0, lastPurgeIdx = firstSweepIdx;
+          for (let j = firstSweepIdx; j < tbosCandles.length; j++) {
+            const swept = bullish ? tbosCandles[j].l < sweepLevel : tbosCandles[j].h > sweepLevel;
+            const closedBeyond = bullish ? tbosCandles[j].c < sweepLevel : tbosCandles[j].c > sweepLevel;
+            const tbosed = bullish ? tbosCandles[j].c > tbosLevel : tbosCandles[j].c < tbosLevel;
+            if (closedBeyond) break;
+            if (swept && !closedBeyond) { purgeCount++; lastPurgeIdx = j; }
+            if (tbosed) break;
+          }
+          if (purgeCount === 0) continue;
+          // Find TBOS candle (close beyond TBOS level after last purge)
+          let tbosCandle = null, tbosAge = null;
+          for (let j = lastPurgeIdx + 1; j < tbosCandles.length; j++) {
+            const tbosed = bullish ? tbosCandles[j].c > tbosLevel : tbosCandles[j].c < tbosLevel;
+            if (tbosed) { tbosCandle = tbosCandles[j]; tbosAge = tbosCandles.length - 1 - j; break; }
+          }
+          // Check if sweep forming on current candle (no TBOS yet)
+          const lastC = tbosCandles[tbosCandles.length - 1];
+          const sweepingNow = (bullish ? lastC.l < sweepLevel && lastC.c >= sweepLevel : lastC.h > sweepLevel && lastC.c <= sweepLevel) && !tbosCandle;
+          if (!tbosCandle && !sweepingNow) continue;
+          if (tbosCandle && tbosAge > 3) continue;
+          let conf = 60;
+          if (purgeCount >= 2) conf += 10;
+          if (tbosCandle && tbosAge === 0) conf += 15;
+          if (tbosCandle && tbosAge === 1) conf += 10;
+          if (tbosCandle && tbosAge === 2) conf += 5;
+          if (sweepingNow) conf += 5;
+          const innerBodyPct = (bodyHigh - bodyLow) / crtRange;
+          if (innerBodyPct < 0.5) conf += 5;
+          conf = Math.min(conf, 85);
+          const sweepCandle = tbosCandles[firstSweepIdx];
+          signals.push({
+            type: purgeCount >= 2 ? 'Double Purge CRT' : 'Classic CRT',
+            model: m.label, direction: bullish ? 'LONG' : 'SHORT',
+            crtHigh: crt.h, crtLow: crt.l, crtDate: crt.date, innerClose: inner.c,
+            tbosLevel, tbosDate: tbosCandle ? tbosCandle.date : (sweepingNow ? 'Forming' : null),
+            tbosAge: tbosCandle ? tbosAge : -1, purgeCount,
+            sweepLow: bullish ? sweepCandle.l : null, sweepHigh: bullish ? null : sweepCandle.h,
+            sweepDate: sweepCandle.date, entryTFs: m.entryTFs, baseConfidence: conf, sweepingNow,
+          });
         }
       }
     }
-    return { statusCode:200, headers, body:JSON.stringify({ ticker, signals, meta:{ price:raw[raw.length-1]?.c, date:raw[raw.length-1]?.date } }) };
+    return { statusCode: 200, headers, body: JSON.stringify({ ticker, signals, meta: { price: raw[raw.length-1] && raw[raw.length-1].c, date: raw[raw.length-1] && raw[raw.length-1].date, candles: raw.length } }) };
   } catch(err) {
-    return { statusCode:200, headers, body:JSON.stringify({ ticker, signals:[], error:err.message }) };
+    return { statusCode: 200, headers, body: JSON.stringify({ ticker, signals: [], error: err.message }) };
   }
 };
