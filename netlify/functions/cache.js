@@ -1,11 +1,7 @@
 // Netlify serverless function — TV candle data cache
-// Receives candle data from the Tampermonkey relay script
-// Serves cached data to candles.js and scan.js
+// Uses Netlify Blobs for persistent storage across invocations
 
-// In-memory cache (persists across warm invocations)
-const cache = {};
-
-exports.handler = async (event) => {
+exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -14,6 +10,15 @@ exports.handler = async (event) => {
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
+  }
+
+  let store;
+  try {
+    const blobs = require("@netlify/blobs");
+    store = blobs.getStore("tv-cache");
+  } catch (e) {
+    // Blobs not available — fall back to in-memory
+    return fallbackHandler(event);
   }
 
   // POST — receive candle data from Tampermonkey relay
@@ -28,29 +33,32 @@ exports.handler = async (event) => {
 
       const key = ticker.toUpperCase();
 
-      // Merge with existing cache
-      if (!cache[key]) {
-        cache[key] = { candles: [], exchange, source, updatedAt: 0 };
-      }
+      // Get existing data
+      let existing = { candles: [], exchange: '', source: 'tradingview', updatedAt: 0 };
+      try {
+        const prev = await store.get(key, { type: 'json' });
+        if (prev) existing = prev;
+      } catch (e) {}
 
-      // Deduplicate by timestamp
-      const existing = new Map(cache[key].candles.map(c => [c.t, c]));
+      // Merge candles by timestamp
+      const candleMap = new Map(existing.candles.map(c => [c.t, c]));
       for (const candle of candles) {
-        existing.set(candle.t, candle);
+        candleMap.set(candle.t, candle);
       }
-      cache[key].candles = Array.from(existing.values()).sort((a, b) => a.t - b.t);
-      cache[key].updatedAt = timestamp || Date.now();
-      cache[key].exchange = exchange || cache[key].exchange;
-      cache[key].source = source || 'tradingview';
+      const merged = Array.from(candleMap.values()).sort((a, b) => a.t - b.t);
+
+      const data = {
+        candles: merged,
+        exchange: exchange || existing.exchange,
+        source: source || 'tradingview',
+        updatedAt: timestamp || Date.now(),
+      };
+
+      await store.setJSON(key, data);
 
       return {
         statusCode: 200, headers,
-        body: JSON.stringify({
-          ok: true,
-          ticker: key,
-          cached: cache[key].candles.length,
-          updatedAt: cache[key].updatedAt,
-        }),
+        body: JSON.stringify({ ok: true, ticker: key, cached: merged.length, updatedAt: data.updatedAt }),
       };
     } catch (err) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: err.message }) };
@@ -59,79 +67,79 @@ exports.handler = async (event) => {
 
   // GET — serve cached candle data
   if (event.httpMethod === 'GET') {
-    const { ticker, interval, range } = event.queryStringParameters || {};
+    const { ticker } = event.queryStringParameters || {};
 
-    // If no ticker, return cache status
     if (!ticker) {
-      const status = {};
-      for (const [key, val] of Object.entries(cache)) {
-        status[key] = {
-          candles: val.candles.length,
-          updatedAt: val.updatedAt,
-          age: Math.round((Date.now() - val.updatedAt) / 1000) + 's',
-          from: val.candles.length ? new Date(val.candles[0].t).toISOString().slice(0, 10) : null,
-          to: val.candles.length ? new Date(val.candles[val.candles.length - 1].t).toISOString().slice(0, 10) : null,
-        };
+      try {
+        const { blobs } = await store.list();
+        const status = {};
+        for (const blob of (blobs || []).slice(0, 50)) {
+          try {
+            const d = await store.get(blob.key, { type: 'json' });
+            if (d) {
+              status[blob.key] = {
+                candles: d.candles.length,
+                updatedAt: d.updatedAt,
+                age: Math.round((Date.now() - d.updatedAt) / 1000) + 's',
+              };
+            }
+          } catch (e) {}
+        }
+        return { statusCode: 200, headers, body: JSON.stringify({ cached_tickers: Object.keys(status).length, tickers: status }) };
+      } catch (e) {
+        return { statusCode: 200, headers, body: JSON.stringify({ cached_tickers: 0, tickers: {}, note: e.message }) };
       }
-      return {
-        statusCode: 200, headers,
-        body: JSON.stringify({ cached_tickers: Object.keys(status).length, tickers: status }),
-      };
     }
 
     const key = ticker.toUpperCase().replace(/\.AX$/i, '');
-    const entry = cache[key];
 
-    if (!entry || !entry.candles.length) {
+    try {
+      const entry = await store.get(key, { type: 'json' });
+
+      if (!entry || !entry.candles || !entry.candles.length) {
+        return { statusCode: 200, headers, body: JSON.stringify({ ticker: key, hit: false, candles: [], count: 0 }) };
+      }
+
+      const age = Date.now() - entry.updatedAt;
+      const stale = age > 24 * 60 * 60 * 1000;
+
       return {
         statusCode: 200, headers,
-        body: JSON.stringify({ ticker: key, hit: false, candles: [], count: 0 }),
+        body: JSON.stringify({
+          ticker: key, hit: true, stale, age: Math.round(age / 1000),
+          count: entry.candles.length, candles: entry.candles,
+          meta: { source: entry.source, exchange: entry.exchange, updatedAt: entry.updatedAt,
+            regularMarketPrice: entry.candles.length ? entry.candles[entry.candles.length - 1].c : null },
+        }),
       };
+    } catch (e) {
+      return { statusCode: 200, headers, body: JSON.stringify({ ticker: key, hit: false, candles: [], count: 0, error: e.message }) };
     }
-
-    // Check if cache is stale (older than 24 hours)
-    const age = Date.now() - entry.updatedAt;
-    const stale = age > 24 * 60 * 60 * 1000;
-
-    // Return raw daily candles — the consumer handles aggregation
-    let candles = [...entry.candles];
-
-    // Apply range filter if specified
-    if (range) {
-      const now = Date.now();
-      const rangeMs = parseRange(range);
-      if (rangeMs) {
-        candles = candles.filter(c => c.t >= now - rangeMs);
-      }
-    }
-
-    return {
-      statusCode: 200, headers,
-      body: JSON.stringify({
-        ticker: key,
-        hit: true,
-        stale,
-        age: Math.round(age / 1000),
-        count: candles.length,
-        candles,
-        meta: {
-          source: entry.source,
-          exchange: entry.exchange,
-          updatedAt: entry.updatedAt,
-          regularMarketPrice: candles.length ? candles[candles.length - 1].c : null,
-        },
-      }),
-    };
   }
 
   return { statusCode: 405, headers, body: JSON.stringify({ error: 'method not allowed' }) };
 };
 
-function parseRange(range) {
-  const map = {
-    '1d': 1, '5d': 5, '1mo': 30, '3mo': 90, '6mo': 180,
-    '1y': 365, '2y': 730, '5y': 1825, 'max': 3650,
-  };
-  const days = map[range?.toLowerCase()];
-  return days ? days * 24 * 60 * 60 * 1000 : null;
+// Fallback in-memory handler if Blobs unavailable
+const memCache = {};
+function fallbackHandler(event) {
+  const headers = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
+  if (event.httpMethod === 'POST') {
+    try {
+      const { ticker, candles, exchange, source, timestamp } = JSON.parse(event.body);
+      const key = ticker.toUpperCase();
+      if (!memCache[key]) memCache[key] = { candles: [], exchange: '', source: 'tradingview', updatedAt: 0 };
+      const m = new Map(memCache[key].candles.map(c => [c.t, c]));
+      for (const c of candles) m.set(c.t, c);
+      memCache[key].candles = Array.from(m.values()).sort((a, b) => a.t - b.t);
+      memCache[key].updatedAt = timestamp || Date.now();
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true, ticker: key, cached: memCache[key].candles.length }) };
+    } catch (e) { return { statusCode: 400, headers, body: JSON.stringify({ error: e.message }) }; }
+  }
+  const { ticker } = event.queryStringParameters || {};
+  if (!ticker) return { statusCode: 200, headers, body: JSON.stringify({ cached_tickers: Object.keys(memCache).length, tickers: Object.fromEntries(Object.entries(memCache).map(([k,v])=>[k,{candles:v.candles.length}])) }) };
+  const key = ticker.toUpperCase().replace(/\.AX$/i, '');
+  const e = memCache[key];
+  if (!e) return { statusCode: 200, headers, body: JSON.stringify({ ticker: key, hit: false, candles: [], count: 0 }) };
+  return { statusCode: 200, headers, body: JSON.stringify({ ticker: key, hit: true, stale: false, count: e.candles.length, candles: e.candles, meta: { source: 'tradingview' } }) };
 }

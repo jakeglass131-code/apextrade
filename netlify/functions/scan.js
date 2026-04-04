@@ -6,7 +6,7 @@
 // 3. TBOS = TBOS-timeframe candle closes back above the last swing high before the sweep
 // 4. Entry forming = current TBOS candle is sweeping now (no TBOS yet confirmed)
 
-const cacheHandler = require('./cache');
+const CACHE_URL = process.env.URL ? process.env.URL + '/.netlify/functions/cache' : 'https://apextrade-proxy.netlify.app/.netlify/functions/cache';
 
 exports.handler = async (event) => {
   const H = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
@@ -20,12 +20,10 @@ exports.handler = async (event) => {
   async function getCandles(iv, rg) {
     if (iv === '1d' || iv === '1wk' || iv === '1mo') {
       try {
-        var cr = await cacheHandler.handler({
-          httpMethod: 'GET',
-          queryStringParameters: { ticker: ticker, range: rg }
-        });
-        var cd = JSON.parse(cr.body);
-        if (cd.hit && !cd.stale && cd.candles.length >= 20) {
+        var cr = await fetch(CACHE_URL + '?ticker=' + encodeURIComponent(ticker));
+        if (!cr.ok) throw new Error('cache fetch failed');
+        var cd = await cr.json();
+        if (cd.hit && !cd.stale && cd.candles && cd.candles.length >= 20) {
           dataSource = 'tradingview';
           var candles = cd.candles.map(function(c) {
             return { t: c.t, date: new Date(c.t).toISOString().slice(0, 10), o: c.o, h: c.h, l: c.l, c: c.c };

@@ -1,5 +1,5 @@
 // Yahoo Finance ASX candle proxy — with TV cache priority
-const cacheHandler = require('./cache');
+const CACHE_URL = process.env.URL ? process.env.URL + '/.netlify/functions/cache' : 'https://apextrade-proxy.netlify.app/.netlify/functions/cache';
 
 exports.handler = async (event) => {
   const H = {'Access-Control-Allow-Origin':'*','Content-Type':'application/json'};
@@ -9,13 +9,12 @@ exports.handler = async (event) => {
 
   // Step 1: Try TV cache
   try {
-    const cr = await cacheHandler.handler({
-      httpMethod:'GET',
-      queryStringParameters:{ticker, range: range||'2y'}
-    });
-    const cd = JSON.parse(cr.body);
-    if(cd.hit && !cd.stale && cd.candles.length >= 20) {
-      return{statusCode:200,headers:H,body:JSON.stringify({ticker,interval:interval||'1d',range:range||'2y',count:cd.candles.length,candles:cd.candles,source:'tradingview'})};
+    const cr = await fetch(CACHE_URL + '?ticker=' + encodeURIComponent(ticker));
+    if (cr.ok) {
+      const cd = await cr.json();
+      if(cd.hit && !cd.stale && cd.candles && cd.candles.length >= 20) {
+        return{statusCode:200,headers:H,body:JSON.stringify({ticker,interval:interval||'1d',range:range||'2y',count:cd.candles.length,candles:cd.candles,source:'tradingview'})};
+      }
     }
   } catch(e){}
 
