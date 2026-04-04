@@ -300,40 +300,64 @@
   var ASX_LIST_URL = 'https://apextrade-proxy.netlify.app/.netlify/functions/asx-list';
 
   function changeSymbol(ticker) {
-    // Use TradingView's internal widget API to change the chart symbol
     try {
-      // Method 1: TV's internal navigation
-      var symbolInput = document.querySelector('#header-toolbar-symbol-search');
-      if (symbolInput) {
-        symbolInput.click();
-        setTimeout(function () {
-          var input = document.querySelector('input[data-role="search"]') || document.querySelector('.search-ZXzPWcCf input') || document.querySelector('input[type="text"]');
-          if (input) {
-            input.value = '';
-            input.focus();
-            // Simulate typing
-            var nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-            nativeInputValueSetter.call(input, 'ASX:' + ticker);
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            // Wait for search results then press Enter
-            setTimeout(function () {
-              input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
-            }, 1500);
-          }
-        }, 500);
-        return;
+      // Method 1: Use TV's internal chart widget API (most reliable, no page reload)
+      var frames = document.querySelectorAll('iframe');
+      var widget = window.TradingView || null;
+
+      // Try accessing the active chart instance
+      if (window._exposed_chartWidgetCollection) {
+        var charts = window._exposed_chartWidgetCollection;
+        if (charts.length > 0) {
+          charts[0].setSymbol('ASX:' + ticker);
+          log('Changed symbol via widget API: ' + ticker);
+          return;
+        }
       }
 
-      // Method 2: URL navigation (simpler fallback)
+      // Method 2: Try the chart model directly
+      var chartEl = document.querySelector('.chart-container');
+      if (chartEl && chartEl.__vue__) {
+        // Vue-based TV
+        try {
+          chartEl.__vue__.$emit('change-symbol', 'ASX:' + ticker);
+        } catch(e) {}
+      }
+
+      // Method 3: Use URL navigation (always works, causes page reload)
       var currentUrl = window.location.href;
-      if (currentUrl.indexOf('/chart/') !== -1) {
-        // Change symbol via URL param
-        var base = currentUrl.split('?')[0];
+      var base = currentUrl.split('?')[0].split('#')[0];
+      // Preserve the chart layout ID
+      var match = base.match(/\/chart\/([^/]+)/);
+      if (match) {
         window.location.href = base + '?symbol=ASX%3A' + ticker;
+        log('Changed symbol via URL: ' + ticker);
+      } else {
+        window.location.href = '/chart/?symbol=ASX%3A' + ticker;
+        log('Changed symbol via URL fallback: ' + ticker);
       }
     } catch (e) {
       log('Symbol change failed: ' + e.message);
     }
+  }
+
+  // Persist cycle state across page reloads (URL nav reloads the page)
+  function saveCycleState() {
+    localStorage.setItem('apextrade_cycle', JSON.stringify({ enabled: autoCycleEnabled, index: autoCycleIndex, list: autoCycleList }));
+  }
+  function loadCycleState() {
+    try {
+      var s = JSON.parse(localStorage.getItem('apextrade_cycle'));
+      if (s && s.enabled && s.list && s.list.length) {
+        autoCycleList = s.list;
+        autoCycleIndex = s.index || 0;
+        return true;
+      }
+    } catch(e) {}
+    return false;
+  }
+  function clearCycleState() {
+    localStorage.removeItem('apextrade_cycle');
   }
 
   function startAutoCycle() {
@@ -342,36 +366,50 @@
     log('Auto-cycle: fetching ASX ticker list...');
 
     origFetch(ASX_LIST_URL).then(function (r) { return r.json(); }).then(function (data) {
-      if (data.tickers && Array.isArray(data.tickers)) {
+      if (data.stocks && Array.isArray(data.stocks)) {
+        autoCycleList = data.stocks.map(function (t) { return t.ticker || t; });
+      } else if (data.tickers && Array.isArray(data.tickers)) {
         autoCycleList = data.tickers.map(function (t) { return t.ticker || t; });
       } else if (Array.isArray(data)) {
         autoCycleList = data.map(function (t) { return t.ticker || t; });
       }
-      log('Auto-cycle: loaded ' + autoCycleList.length + ' tickers');
-      updateBadge();
-
-      autoCycleInterval = setInterval(function () {
-        if (autoCycleIndex >= autoCycleList.length) {
-          log('Auto-cycle: completed all ' + autoCycleList.length + ' tickers!');
-          stopAutoCycle();
-          return;
-        }
-        var ticker = autoCycleList[autoCycleIndex];
-        log('Auto-cycle: [' + (autoCycleIndex + 1) + '/' + autoCycleList.length + '] ' + ticker);
-        changeSymbol(ticker);
-        autoCycleIndex++;
-        updateBadge();
-      }, CYCLE_DELAY);
+      log('Auto-cycle: loaded ' + autoCycleList.length + ' tickers, starting from index ' + autoCycleIndex);
+      advanceCycle();
     }).catch(function (e) {
       log('Auto-cycle: failed to load tickers: ' + e.message);
       autoCycleEnabled = false;
     });
   }
 
+  function resumeAutoCycle() {
+    autoCycleEnabled = true;
+    log('Auto-cycle: resuming from index ' + autoCycleIndex + '/' + autoCycleList.length);
+    // Wait for current chart data to be captured, then advance
+    setTimeout(advanceCycle, CYCLE_DELAY);
+  }
+
+  function advanceCycle() {
+    if (!autoCycleEnabled) return;
+    if (autoCycleIndex >= autoCycleList.length) {
+      log('Auto-cycle: completed all ' + autoCycleList.length + ' tickers!');
+      stopAutoCycle();
+      return;
+    }
+    var ticker = autoCycleList[autoCycleIndex];
+    log('Auto-cycle: [' + (autoCycleIndex + 1) + '/' + autoCycleList.length + '] ' + ticker);
+    autoCycleIndex++;
+    saveCycleState();
+    updateBadge();
+    // Flush any pending data before changing symbol
+    flushCache();
+    setTimeout(function () { changeSymbol(ticker); }, 1000);
+  }
+
   function stopAutoCycle() {
     autoCycleEnabled = false;
     if (autoCycleInterval) clearInterval(autoCycleInterval);
     autoCycleInterval = null;
+    clearCycleState();
     updateBadge();
     log('Auto-cycle stopped at index ' + autoCycleIndex);
   }
@@ -408,6 +446,15 @@
     };
   }
   setTimeout(addBadgeV2, 4000);
+
+  // ── Auto-resume cycle after page reload ──
+  setTimeout(function () {
+    if (loadCycleState()) {
+      log('Auto-cycle: found saved state, resuming...');
+      updateBadge();
+      resumeAutoCycle();
+    }
+  }, 5000); // Wait 5s for page to fully load and WS to connect
 
   log('ApexTrade TV Relay v1.3 loaded — click badge to start auto-cycle');
 })();
