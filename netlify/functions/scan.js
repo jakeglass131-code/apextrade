@@ -1,4 +1,4 @@
-// CRT Scanner v11 ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Jake's exact rules
+// CRT Scanner v11 ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Jake's exact rules
 // 
 // Rules:
 // 1. CRT candle = completed calendar period (year/quarter/half/month)
@@ -90,9 +90,6 @@ exports.handler = async (event) => {
         if (!crt || !inner) continue;
         var crtRange = crt.h - crt.l;
         if (crtRange <= 0) continue;
-        // CRT candle must not itself be an inside bar of the prior candle
-        var prev = C[ii - 1];
-        if (prev && crt.h <= prev.h && crt.l >= prev.l) continue;
 
         if (inner.l < crt.l && inner.c > crt.l && inner.h < crt.h) {
           var tbos = T.filter(function(x) { return x.t > inner.t; });
