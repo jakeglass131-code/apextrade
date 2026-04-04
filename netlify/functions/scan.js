@@ -1,12 +1,12 @@
-// CRT Scanner v11 ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Jake's exact rules
-// 
+// CRT Scanner v11 - Jake's exact rules + TV cache priority
+//
 // Rules:
 // 1. CRT candle = completed calendar period (year/quarter/half/month)
 // 2. Sweep candle = next period, wicked beyond the CRT low/high AND closed back inside
-//    "Inside" = close did not close BEYOND the swept level on the CRT timeframe candle
-//    Individual TBOS-TF candles within the period can close below (multi-month sweep is valid)
 // 3. TBOS = TBOS-timeframe candle closes back above the last swing high before the sweep
 // 4. Entry forming = current TBOS candle is sweeping now (no TBOS yet confirmed)
+
+const cacheHandler = require('./cache');
 
 exports.handler = async (event) => {
   const H = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
@@ -14,6 +14,53 @@ exports.handler = async (event) => {
   const ticker = (event.queryStringParameters || {}).ticker;
   if (!ticker) return { statusCode: 400, headers: H, body: JSON.stringify({ error: 'ticker required' }) };
   const sym = ticker.includes('.') ? ticker : ticker + '.AX';
+  var dataSource = 'yahoo';
+
+  // Try TV cache first, fall back to Yahoo
+  async function getCandles(iv, rg) {
+    if (iv === '1d' || iv === '1wk' || iv === '1mo') {
+      try {
+        var cr = await cacheHandler.handler({
+          httpMethod: 'GET',
+          queryStringParameters: { ticker: ticker, range: rg }
+        });
+        var cd = JSON.parse(cr.body);
+        if (cd.hit && !cd.stale && cd.candles.length >= 20) {
+          dataSource = 'tradingview';
+          var candles = cd.candles.map(function(c) {
+            return { t: c.t, date: new Date(c.t).toISOString().slice(0, 10), o: c.o, h: c.h, l: c.l, c: c.c };
+          });
+          if (iv === '1wk') return aggWeekly(candles);
+          if (iv === '1mo') return aggMonthly(candles);
+          return candles;
+        }
+      } catch(e) {}
+    }
+    return yf(iv, rg);
+  }
+
+  function aggWeekly(daily) {
+    var weeks = {}, ord = [];
+    daily.forEach(function(c) {
+      var d = new Date(c.t);
+      var day = d.getUTCDay();
+      var mon = new Date(c.t - day * 86400000);
+      var k = mon.toISOString().slice(0, 10);
+      if (!weeks[k]) { weeks[k] = { t: c.t, date: c.date, o: c.o, h: c.h, l: c.l, c: c.c }; ord.push(k); }
+      else { if (c.h > weeks[k].h) weeks[k].h = c.h; if (c.l < weeks[k].l) weeks[k].l = c.l; weeks[k].c = c.c; }
+    });
+    return ord.map(function(k) { return weeks[k]; });
+  }
+
+  function aggMonthly(daily) {
+    var months = {}, ord = [];
+    daily.forEach(function(c) {
+      var k = c.date.substring(0, 7);
+      if (!months[k]) { months[k] = { t: c.t, date: c.date, o: c.o, h: c.h, l: c.l, c: c.c }; ord.push(k); }
+      else { if (c.h > months[k].h) months[k].h = c.h; if (c.l < months[k].l) months[k].l = c.l; months[k].c = c.c; }
+    });
+    return ord.map(function(k) { return months[k]; });
+  }
 
   async function yf(iv, rg) {
     const r = await fetch(
@@ -54,9 +101,9 @@ exports.handler = async (event) => {
   function k9(c) { var m = parseInt(c.date.substring(5, 7)); return c.date.substring(0, 4) + (m <= 9 ? '-P1' : '-P2'); }
 
   try {
-    var mo1 = await yf('1mo', '15y');
-    var wk1 = await yf('1wk', '5y');
-    var day1 = await yf('1d', '3y');
+    var mo1 = await getCandles('1mo', '15y');
+    var wk1 = await getCandles('1wk', '5y');
+    var day1 = await getCandles('1d', '3y');
     if (mo1.length < 24) throw new Error('insufficient data');
 
     var day2 = [];
@@ -107,7 +154,6 @@ exports.handler = async (event) => {
             var last = tbos[tbos.length - 1];
             var sweepingNow = !tbosC && last.l < crt.l && last.c >= crt.l;
             var tbosForming = !tbosC && !sweepingNow && last.c > tbosLvl;
-            // Invalidate if current price already hit the CRT high (target reached)
             var targetHit = tbos.some(function(x){return x.c>crt.h;});
             if (!targetHit && (tbosC || sweepingNow || tbosForming)) {
               if (!tbosC || tbosAge <= 5) {
@@ -127,7 +173,6 @@ exports.handler = async (event) => {
             var purges = 1; var tbosC = null, tbosAge = null;
             for (var j = 0; j < tbos.length; j++) { var c = tbos[j]; if (c.h > crt.h) purges++; if (c.c < tbosLvl && !tbosC) { tbosC = c; tbosAge = tbos.length - 1 - j; } }
             var last = tbos[tbos.length - 1]; var sweepingNow = !tbosC && last.h > crt.h && last.c <= crt.h; var tbosForming = !tbosC && !sweepingNow && last.c < tbosLvl;
-            // Invalidate if current price already hit the CRT low (target reached)
             var targetHit = tbos.some(function(x){return x.c<crt.l;});
             if (!targetHit && ((tbosC && tbosAge <= 5) || sweepingNow || tbosForming)) {
               var conf = 60; if (purges >= 2) conf += 10; if (tbosForming) conf += 15; else if (tbosC && tbosAge === 0) conf += 15; else if (tbosC && tbosAge === 1) conf += 10; else if (tbosC && tbosAge === 2) conf += 5; if (sweepingNow) conf += 5; conf = Math.min(conf, 85);
@@ -138,6 +183,6 @@ exports.handler = async (event) => {
       }
     }
     var price = day1.length ? day1[day1.length - 1].c : null;
-    return { statusCode: 200, headers: H, body: JSON.stringify({ ticker, signals, meta: { price, date: day1.length ? day1[day1.length - 1].date : null } }) };
-  } catch (err) { return { statusCode: 200, headers: H, body: JSON.stringify({ ticker, signals: [], error: err.message }) }; }
+    return { statusCode: 200, headers: H, body: JSON.stringify({ ticker: ticker, signals: signals, dataSource: dataSource, meta: { price: price, date: day1.length ? day1[day1.length - 1].date : null } }) };
+  } catch (err) { return { statusCode: 200, headers: H, body: JSON.stringify({ ticker: ticker, signals: [], error: err.message }) }; }
 };
