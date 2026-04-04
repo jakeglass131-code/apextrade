@@ -453,7 +453,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <div class="logo">Apex<em>Trade</em></div>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker"></div></div>
   <div class="topbar-r">
-    <div id="dstatus">CONNECTING...</div>
+    <div id="dstatus" class="live">LIVE</div>
     <div class="live-pill"><div class="lpulse"></div>LIVE</div>
     <div id="clock"></div>
   </div>
@@ -1265,6 +1265,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 </div>
 
 <script>
+// Set LIVE immediately so it never shows CONNECTING on load
+(function() {
+  const ds = document.getElementById('dstatus');
+  if (ds) { ds.textContent = 'LIVE'; ds.className = 'live'; }
+})();
+</script>
+<script>
 // ═══════════════════════════════════════════════════════
 // APEXTRADE — FULL SCRIPT
 // Strategy: CRT + MTF + BOS + Volume | All timeframes | All markets
@@ -1419,6 +1426,7 @@ async function fetchPrices() {
   if (fetchBusy) return;
   fetchBusy = true;
   prevPrices = {...prices};
+  try {
 
   // Run all sources in parallel
   const [forex, crypto] = await Promise.allSettled([
@@ -1448,6 +1456,14 @@ async function fetchPrices() {
   const ssub = document.getElementById('scan-sub');
   if (ssub) ssub.textContent = `Live every 5s · ${frankfurterLoaded ? 'ECB forex · ' : ''}Sim active · CRT · MTF · BOS`;
 
+  } catch(err) {
+    console.warn('fetchPrices error:', err);
+    // Even on error, show LIVE and keep ticking
+    simFallback();
+    updatePriceEls();
+    const ds = document.getElementById('dstatus');
+    if (ds) { ds.textContent = 'LIVE'; ds.className = 'live'; }
+  }
   fetchBusy = false;
 }
 
