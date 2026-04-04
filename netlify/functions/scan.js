@@ -5,7 +5,7 @@
 // 2. Sweep candle = next period, wicked beyond the CRT low/high AND closed back inside
 //    "Inside" = close did not close BEYOND the swept level on the CRT timeframe candle
 //    Individual TBOS-TF candles within the period can close below (multi-month sweep is valid)
-// 3. TBOS = TBoS-timeframe candle closes back above the last swing high before the sweep
+// 3. TBOS = TBOS-timeframe candle closes back above the last swing high before the sweep
 // 4. Entry forming = current TBOS candle is sweeping now (no TBOS yet confirmed)
 
 exports.handler = async (event) => {
@@ -50,7 +50,7 @@ exports.handler = async (event) => {
   }
   function ky(c) { return c.date.substring(0, 4); }
   function kq(c) { var m = parseInt(c.date.substring(5, 7)); return c.date.substring(0, 4) + '-Q' + Math.ceil(m / 3); }
-  function kh(h) { var m = parseInt(c.date.substring(5, 7)); return c.date.substring(0, 4) + (m <= 6 ? '-H1' : '-H2'); }
+  function kh(c) { var m = parseInt(c.date.substring(5, 7)); return c.date.substring(0, 4) + (m <= 6 ? '-H1' : '-H2'); }
   function k9(c) { var m = parseInt(c.date.substring(5, 7)); return c.date.substring(0, 4) + (m <= 9 ? '-P1' : '-P2'); }
 
   try {
@@ -73,8 +73,8 @@ exports.handler = async (event) => {
     var MODELS = [
       { label: '1M CRT',  C: mo1,        T: day2, entryTFs: ['1D', '4H'] },
       { label: '3M CRT',  C: grp(mo1,kq),T: mo1,  entryTFs: ['2D', '3D'] },
-      { label: '6M CCT',  C: grp(mo1,kh),T: wk1,  entryTFs: ['2W', '1W'] },
-      { label: '9M CRT',  C: grp(mo1,k9,T: wk1,  entryTFs: ['2W', '1W'] },
+      { label: '6M CRT',  C: grp(mo1,kh),T: wk1,  entryTFs: ['2W', '1W'] },
+      { label: '9M CRT',  C: grp(mo1,k9),T: wk1,  entryTFs: ['2W', '1W'] },
       { label: '12M CRT', C: grp(mo1,ky),T: mo1,  entryTFs: ['3W', '2W'] },
     ];
 
@@ -91,116 +91,49 @@ exports.handler = async (event) => {
         var crtRange = crt.h - crt.l;
         if (crtRange <= 0) continue;
 
-        // ── BULLISH setup ──
         if (inner.l < crt.l && inner.c > crt.l) {
           var tbos = T.filter(function(x) { return x.t > inner.t; });
           if (tbos.length) {
             var tbosLvl = crt.h;
             var preSweep = T.filter(function(x) { return x.t > crt.t && x.t <= inner.t; });
             preSweep.forEach(function(x) { if (x.h > tbosLvl) tbosLvl = x.h; });
-
             var purges = 1;
             var tbosC = null, tbosAge = null;
-
             for (var j = 0; j < tbos.length; j++) {
               var c = tbos[j];
               if (c.l < crt.l) purges++;
-              if (c.c > tbosLvl && !tbosC) {
-                tbosC = c;
-                tbosAge = tbos.length - 1 - j;
-              }
+              if (c.c > tbosLvl && !tbosC) { tbosC = c; tbosAge = tbos.length - 1 - j; }
             }
-
             var last = tbos[tbos.length - 1];
             var sweepingNow = !tbosC && last.l < crt.l && last.c >= crt.l;
             var tbosForming = !tbosC && !sweepingNow && last.c > tbosLvl;
-
             if (tbosC || sweepingNow || tbosForming) {
               if (!tbosC || tbosAge <= 5) {
-                var conf = 60;
-                if (purges >= 2) conf += 10;
-                if (tbosForming) conf += 15;
-                else if (tbosC && tbosAge === 0) conf += 15;
-                else if (tbosC && tbosAge === 1) conf += 10;
-                else if (tbosC && tbosAge === 2) conf += 5;
-                if (sweepingNow) conf += 5;
-                conf = Math.min(conf, 85);
-
-                signals.push({
-                  type: purges >= 2 ? 'Double Purge CRT' : 'Classic CRT',
-                  model: m.label, direction: 'LONG',
-                  crtHigh: crt.h, crtLow: crt.l, crtDate: crt.date,
-                  innerClose: inner.c, innerDate: inner.date, sweepLow: inner.l,
-                  tbosLevel: tbosLvl,
-                  tbosDate: tbosC ? tbosC.date : (tbosForming ? 'Forming now' : (sweepingNow ? 'Sweep forming' : null)),
-                  tbosAge: tbosC ? tbosAge : -1,
-                  purgeCount: purges,
-                  entryTFs: m.entryTFs, baseConfidence: conf,
-                  sweepingNow: sweepingNow, tbosForming: tbosForming,
-                });
+                var conf = 60; if (purges >= 2) conf += 10;
+                if (tbosForming) conf += 15; else if (tbosC && tbosAge === 0) conf += 15; else if (tbosC && tbosAge === 1) conf += 10; else if (tbosC && tbosAge === 2) conf += 5;
+                if (sweepingNow) conf += 5; conf = Math.min(conf, 85);
+                signals.push({ type: purges >= 2 ? 'Double Purge CRT' : 'Classic CRT', model: m.label, direction: 'LONG', crtHigh: crt.h, crtLow: crt.l, crtDate: crt.date, innerClose: inner.c, innerDate: inner.date, sweepLow: inner.l, tbosLevel: tbosLvl, tbosDate: tbosC ? tbosC.date : (tbosForming ? 'Forming now' : (sweepingNow ? 'Sweep forming' : null)), tbosAge: tbosC ? tbosAge : -1, purgeCount: purges, entryTFs: m.entryTFs, baseConfidence: conf, sweepingNow: sweepingNow, tbosForming: tbosForming });
               }
             }
           }
         }
-
-        // ── BEARISH setup ──
         if (inner.h > crt.h && inner.c < crt.h) {
           var tbos = T.filter(function(x) { return x.t > inner.t; });
           if (tbos.length) {
-            var tbosLvl = crt.l;
-            var preSweep = T.filter(function(x) { return x.t > crt.t && x.t <= inner.t; });
+            var tbosLvl = crt.l; var preSweep = T.filter(function(x) { return x.t > crt.t && x.t <= inner.t; });
             preSweep.forEach(function(x) { if (x.l < tbosLvl) tbosLvl = x.l; });
-
-            var purges = 1;
-            var tbosC = null, tbosAge = null;
-
-            for (var j = 0; j < tbos.length; j++) {
-              var c = tbos[j];
-              if (c.h > crt.h) purges++;
-              if (c.c < tbosLvl && !tbosC) {
-                tbosC = c;
-                tbosAge = tbos.length - 1 - j;
-              }
-            }
-
-            var last = tbos[tbos.length - 1];
-            var sweepingNow = !tbosC && last.h > crt.h && last.c <= crt.h;
-            var tbosForming = !tbosC && !sweepingNow && last.c < tbosLvl;
-
+            var purges = 1; var tbosC = null, tbosAge = null;
+            for (var j = 0; j < tbos.length; j++) { var c = tbos[j]; if (c.h > crt.h) purges++; if (c.c < tbosLvl && !tbosC) { tbosC = c; tbosAge = tbos.length - 1 - j; } }
+            var last = tbos[tbos.length - 1]; var sweepingNow = !tbosC && last.h > crt.h && last.c <= crt.h; var tbosForming = !tbosC && !sweepingNow && last.c < tbosLvl;
             if ((tbosC && tbosAge <= 5) || sweepingNow || tbosForming) {
-              var conf = 60;
-              if (purges >= 2) conf += 10;
-              if (tbosForming) conf += 15;
-              else if (tbosC && tbosAge === 0) conf += 15;
-              else if (tbosC && tbosAge === 1) conf += 10;
-              else if (tbosC && tbosAge === 2) conf += 5;
-              if (sweepingNow) conf += 5;
-              conf = Math.min(conf, 85);
-
-              signals.push({
-                type: purges >= 2 ? 'Double Purge CRT' : 'Classic CRT',
-                model: m.label, direction: 'SHORT',
-                crtHigh: crt.h, crtLow: crt.l, crtDate: crt.date,
-                innerClose: inner.c, innerDate: inner.date, sweepHigh: inner.h,
-                tbosLevel: tbosLvl,
-                tbosDate: tbosC ? tbosC.date : (tbosForming ? 'Forming now' : (sweepingNow ? 'Sweep forming' : null)),
-                tbosAge: tbosC ? tbosAge : -1,
-                purgeCount: purges,
-                entryTFs: m.entryTFs, baseConfidence: conf,
-                sweepingNow: sweepingNow, tbosForming: tbosForming,
-              });
+              var conf = 60; if (purges >= 2) conf += 10; if (tbosForming) conf += 15; else if (tbosC && tbosAge === 0) conf += 15; else if (tbosC && tbosAge === 1) conf += 10; else if (tbosC && tbosAge === 2) conf += 5; if (sweepingNow) conf += 5; conf = Math.min(conf, 85);
+              signals.push({ type: purges >= 2 ? 'Double Purge CRT' : 'Classic CRT', model: m.label, direction: 'SHORT', crtHigh: crt.h, crtLow: crt.l, crtDate: crt.date, innerClose: inner.c, innerDate: inner.date, sweepHigh: inner.h, tbosLevel: tbosLvl, tbosDate: tbosC ? tbosC.date : (tbosForming ? 'Forming now' : (sweepingNow ? 'Sweep forming' : null)), tbosAge: tbosC ? tbosAge : -1, purgeCount: purges, entryTFs: m.entryTFs, baseConfidence: conf, sweepingNow: sweepingNow, tbosForming: tbosForming });
             }
           }
         }
       }
     }
-
     var price = day1.length ? day1[day1.length - 1].c : null;
-    return {
-      statusCode: 200, headers: H,
-      body: JSON.stringify({ ticker, signals, meta: { price, date: day1.length ? day1[day1.length - 1].date : null } })
-    };
-  } catch (err) {
-    return { statusCode: 200, headers: H, body: JSON.stringify({ ticker, signals: [], error: err.message }) };
-  }
+    return { statusCode: 200, headers: H, body: JSON.stringify({ ticker, signals, meta: { price, date: day1.length ? day1[day1.length - 1].date : null } }) };
+  } catch (err) { return { statusCode: 200, headers: H, body: JSON.stringify({ ticker, signals: [], error: err.message }) }; }
 };
