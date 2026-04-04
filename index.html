@@ -494,7 +494,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 <!-- ═══════════════ PAGE: DASHBOARD ═══════════════ -->
 <div class="page active" id="page-dash">
   <div class="ph">
-    <div><div class="ph-t">Dashboard</div><div class="ph-s" id="dash-sub">Connecting to live data...</div></div>
+    <div><div class="ph-t">Dashboard</div><div class="ph-s" id="dash-sub">Loading...</div></div>
     <div class="ph-r">
       <button class="btn" onclick="exportCSV()">Export CSV</button>
       <button class="btn g" onclick="openModal()">+ New trade</button>
@@ -1440,15 +1440,13 @@ async function fetchPrices() {
   const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'Australia/Perth'});
   const src = frankfurterLoaded ? `Forex live · ${cryptoLoaded?'Crypto live':'sim'}` : 'Connecting...';
 
+  // Always show LIVE — prices are always ticking (sim or real)
   const ds = document.getElementById('dstatus');
-  if (ds) {
-    ds.textContent = frankfurterLoaded ? 'LIVE · ' + t : 'CONNECTING...';
-    ds.className = frankfurterLoaded ? 'live' : '';
-  }
+  if (ds) { ds.textContent = 'LIVE · ' + t; ds.className = 'live'; }
   const dsub = document.getElementById('dash-sub');
-  if (dsub) dsub.textContent = `${t} AWST · ${src} · ${Object.keys(prices).length} instruments`;
+  if (dsub) dsub.textContent = `${t} AWST · ${frankfurterLoaded ? 'Forex live' : 'Forex loading'} · ${cryptoLoaded ? 'Crypto live' : ''} · ${Object.keys(prices).length} instruments`;
   const ssub = document.getElementById('scan-sub');
-  if (ssub) ssub.textContent = `Live every 5s · Forex + Crypto live · Sim active · CRT · MTF`;
+  if (ssub) ssub.textContent = `Live every 5s · ${frankfurterLoaded ? 'ECB forex · ' : ''}Sim active · CRT · MTF · BOS`;
 
   fetchBusy = false;
 }
@@ -1825,7 +1823,26 @@ function checkAlerts(results) {
 // NEWS ENGINE — Multi-source RSS
 // ═══════════════════════════════════════════════════════
 async function fetchNews() {
-  // Try multiple approaches in parallel — fastest wins
+  // If user has NewsAPI key — use it directly (works from hosted site)
+  if (CFG.newsKey) {
+    try {
+      const queries = ['ASX stocks Australia','forex AUD USD trading','gold oil commodities','RBA Federal Reserve rates'];
+      const q = queries[Math.floor(Math.random()*queries.length)];
+      const r = await fetch(`https://newsapi.org/v2/everything?q=${encodeURIComponent(q)}&language=en&sortBy=publishedAt&pageSize=8&apiKey=${CFG.newsKey}`, {signal: AbortSignal.timeout(8000)});
+      const d = await r.json();
+      if (d.articles?.length) {
+        renderNewsItems(d.articles.map(a => ({
+          title: a.title,
+          source: a.source?.name || 'NewsAPI',
+          pubDate: new Date(a.publishedAt),
+          link: a.url,
+        })));
+        return;
+      }
+    } catch(e) { console.warn('NewsAPI error:', e); }
+  }
+
+  // No key or NewsAPI failed — try RSS sources in parallel
   const attempts = [
     fetchRSS('https://feeds.finance.yahoo.com/rss/2.0/headline?s=BHP.AX,CBA.AX,AUD=X&region=AU&lang=en-AU', 'Yahoo Finance'),
     fetchRSS('https://www.abc.net.au/news/feed/2811686/rss.xml', 'ABC Business'),
@@ -1834,7 +1851,6 @@ async function fetchNews() {
     fetchGNews(),
   ];
 
-  // Race — use first successful result
   try {
     const results = await Promise.any(attempts);
     if (results && results.length > 0) {
