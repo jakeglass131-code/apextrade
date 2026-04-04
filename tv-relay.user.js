@@ -159,15 +159,37 @@
     updateBadge();
   }
 
-  // ── AUTO-CYCLE via keyboard shortcut (Alt+Down = next watchlist item) ──
+  // ── AUTO-CYCLE: click watchlist rows directly ──
   function nextWatchlistItem() {
-    // Simulate Alt+Down Arrow — TV's shortcut for next symbol in watchlist
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40, altKey: true, bubbles: true }));
-    // Also try on the chart container
-    var chart = document.querySelector('.chart-markup-table') || document.querySelector('.chart-container') || document.body;
-    chart.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', code: 'ArrowDown', keyCode: 40, altKey: true, bubbles: true }));
-    cycleCount++;
-    updateBadge();
+    // Find all watchlist rows and click the next one
+    var rows = document.querySelectorAll('[class*="listRow"]');
+    if (!rows.length) rows = document.querySelectorAll('[data-symbol-full]');
+    if (!rows.length) rows = document.querySelectorAll('.symbol-list .row, .watchlist .row, [class*="symbolRow"], [class*="itemRow"]');
+
+    // Try broader selector - TV watchlist items are usually in the right panel
+    if (!rows.length) {
+      var rightPanel = document.querySelector('[class*="watchlist"]') || document.querySelector('[data-name="watchlist"]') || document.querySelector('.widgetbar-widget');
+      if (rightPanel) {
+        rows = rightPanel.querySelectorAll('[class*="row"]:not([class*="header"])');
+      }
+    }
+
+    if (!rows.length) {
+      log('No watchlist rows found, trying fallback...');
+      // Last resort: find any clickable element with a ticker symbol
+      rows = document.querySelectorAll('[class*="symbolNameText"], [class*="tickerName"]');
+    }
+
+    if (rows.length > 0) {
+      var targetIdx = cycleCount % rows.length;
+      var row = rows[targetIdx];
+      log('Clicking watchlist row ' + targetIdx + '/' + rows.length);
+      row.click();
+      cycleCount++;
+      updateBadge();
+    } else {
+      log('Could not find watchlist items to click');
+    }
   }
 
   var cycleTimer = null;
