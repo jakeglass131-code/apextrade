@@ -46,13 +46,13 @@ exports.handler = async (event) => {
         if(!crt||!inner)continue;
         var crtRange=crt.h-crt.l;
         if(crtRange<=0)continue;
-        var tol=crtRange*0.005;
+        var tol=crtRange*0.02;
         // BULLISH: inner must have swept CRT low (wick below) AND closed back above it
-        // Close can be anywhere above CRT low â doesn't need to be below CRT high
+        // Close can be anywhere above CRT low Ã¢ÂÂ doesn't need to be below CRT high
         if(inner.l<crt.l&&inner.c>crt.l){
           var tbos=T.filter(function(x){return x.t>inner.t;});
           if(tbos.length){
-            // Sweep already happened on inner candle itself â now look for TBOS
+            // Sweep already happened on inner candle itself Ã¢ÂÂ now look for TBOS
             // TBOS level = CRT high (the swing high before the sweep)
             var tbosLvl=crt.h;
             // Check if any TBOS candle before inner had a higher high
