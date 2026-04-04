@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ApexTrade TV Relay
 // @namespace    https://apextrade-proxy.netlify.app
-// @version      1.1
+// @version      1.2
 // @description  Intercepts TradingView candle data and relays it to your ApexTrade proxy cache
 // @match        https://www.tradingview.com/*
 // @match        https://tradingview.com/*
@@ -18,6 +18,7 @@
   var SEND_INTERVAL = 5000;
   var DEBUG = true;
   var pendingData = {};
+  var lastKnownSymbol = ''; // Track currently viewed symbol
 
   function log() {
     if (DEBUG) console.log.apply(console, ['[ApexTrade Relay]'].concat(Array.prototype.slice.call(arguments)));
@@ -50,8 +51,8 @@
   // ── Intercept XMLHttpRequest ──
   var origXHROpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function (method, url) {
-    this._tvUrl = url;
-    if (url && url.indexOf('/history') !== -1) {
+    this._tvUrl = typeof url === 'string' ? url : (url && url.toString ? url.toString() : '');
+    if (this._tvUrl && this._tvUrl.indexOf('/history') !== -1) {
       log('XHR intercepted:', url);
       this.addEventListener('load', function () {
         try {
@@ -119,7 +120,39 @@
         if (parsed.m === 'du' || parsed.m === 'timescale_update') {
           extractFromTV(parsed.p);
         }
+        // Track symbol from resolve_symbol and series_loading messages
+        if (parsed.m === 'symbol_resolved' || parsed.m === 'series_completed') {
+          extractSymbolName(parsed.p);
+        }
       } catch (e) {}
+    }
+    // Also look for symbol= patterns in the raw message for tracking
+    var symMatch = raw.match(/symbol=([A-Z]+:[A-Z0-9.]+)/);
+    if (symMatch) {
+      var sym = symMatch[1];
+      if (sym.indexOf(':') !== -1) sym = sym.split(':').pop();
+      sym = sym.replace(/\.AX$/i, '');
+      if (sym) lastKnownSymbol = sym;
+    }
+  }
+
+  function extractSymbolName(params) {
+    if (!Array.isArray(params)) return;
+    for (var i = 0; i < params.length; i++) {
+      var p = params[i];
+      if (!p) continue;
+      if (typeof p === 'string' && p.indexOf(':') !== -1) {
+        var sym = p.split(':').pop().replace(/\.AX$/i, '');
+        if (sym && /^[A-Z0-9]+$/.test(sym)) { lastKnownSymbol = sym; log('Symbol tracked: ' + sym); }
+      }
+      if (typeof p === 'object') {
+        var name = p.short_name || p.name || p.symbol || '';
+        if (name) {
+          if (name.indexOf(':') !== -1) name = name.split(':').pop();
+          name = name.replace(/\.AX$/i, '');
+          if (name && /^[A-Z0-9]+$/.test(name)) { lastKnownSymbol = name; log('Symbol tracked: ' + name); }
+        }
+      }
     }
   }
 
@@ -145,7 +178,25 @@
 
   function processTVSeries(seriesObj) {
     var ticker = '';
-    if (seriesObj.ns) ticker = seriesObj.ns.short_name || seriesObj.ns.name || '';
+
+    // Try multiple locations for the symbol name
+    if (seriesObj.ns) {
+      ticker = seriesObj.ns.short_name || seriesObj.ns.name || seriesObj.ns.description || '';
+    }
+    if (!ticker && seriesObj.v && seriesObj.v.short_name) ticker = seriesObj.v.short_name;
+
+    // Search the whole object for symbol-like strings
+    if (!ticker) {
+      var str = JSON.stringify(seriesObj);
+      var m = str.match(/"(?:short_name|name|symbol)"\s*:\s*"([A-Z][A-Z0-9.:]*)"/);
+      if (m) ticker = m[1];
+    }
+
+    // Fall back to last known symbol from the page
+    if (!ticker && lastKnownSymbol) {
+      ticker = lastKnownSymbol;
+      log('Using lastKnownSymbol: ' + ticker);
+    }
 
     var candles = [];
     for (var i = 0; i < seriesObj.s.length; i++) {
@@ -216,5 +267,29 @@
   else addBadge();
   setTimeout(addBadge, 3000);
 
-  log('ApexTrade TV Relay v1.1 loaded');
+  // ── Track symbol from page DOM ──
+  setInterval(function () {
+    try {
+      // TV shows the symbol in the header
+      var el = document.querySelector('[data-symbol-short]');
+      if (el) {
+        var s = el.getAttribute('data-symbol-short') || el.textContent.trim();
+        if (s && s.indexOf(':') !== -1) s = s.split(':').pop();
+        s = s.replace(/\.AX$/i, '');
+        if (s && /^[A-Z0-9]+$/.test(s)) lastKnownSymbol = s;
+      }
+      // Also try the chart header text
+      if (!lastKnownSymbol) {
+        var hdr = document.querySelector('.chart-controls-bar .apply-common-tooltip');
+        if (hdr) {
+          var txt = hdr.textContent.trim().split(/[\s·]/)[0];
+          if (txt.indexOf(':') !== -1) txt = txt.split(':').pop();
+          txt = txt.replace(/\.AX$/i, '');
+          if (txt && /^[A-Z0-9]+$/.test(txt)) lastKnownSymbol = txt;
+        }
+      }
+    } catch (e) {}
+  }, 2000);
+
+  log('ApexTrade TV Relay v1.2 loaded');
 })();
