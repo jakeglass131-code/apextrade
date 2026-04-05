@@ -1587,7 +1587,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <button class="btn smt-filter" data-filter="divergence" onclick="filterSmtResults('divergence',this)" style="font-size:10px;padding:4px 12px">Active Divergences</button>
     <button class="btn smt-filter" data-filter="bullish" onclick="filterSmtResults('bullish',this)" style="font-size:10px;padding:4px 12px">Bullish SMT</button>
     <button class="btn smt-filter" data-filter="bearish" onclick="filterSmtResults('bearish',this)" style="font-size:10px;padding:4px 12px">Bearish SMT</button>
-    <button class="btn smt-filter" data-filter="aplus" onclick="filterSmtResults('aplus',this)" style="font-size:10px;padding:4px 12px">A+ Correlation</button>
+    <button class="btn smt-filter" data-filter="aplus" onclick="filterSmtResults('aplus',this)" style="font-size:10px;padding:4px 12px">A/A+ Grade</button>
     <div style="flex:1"></div>
     <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em">SORT</span>
     <button class="btn smt-sort active" onclick="sortSmtResults('correlation',this)" style="font-size:10px;padding:4px 10px">Correlation</button>
@@ -6916,7 +6916,8 @@ async function startSmtScan() {
       if (!r) return;
       smtResults.push(r);
       if (r.isValid) valid++;
-      if (r.activeDivergence) {
+      // Only count divergences from pairs with meaningful correlation (Pearson ≥ 0.50)
+      if (r.activeDivergence && (r.pearson || 0) >= 0.50) {
         divs++;
         if (r.activeDivergence.type === 'BULLISH') bull++;
         else bear++;
@@ -6946,7 +6947,7 @@ async function startSmtScan() {
   try {
     localStorage.setItem('apex_smt_results', JSON.stringify({
       time: new Date().toISOString(),
-      results: smtResults.filter(r => r.isValid || r.activeDivergence)
+      results: smtResults.filter(r => r.isValid || (r.activeDivergence && (r.pearson || 0) >= 0.50))
     }));
   } catch(e) {}
 }
@@ -6982,13 +6983,15 @@ function renderSmtResults() {
   const activeSort = document.querySelector('.smt-sort.active');
   const sortBy = activeSort ? activeSort.textContent.trim().toLowerCase() : 'correlation';
 
-  // Filter
+  // Filter — only show divergences from meaningfully correlated pairs (Pearson ≥ 0.50)
+  const MIN_DIV_CORR = 0.50;
   let filtered = smtResults.filter(r => {
-    if (filter === 'all') return r.isValid || r.activeDivergence;
-    if (filter === 'divergence') return r.activeDivergence;
-    if (filter === 'bullish') return r.activeDivergence && r.activeDivergence.type === 'BULLISH';
-    if (filter === 'bearish') return r.activeDivergence && r.activeDivergence.type === 'BEARISH';
-    if (filter === 'aplus') return r.grade === 'A+';
+    const meaningfulDiv = r.activeDivergence && (r.pearson || 0) >= MIN_DIV_CORR;
+    if (filter === 'all') return r.isValid || meaningfulDiv;
+    if (filter === 'divergence') return meaningfulDiv;
+    if (filter === 'bullish') return meaningfulDiv && r.activeDivergence.type === 'BULLISH';
+    if (filter === 'bearish') return meaningfulDiv && r.activeDivergence.type === 'BEARISH';
+    if (filter === 'aplus') return r.grade === 'A+' || r.grade === 'A';
     return true;
   });
 
@@ -7000,8 +7003,8 @@ function renderSmtResults() {
     return 0;
   });
 
-  // Render active divergence cards
-  const activeDivs = smtResults.filter(r => r.activeDivergence);
+  // Render active divergence cards — only from meaningfully correlated pairs
+  const activeDivs = smtResults.filter(r => r.activeDivergence && (r.pearson || 0) >= MIN_DIV_CORR);
   if (activeDivs.length > 0 && divPanel && divCards) {
     divPanel.style.display = 'block';
     divCards.innerHTML = activeDivs.map(r => {
