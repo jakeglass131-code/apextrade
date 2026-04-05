@@ -5553,18 +5553,12 @@ function toggleCrtMode() { setScanView(activeScanView === 'crt' ? 'bullish' : 'c
 // ═══════════════════════════════════════════════════════
 
 const OVERNIGHT_INSTRUMENTS = [
-  { sym:'NQ=F',  label:'NQ',   name:'Nasdaq 100',    dp:0 },
-  { sym:'ES=F',  label:'ES',   name:'S&P 500',       dp:0 },
-  { sym:'YM=F',  label:'DOW',  name:'Dow Jones',     dp:0 },
-  { sym:'RTY=F', label:'RTY',  name:'Russell 2000',  dp:0 },
-  { sym:'GC=F',  label:'GOLD', name:'Gold',          dp:0 },
-  { sym:'CL=F',  label:'WTI',  name:'Crude Oil',     dp:2 },
-  { sym:'BTC-USD',label:'BTC', name:'Bitcoin',       dp:0 },
-  { sym:'ETH-USD',label:'ETH', name:'Ethereum',      dp:0 },
-  { sym:'^AXJO', label:'ASX',  name:'ASX 200',       dp:0 },
-  { sym:'EURUSD=X',label:'EUR/USD',name:'Euro/USD',  dp:4 },
-  { sym:'DX-Y.NYB',label:'DXY',name:'US Dollar Idx',dp:2 },
-  { sym:'^VIX',  label:'VIX',  name:'Volatility',    dp:2 },
+  { sym:'ES=F',      label:'ES',   name:'S&P 500',    dp:0 },
+  { sym:'YM=F',      label:'DOW',  name:'Dow Jones',  dp:0 },
+  { sym:'GC=F',      label:'GOLD', name:'Gold',       dp:0 },
+  { sym:'CL=F',      label:'WTI',  name:'Crude Oil',  dp:2 },
+  { sym:'BTC-USD',   label:'BTC',  name:'Bitcoin',    dp:0 },
+  { sym:'DX-Y.NYB',  label:'DXY',  name:'US Dollar',  dp:2 },
 ];
 
 let overnightData = {};
