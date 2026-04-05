@@ -1,7 +1,6 @@
-// fundamentals.js v2 — Netlify serverless function
-// Scores ASX stocks for value using Yahoo Finance chart API (v8) + quoteSummary
-// Client calls ?action=batch with POST body {tickers:[...]} for 20 at a time
-// Client aggregates across batches — no timeout issues
+// fundamentals.js v3 — Netlify serverless function
+// Scores ASX stocks for value using Yahoo Finance chart API (v8)
+// Client calls POST with { tickers: [...up to 12...] } — returns scored results immediately
 
 const H = {
   'Access-Control-Allow-Origin': '*',
@@ -11,37 +10,33 @@ const H = {
 
 const YF_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-  'Accept': 'application/json, text/plain, */*',
+  'Accept': 'application/json',
   'Referer': 'https://finance.yahoo.com/',
 };
 
-// Fetch chart data (always works — same as scan.js)
-async function fetchChart(ticker) {
-  const sym = ticker.includes('.') ? ticker : ticker + '.AX';
-  const r = await fetch(
-    `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1mo&range=2y`,
-    { headers: YF_HEADERS, signal: AbortSignal.timeout(7000) }
-  );
-  if (!r.ok) throw new Error(`chart ${r.status}`);
+async function fetchChart(sym) {
+  // Use same endpoint as scan.js — we know this works
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${sym}?interval=1mo&range=2y`;
+  const r = await fetch(url, { headers: YF_HEADERS });
+  if (!r.ok) throw new Error(`Yahoo chart ${r.status} for ${sym}`);
   const d = await r.json();
   const result = d?.chart?.result?.[0];
-  if (!result) throw new Error('no chart data');
+  if (!result) throw new Error(`No chart data for ${sym}`);
   const meta   = result.meta || {};
-  const closes = result.indicators?.quote?.[0]?.close || [];
-  const highs  = result.indicators?.quote?.[0]?.high  || [];
-  const lows   = result.indicators?.quote?.[0]?.low   || [];
-  const vols   = result.indicators?.quote?.[0]?.volume|| [];
-  return { meta, closes, highs, lows, vols };
+  const quote  = result.indicators?.quote?.[0] || {};
+  return {
+    meta,
+    closes: (quote.close  || []).filter(v => v != null),
+    highs:  (quote.high   || []).filter(v => v != null),
+    lows:   (quote.low    || []).filter(v => v != null),
+    vols:   (quote.volume || []).filter(v => v != null),
+  };
 }
 
-// Try quoteSummary for PE/PB/ROE/dividends (may work from Netlify servers)
-async function fetchFundamentals(ticker) {
-  const sym = ticker.includes('.') ? ticker : ticker + '.AX';
+async function fetchFundamentals(sym) {
   try {
-    const r = await fetch(
-      `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=defaultKeyStatistics,financialData,summaryDetail`,
-      { headers: YF_HEADERS, signal: AbortSignal.timeout(6000) }
-    );
+    const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=defaultKeyStatistics,financialData,summaryDetail`;
+    const r = await fetch(url, { headers: YF_HEADERS });
     if (!r.ok) return null;
     const d = await r.json();
     const res = d?.quoteSummary?.result?.[0] || {};
@@ -49,174 +44,164 @@ async function fetchFundamentals(ticker) {
     const fd  = res.financialData || {};
     const sd  = res.summaryDetail || {};
     return {
-      pe:        sd?.trailingPE?.raw || null,
-      forwardPE: sd?.forwardPE?.raw  || null,
-      pb:        ks?.priceToBook?.raw || null,
-      roe:       fd?.returnOnEquity?.raw || null,
-      debtEq:    fd?.debtToEquity?.raw || null,
-      divYield:  sd?.dividendYield?.raw || null,
-      eps:       ks?.trailingEps?.raw || null,
-      shortName: sd?.shortName || null,
-      sector:    null,
+      pe:       sd?.trailingPE?.raw    ?? null,
+      pb:       ks?.priceToBook?.raw   ?? null,
+      roe:      fd?.returnOnEquity?.raw?? null,
+      debtEq:   fd?.debtToEquity?.raw  ?? null,
+      divYield: sd?.dividendYield?.raw ?? null,
+      eps:      ks?.trailingEps?.raw   ?? null,
+      shortName:ks?.shortName ?? null,
     };
   } catch(e) {
-    return null; // quoteSummary not available — use chart data only
+    return null;
   }
 }
 
-// Value scoring — technical + fundamental
 function scoreStock(ticker, chart, fund) {
   const { meta, closes, highs, lows, vols } = chart;
-  const price  = meta.regularMarketPrice || (closes[closes.length-1] || 0);
-  const w52h   = Math.max(...highs.filter(Boolean), meta.fiftyTwoWeekHigh || 0);
-  const w52l   = Math.min(...lows.filter(Boolean).filter(v => v > 0), meta.fiftyTwoWeekLow || Infinity);
+  const price  = meta.regularMarketPrice || closes[closes.length - 1] || 0;
+  const w52h   = highs.length ? Math.max(...highs) : (meta.fiftyTwoWeekHigh || price * 1.3);
+  const w52l   = lows.length  ? Math.min(...lows)  : (meta.fiftyTwoWeekLow  || price * 0.7);
   const mktCap = meta.marketCap || 0;
-  const avgVol = vols.length ? vols.filter(Boolean).reduce((a,b)=>a+b,0)/vols.filter(Boolean).length : 0;
+  const avgVol = vols.length ? vols.reduce((a,b) => a+b, 0) / vols.length : 0;
   const curVol = meta.regularMarketVolume || 0;
+  const w52pos = (w52h > w52l) ? (price - w52l) / (w52h - w52l) : 0.5;
 
-  // 12-month momentum from closes
-  const validCloses = closes.filter(Boolean);
-  const mo12chg = validCloses.length >= 12 
-    ? (validCloses[validCloses.length-1] / validCloses[validCloses.length-12] - 1) 
+  // Momentum from monthly closes
+  const mo12chg = closes.length >= 12 ? (closes[closes.length-1] / closes[closes.length-12] - 1) : null;
+  const mo3chg  = closes.length >= 3  ? (closes[closes.length-1] / closes[closes.length-3]  - 1) : null;
+  const consistency = closes.length >= 7
+    ? closes.slice(-6).filter((c, i, a) => i > 0 && c > a[i - 1]).length
     : null;
-  // 3-month
-  const mo3chg = validCloses.length >= 3
-    ? (validCloses[validCloses.length-1] / validCloses[validCloses.length-3] - 1)
-    : null;
-  // Consistency: how many of last 6 months were up
-  const consistency = validCloses.length >= 7
-    ? validCloses.slice(-6).filter((c,i,a) => i>0 && c > a[i-1]).length
-    : null;
-
-  const w52pos = (w52h > w52l && w52l > 0) ? (price - w52l) / (w52h - w52l) : null;
 
   let score = 0;
   const signals = [];
   const warnings = [];
 
-  // ── Fundamental value (if available) ──
+  // ── Fundamentals (P/E, P/B, ROE, dividends) ──────────────────────
   if (fund) {
     const pe = fund.pe;
-    if (pe && pe > 0 && pe < 12)       { score += 22; signals.push(`Low P/E ${pe.toFixed(1)}`); }
-    else if (pe && pe > 0 && pe < 20)  { score += 12; signals.push(`Fair P/E ${pe.toFixed(1)}`); }
-    else if (pe && pe > 35)            { score -= 10; warnings.push(`High P/E ${pe.toFixed(1)}`); }
-
+    if (pe != null && pe > 0)  {
+      if (pe < 10)       { score += 25; signals.push(`Very low P/E ${pe.toFixed(1)}`); }
+      else if (pe < 18)  { score += 14; signals.push(`Low P/E ${pe.toFixed(1)}`); }
+      else if (pe < 28)  { score += 5;  signals.push(`Fair P/E ${pe.toFixed(1)}`); }
+      else if (pe > 40)  { score -= 10; warnings.push(`High P/E ${pe.toFixed(1)}`); }
+    }
     const pb = fund.pb;
-    if (pb && pb > 0 && pb < 1.5)     { score += 20; signals.push(`Below book P/B ${pb.toFixed(2)}`); }
-    else if (pb && pb > 0 && pb < 3)  { score += 10; signals.push(`Fair P/B ${pb.toFixed(2)}`); }
-    else if (pb && pb > 5)            { score -= 5;  warnings.push(`High P/B ${pb.toFixed(2)}`); }
-
+    if (pb != null && pb > 0) {
+      if (pb < 1.0)       { score += 22; signals.push(`Deep value P/B ${pb.toFixed(2)}`); }
+      else if (pb < 2.0)  { score += 12; signals.push(`P/B ${pb.toFixed(2)}`); }
+      else if (pb < 4.0)  { score += 4; }
+      else if (pb > 6.0)  { score -= 6; warnings.push(`Rich P/B ${pb.toFixed(2)}`); }
+    }
     const div = fund.divYield;
-    if (div && div > 0.05)  { score += 18; signals.push(`High div yield ${(div*100).toFixed(1)}%`); }
-    else if (div && div > 0.03) { score += 10; signals.push(`Div ${(div*100).toFixed(1)}%`); }
-
+    if (div != null) {
+      if (div > 0.06)     { score += 20; signals.push(`High div ${(div*100).toFixed(1)}%`); }
+      else if (div > 0.04){ score += 12; signals.push(`Good div ${(div*100).toFixed(1)}%`); }
+      else if (div > 0.02){ score += 6;  signals.push(`Div ${(div*100).toFixed(1)}%`); }
+    }
     const roe = fund.roe;
-    if (roe && roe > 0.20)  { score += 12; signals.push(`Strong ROE ${(roe*100).toFixed(0)}%`); }
-    else if (roe && roe > 0.10) { score += 6;  signals.push(`ROE ${(roe*100).toFixed(0)}%`); }
-    else if (roe && roe < 0)    { score -= 8;  warnings.push('Negative ROE'); }
-
-    if (fund.eps && fund.eps < 0) { score -= 12; warnings.push('Loss-making'); }
-    else if (fund.eps && fund.eps > 0) { score += 8; signals.push('Profitable'); }
+    if (roe != null) {
+      if (roe > 0.20)     { score += 14; signals.push(`Strong ROE ${(roe*100).toFixed(0)}%`); }
+      else if (roe > 0.10){ score += 7;  signals.push(`ROE ${(roe*100).toFixed(0)}%`); }
+      else if (roe < 0)   { score -= 10; warnings.push('Negative ROE'); }
+    }
+    const eps = fund.eps;
+    if (eps != null) {
+      if (eps > 0)  { score += 8;  signals.push('Profitable'); }
+      else          { score -= 14; warnings.push('Loss-making'); }
+    }
   }
 
-  // ── Technical value (from chart — always available) ──
-  if (w52pos !== null) {
-    if (w52pos < 0.25)       { score += 12; signals.push(`Near 52w low (${(w52pos*100).toFixed(0)}%)`); }
-    else if (w52pos < 0.45)  { score += 6;  signals.push(`Mid-range (${(w52pos*100).toFixed(0)}% of range)`); }
-    else if (w52pos > 0.85)  { score -= 6;  warnings.push('Near 52w high'); }
+  // ── Technical value signals ───────────────────────────────────────
+  if (w52pos < 0.2)       { score += 14; signals.push(`Near 52w low (${(w52pos*100).toFixed(0)}%)`); }
+  else if (w52pos < 0.4)  { score += 7;  signals.push(`Lower range (${(w52pos*100).toFixed(0)}%)`); }
+  else if (w52pos > 0.9)  { score -= 7;  warnings.push('Near 52w high'); }
+
+  if (mo12chg != null) {
+    if (mo12chg > 0.40)     { score += 10; signals.push(`Strong 12mo +${(mo12chg*100).toFixed(0)}%`); }
+    else if (mo12chg > 0.15){ score += 5; }
+    else if (mo12chg < -0.25){ score -= 8; warnings.push(`12mo down ${(mo12chg*100).toFixed(0)}%`); }
   }
 
-  if (mo12chg !== null) {
-    if (mo12chg > 0.30)      { score += 10; signals.push(`Strong 12mo +${(mo12chg*100).toFixed(0)}%`); }
-    else if (mo12chg > 0.10) { score += 5;  signals.push(`Positive 12mo +${(mo12chg*100).toFixed(0)}%`); }
-    else if (mo12chg < -0.20){ score -= 8;  warnings.push(`12mo decline ${(mo12chg*100).toFixed(0)}%`); }
+  // Recent pullback = opportunity
+  if (mo3chg != null && mo3chg < -0.08 && (mo12chg == null || mo12chg > -0.1)) {
+    score += 8; signals.push(`Pullback ${(mo3chg*100).toFixed(0)}% — potential entry`);
   }
 
-  if (mo3chg !== null && mo3chg < -0.10) {
-    score += 8; signals.push(`Pullback ${(mo3chg*100).toFixed(0)}% (buy opportunity)`);
+  if (consistency != null) {
+    if (consistency >= 5)    { score += 8; signals.push('Consistent uptrend'); }
+    else if (consistency <= 1){ score -= 4; warnings.push('Choppy price action'); }
   }
 
-  if (consistency !== null) {
-    if (consistency >= 5)    { score += 8; signals.push('Consistent monthly gains'); }
-    else if (consistency <= 1){ score -= 5; warnings.push('Inconsistent price action'); }
+  if (curVol > 0 && avgVol > 0 && curVol > avgVol * 1.8) {
+    score += 5; signals.push('Elevated volume');
   }
 
-  if (curVol && avgVol && curVol > avgVol * 1.8) {
-    score += 5; signals.push('High volume accumulation');
-  }
-
-  // Market cap bonus (prefer mid-large caps)
+  // Market cap preference
   if (mktCap > 10e9)      score += 6;
   else if (mktCap > 1e9)  score += 3;
-  else if (mktCap < 1e8)  { score -= 5; warnings.push('Micro cap — higher risk'); }
+  else if (mktCap < 5e7)  { score -= 6; warnings.push('Micro cap'); }
 
   const grade = score >= 65 ? 'A+' : score >= 48 ? 'A' : score >= 32 ? 'B' : score >= 16 ? 'C' : 'D';
 
   return {
-    ticker: ticker.includes('.') ? ticker : ticker + '.AX',
-    name: fund?.shortName || meta.shortName || ticker,
-    price,
-    change: meta.regularMarketChangePercent || null,
+    ticker: sym,
+    name: fund?.shortName || meta.shortName || meta.longName || sym,
+    price, change: meta.regularMarketChangePercent || 0,
     marketCap: mktCap,
     w52High: w52h, w52Low: w52l, w52Pos: w52pos,
     mo12chg, mo3chg,
-    pe: fund?.pe || null,
-    pb: fund?.pb || null,
-    roe: fund?.roe || null,
-    divYield: fund?.divYield || null,
-    eps: fund?.eps || null,
-    score, grade, signals, warnings,
-    lastUpdated: new Date().toISOString(),
+    pe: fund?.pe ?? null, pb: fund?.pb ?? null,
+    roe: fund?.roe ?? null, divYield: fund?.divYield ?? null, eps: fund?.eps ?? null,
+    score, grade, signals: signals.slice(0, 4), warnings: warnings.slice(0, 2),
     hasFundamentals: !!fund,
+    lastUpdated: new Date().toISOString(),
   };
 }
 
 exports.handler = async function(event) {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: H, body: '' };
 
-  // BATCH: POST with { tickers: [...up to 15...] }
-  if (event.httpMethod === 'POST') {
-    try {
-      const body = JSON.parse(event.body || '{}');
-      const tickers = (body.tickers || []).slice(0, 15);
-      if (!tickers.length) return { statusCode: 400, headers: H, body: JSON.stringify({ error: 'tickers required' }) };
-
-      // Fetch chart + fundamentals in parallel per ticker
-      const results = await Promise.allSettled(
-        tickers.map(async (ticker) => {
-          const [chart, fund] = await Promise.all([
-            fetchChart(ticker),
-            fetchFundamentals(ticker),
-          ]);
-          return scoreStock(ticker, chart, fund);
-        })
-      );
-
-      const scored = results
-        .filter(r => r.status === 'fulfilled')
-        .map(r => r.value)
-        .sort((a, b) => b.score - a.score);
-
-      const failed = results
-        .filter(r => r.status === 'rejected')
-        .length;
-
-      return {
-        statusCode: 200, headers: H,
-        body: JSON.stringify({ results: scored, failed, count: scored.length })
-      };
-    } catch(e) {
-      return { statusCode: 500, headers: H, body: JSON.stringify({ error: e.message }) };
-    }
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 200, headers: H, body: JSON.stringify({
+      status: 'ready',
+      usage: 'POST { tickers: ["BHP.AX", ...] } (max 12 per call)',
+      note: 'Scores on P/E, P/B, ROE, dividends, 52w position, momentum',
+    })};
   }
 
-  // GET: return info about the endpoint
+  let body;
+  try { body = JSON.parse(event.body || '{}'); } 
+  catch(e) { return { statusCode: 400, headers: H, body: JSON.stringify({ error: 'Invalid JSON' }) }; }
+
+  const tickers = (body.tickers || []).slice(0, 12).map(t => t.includes('.') ? t : t + '.AX');
+  if (!tickers.length) return { statusCode: 400, headers: H, body: JSON.stringify({ error: 'tickers required' }) };
+
+  const results = [];
+  const errors  = [];
+
+  // Process in parallel — chart + fundamentals per ticker
+  const settled = await Promise.allSettled(
+    tickers.map(async (sym) => {
+      try {
+        const [chart, fund] = await Promise.all([
+          fetchChart(sym),
+          fetchFundamentals(sym).catch(() => null),
+        ]);
+        return scoreStock(sym, chart, fund);
+      } catch(e) {
+        errors.push({ ticker: sym, error: e.message });
+        return null;
+      }
+    })
+  );
+
+  settled.forEach(r => { if (r.status === 'fulfilled' && r.value) results.push(r.value); });
+  results.sort((a, b) => b.score - a.score);
+
   return {
     statusCode: 200, headers: H,
-    body: JSON.stringify({
-      status: 'ready',
-      usage: 'POST with { tickers: ["BHP.AX", "CBA.AX", ...] } (max 15 per call)',
-      scoring: 'P/E, P/B, ROE, dividend yield, 52w position, 12mo momentum, consistency',
-    })
+    body: JSON.stringify({ results, errors, count: results.length })
   };
 };
