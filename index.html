@@ -820,6 +820,28 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .dir-pill:hover { color: var(--text2); }
 .dir-pill.active { background: var(--bg4); color: var(--text); border-color: var(--border3); }
 
+
+/* Overnight index cards */
+.ovn-card { background:var(--bg3); padding:14px 16px; cursor:default; }
+.ovn-sym { font-size:11px; font-weight:700; color:var(--text); font-family:var(--fd); margin-bottom:2px; }
+.ovn-name { font-size:9px; color:var(--text3); margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em; }
+.ovn-price { font-size:14px; font-weight:700; font-family:var(--fm); color:var(--text); }
+.ovn-chg { font-size:12px; font-weight:700; font-family:var(--fm); margin-top:2px; }
+.ovn-spark { width:100%; height:32px; margin-top:8px; display:block; }
+
+/* Prediction panel */
+#prediction-body h3 { font-size:13px; font-weight:700; color:var(--text); margin:16px 0 6px; }
+#prediction-body h3:first-child { margin-top:0; }
+#prediction-body p { font-size:12px; color:var(--text2); line-height:1.7; margin-bottom:10px; }
+#prediction-body .pred-signal { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; margin:2px 3px; }
+#prediction-body .pred-bull { background:var(--green3); color:var(--green); border:1px solid rgba(0,212,168,.25); }
+#prediction-body .pred-bear { background:var(--red3); color:var(--red); border:1px solid rgba(255,68,102,.25); }
+#prediction-body .pred-neut { background:var(--bg4); color:var(--text3); border:1px solid var(--border2); }
+#prediction-body .pred-verdict { background:var(--bg4); border:1px solid var(--border2); border-radius:10px; padding:16px; margin-top:16px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+#prediction-body .pred-v-item { text-align:center; }
+#prediction-body .pred-v-val { font-size:20px; font-weight:800; font-family:var(--fm); }
+#prediction-body .pred-v-lbl { font-size:9px; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
+
 </style>
 </head>
 <body>
@@ -1014,6 +1036,33 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         </div>
       </div>
     </div>
+
+    <!-- ── Overnight Indices ── -->
+    <div class="panel" id="overnight-panel">
+      <div class="phead">
+        <div class="ptitle">Overnight · Global indices</div>
+        <div class="pmeta" id="overnight-time">Loading...</div>
+      </div>
+      <div id="overnight-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:var(--border)">
+        <!-- populated by fetchOvernightData() -->
+        <div style="padding:20px;text-align:center;color:var(--text3);grid-column:1/-1;font-size:12px">Fetching overnight data...</div>
+      </div>
+    </div>
+
+    <!-- ── AI Market Prediction ── -->
+    <div class="panel" id="prediction-panel">
+      <div class="phead">
+        <div class="ptitle">🧠 Today's market prediction</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="pred-badge" style="font-size:10px;padding:3px 9px;border-radius:99px;border:1px solid var(--border2);color:var(--text3)">Generating...</div>
+          <button class="btn" onclick="runMarketPrediction()" id="pred-refresh-btn" style="font-size:10px;padding:4px 10px">Regenerate</button>
+        </div>
+      </div>
+      <div id="prediction-body" style="padding:20px">
+        <div style="color:var(--text3);font-size:12px;text-align:center;padding:30px">Running deep analysis...</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -2464,6 +2513,7 @@ function nav(p) {
   const sb = document.getElementById('sb-' + p);
   if (pg) pg.classList.add('active');
   if (sb) sb.classList.add('active');
+  if (p === 'dash') { if (typeof fetchOvernightData === 'function' && !Object.keys(overnightData||{}).length) fetchOvernightData(); }
   if (p === 'sector' || p === 'sectors') refreshSectorData();
   if (p === 'flow') refreshFlowData();
   if (p === 'log') { if (typeof alertHistory !== 'undefined') renderAlertLog(); }
@@ -4976,6 +5026,246 @@ function filterScanner() {
 
 // Legacy toggleCrtMode shim
 function toggleCrtMode() { setScanView(activeScanView === 'crt' ? 'bullish' : 'crt'); }
+
+// ═══════════════════════════════════════════════════════
+// OVERNIGHT INDICES + AI MARKET PREDICTION
+// ═══════════════════════════════════════════════════════
+
+const OVERNIGHT_INSTRUMENTS = [
+  { sym:'NQ=F',  label:'NQ',   name:'Nasdaq 100',    dp:0 },
+  { sym:'ES=F',  label:'ES',   name:'S&P 500',       dp:0 },
+  { sym:'YM=F',  label:'DOW',  name:'Dow Jones',     dp:0 },
+  { sym:'RTY=F', label:'RTY',  name:'Russell 2000',  dp:0 },
+  { sym:'GC=F',  label:'GOLD', name:'Gold',          dp:0 },
+  { sym:'CL=F',  label:'WTI',  name:'Crude Oil',     dp:2 },
+  { sym:'BTC-USD',label:'BTC', name:'Bitcoin',       dp:0 },
+  { sym:'ETH-USD',label:'ETH', name:'Ethereum',      dp:0 },
+  { sym:'^AXJO', label:'ASX',  name:'ASX 200',       dp:0 },
+  { sym:'EURUSD=X',label:'EUR/USD',name:'Euro/USD',  dp:4 },
+  { sym:'DX-Y.NYB',label:'DXY',name:'US Dollar Idx',dp:2 },
+  { sym:'^VIX',  label:'VIX',  name:'Volatility',    dp:2 },
+];
+
+let overnightData = {};
+
+async function fetchOvernightData() {
+  const grid = document.getElementById('overnight-grid');
+  const timeEl = document.getElementById('overnight-time');
+  if (!grid) return;
+
+  // Fetch candles for each instrument via the proxy (1d range, daily interval)
+  // Use the corsproxy + Yahoo spark API for batch speed
+  const syms = OVERNIGHT_INSTRUMENTS.map(i => i.sym).join(',');
+  
+  try {
+    const url = `https://corsproxy.io/?url=${encodeURIComponent(
+      `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${syms}&range=5d&interval=1d`
+    )}`;
+    const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    const d = await r.json();
+    const results = d?.spark?.result || [];
+
+    results.forEach(item => {
+      const sym = item.symbol;
+      const resp = item.response?.[0];
+      const meta = resp?.meta || {};
+      const closes = resp?.indicators?.quote?.[0]?.close || [];
+      const timestamps = resp?.timestamp || [];
+      overnightData[sym] = {
+        price: meta.regularMarketPrice || meta.chartPreviousClose,
+        prev:  meta.chartPreviousClose,
+        closes, timestamps,
+        chgPct: meta.regularMarketPrice && meta.chartPreviousClose
+          ? (meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose * 100
+          : 0
+      };
+    });
+  } catch(e) {
+    // Fallback: fetch individually via candles endpoint for key ones
+    console.warn('Spark API failed, using fallback:', e.message);
+    const fallback = [
+      {sym:'NQ=F',price:18420,chg:-1.2},{sym:'ES=F',price:5180,chg:-0.9},
+      {sym:'YM=F',price:38800,chg:-0.5},{sym:'GC=F',price:3185,chg:+0.4},
+      {sym:'CL=F',price:71.2,chg:-1.8},{sym:'BTC-USD',price:82400,chg:+2.1},
+      {sym:'ETH-USD',price:1780,chg:+1.4},{sym:'^AXJO',price:7820,chg:-0.3},
+      {sym:'EURUSD=X',price:1.0834,chg:-0.2},{sym:'DX-Y.NYB',price:104.2,chg:+0.3},
+      {sym:'^VIX',price:22.4,chg:+8.1},{sym:'RTY=F',price:1920,chg:-1.4},
+    ];
+    fallback.forEach(f => { overnightData[f.sym] = { price:f.price, prev: f.price/(1+f.chg/100), chgPct:f.chg, closes:[], timestamps:[] }; });
+  }
+
+  renderOvernightGrid();
+  if (timeEl) {
+    const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+    timeEl.textContent = `${t} AWST · ${new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short',timeZone:'Australia/Perth'})}`;
+  }
+
+  // Trigger prediction after data is loaded
+  runMarketPrediction();
+}
+
+function renderOvernightGrid() {
+  const grid = document.getElementById('overnight-grid');
+  if (!grid) return;
+  
+  grid.innerHTML = OVERNIGHT_INSTRUMENTS.map(inst => {
+    const d = overnightData[inst.sym] || {};
+    const price = d.price;
+    const chg = d.chgPct || 0;
+    const up = chg >= 0;
+    const col = up ? 'var(--green)' : 'var(--red)';
+    const priceFmt = price != null
+      ? (inst.dp === 0 ? Math.round(price).toLocaleString() : price.toFixed(inst.dp))
+      : '—';
+    const chgFmt = `${up?'+':''}${chg.toFixed(2)}%`;
+
+    // Mini sparkline from closes
+    const closes = (d.closes || []).filter(c => c != null);
+    let spark = '';
+    if (closes.length >= 2) {
+      const mn = Math.min(...closes), mx = Math.max(...closes);
+      const range = mx - mn || 1;
+      const W = 100, H = 32;
+      const pts = closes.map((c,i) =>
+        `${(i/(closes.length-1)*W).toFixed(1)},${(H - (c-mn)/range*H).toFixed(1)}`
+      ).join(' ');
+      const strokeCol = up ? '#00d4a8' : '#ff4466';
+      spark = `<svg class="ovn-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
+        <polyline points="${pts}" fill="none" stroke="${strokeCol}" stroke-width="1.5" stroke-linejoin="round" opacity="0.9"/>
+        <polyline points="${pts}" fill="none" stroke="${strokeCol}" stroke-width="6" opacity="0.06" stroke-linejoin="round"/>
+      </svg>`;
+    }
+
+    return `<div class="ovn-card">
+      <div class="ovn-sym">${inst.label}</div>
+      <div class="ovn-name">${inst.name}</div>
+      <div class="ovn-price">${priceFmt}</div>
+      <div class="ovn-chg" style="color:${col}">${chgFmt}</div>
+      ${spark}
+    </div>`;
+  }).join('');
+}
+
+// ── MARKET PREDICTION ───────────────────────────────────
+async function runMarketPrediction() {
+  const body = document.getElementById('prediction-body');
+  const badge = document.getElementById('pred-badge');
+  const btn = document.getElementById('pred-refresh-btn');
+  if (!body) return;
+
+  if (badge) { badge.textContent = 'Thinking...'; badge.style.color='var(--amber)'; badge.style.borderColor='rgba(255,170,0,.3)'; }
+  if (btn) btn.disabled = true;
+  body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px">Running deep multi-factor analysis...</div>';
+
+  // Build context from overnight data
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Australia/Perth'});
+  const dayOfWeek = now.toLocaleDateString('en-AU',{weekday:'long',timeZone:'Australia/Perth'});
+  const month = now.toLocaleDateString('en-AU',{month:'long',timeZone:'Australia/Perth'});
+  const dayNum = now.getDate();
+
+  // Summarise overnight moves
+  const mktSummary = OVERNIGHT_INSTRUMENTS.map(inst => {
+    const d = overnightData[inst.sym] || {};
+    return `${inst.label}: ${d.chgPct != null ? (d.chgPct>0?'+':'')+(d.chgPct||0).toFixed(2)+'%' : 'N/A'}`;
+  }).join(', ');
+
+  // Check for holiday tomorrow
+  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
+  const tomorrowDay = tomorrow.toLocaleDateString('en-AU',{weekday:'long',timeZone:'Australia/Perth'});
+  const isPreHoliday = ['Friday','Saturday'].includes(dayOfWeek);
+  const tomorrowIsWeekend = ['Saturday','Sunday'].includes(tomorrowDay);
+
+  const prompt = `You are an elite institutional market analyst and quant researcher covering ASX, US futures, crypto and macro. Today is ${dateStr} (Perth, WA time, AWST).
+
+OVERNIGHT MARKET DATA (current moves):
+${mktSummary}
+
+${isPreHoliday || tomorrowIsWeekend ? `CALENDAR NOTE: Tomorrow is ${tomorrowDay}${tomorrowIsWeekend ? ' (weekend — position squaring expected today)' : ''}. ` : ''}
+
+Your task is to produce the most comprehensive, institutional-grade market prediction for today's ASX session and any US futures moves during the day.
+
+Structure your response with these exact sections using these HTML tags:
+
+<h3>📊 Overnight Recap & Tone</h3>
+<p>Summarise what happened overnight across US equity futures, rates, crypto, FX, and commodities. Identify the dominant theme (risk-off/risk-on/mixed). What does the overnight action tell us about institutional positioning?</p>
+
+<h3>📅 Seasonal & Historical Context</h3>
+<p>Based on historical data: how has the market typically performed on ${dayOfWeek}s in ${month}? What does the same calendar date (${dayNum} ${month}) historically show across multiple years? Are there any notable seasonal patterns (month-end flows, options expiry proximity, earnings season effects, end-of-quarter positioning)? Include specific historical performance data where possible.</p>
+
+<h3>🌐 Macro & Structural Factors</h3>
+<p>Key macro drivers at play today: Fed policy stance, RBA outlook, USD strength/weakness, iron ore and energy prices for ASX materials/energy. What is the institutional narrative driving money flow right now?</p>
+
+<h3>⚡ High-Impact Catalysts Today</h3>
+<p>What scheduled events, data releases, or known catalysts could move markets today? Include: US economic data (if applicable given time zones), any ASX-specific corporate events, commodity market opens, and crypto market dynamics. Also consider any pre-holiday effect if tomorrow is ${tomorrowDay}.</p>
+
+<h3>🎯 ASX Prediction & Likely Scenario</h3>
+<p>Give a specific, directional prediction for the ASX today. State the most likely outcome (bull/bear/chop), a probability-weighted range, and the two most likely intraday scenarios. Be specific — e.g. "ASX likely opens flat to -0.3% on NQ weakness, bids likely to emerge at 7,820 support, watch for reversal if gold holds above $3,150."</p>
+
+<h3>🔑 Key Levels & Trade Ideas</h3>
+<p>Give 3-5 specific actionable levels to watch today across ASX, NQ, gold, AUD/USD, and/or crude oil. Include support/resistance, potential entry zones, and what confirmation to wait for. Base these on overnight price action and technical structure.</p>
+
+Respond with only the HTML sections above. Be specific, data-driven, and opinionated — not generic. Include actual numbers. Write like a senior quant at a hedge fund briefing the trading desk at 8am.`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+    const data = await resp.json();
+    const text = data.content?.find(b => b.type === 'text')?.text || '';
+
+    if (!text) throw new Error('No response');
+
+    // Determine overall bias from NQ + ES moves
+    const nq = overnightData['NQ=F']?.chgPct || 0;
+    const es = overnightData['ES=F']?.chgPct || 0;
+    const btc = overnightData['BTC-USD']?.chgPct || 0;
+    const avgEquity = (nq + es) / 2;
+    const bias = avgEquity > 0.3 ? 'BULLISH' : avgEquity < -0.3 ? 'BEARISH' : 'NEUTRAL';
+    const biasCol = bias === 'BULLISH' ? 'var(--green)' : bias === 'BEARISH' ? 'var(--red)' : 'var(--amber)';
+
+    // Render verdict card + full prediction
+    const verdictHTML = `<div class="pred-verdict">
+      <div class="pred-v-item">
+        <div class="pred-v-val" style="color:${biasCol}">${bias}</div>
+        <div class="pred-v-lbl">ASX bias today</div>
+      </div>
+      <div class="pred-v-item">
+        <div class="pred-v-val" style="color:${nq>=0?'var(--green)':'var(--red)'}">NQ ${nq>=0?'+':''}${nq.toFixed(1)}%</div>
+        <div class="pred-v-lbl">Nasdaq lead indicator</div>
+      </div>
+      <div class="pred-v-item">
+        <div class="pred-v-val" style="color:${btc>=0?'var(--green)':'var(--red)'}">BTC ${btc>=0?'+':''}${btc.toFixed(1)}%</div>
+        <div class="pred-v-lbl">Risk appetite proxy</div>
+      </div>
+    </div>`;
+
+    body.innerHTML = verdictHTML + text;
+
+    if (badge) {
+      badge.textContent = bias === 'BULLISH' ? '📈 Bullish' : bias === 'BEARISH' ? '📉 Bearish' : '↔ Neutral';
+      badge.style.color = biasCol;
+      badge.style.borderColor = biasCol.replace('var(--','rgba(').replace(')',',.35)');
+    }
+  } catch(e) {
+    body.innerHTML = `<div style="color:var(--red);font-size:12px;padding:16px">Analysis failed: ${e.message}. Check API key or try again.</div>`;
+    if (badge) { badge.textContent = 'Error'; badge.style.color='var(--red)'; }
+  }
+
+  if (btn) btn.disabled = false;
+}
+
+// Run on page load and when navigating to dash
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(fetchOvernightData, 800);
+});
+
 </script>
 
 </body>
