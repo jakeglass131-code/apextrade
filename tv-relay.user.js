@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ApexTrade TV Relay
 // @namespace    https://apextrade-proxy.netlify.app
-// @version      3.1
+// @version      3.2
 // @description  Captures TradingView candle data and auto-cycles through watchlist
 // @match        https://www.tradingview.com/*
 // @match        https://tradingview.com/*
@@ -15,6 +15,7 @@
   'use strict';
 
   var CACHE_ENDPOINT = 'https://apextrade-proxy.netlify.app/.netlify/functions/cache';
+  var ASX_URL = 'https://apextrade-proxy.netlify.app/.netlify/functions/asx-list';
   var SEND_INTERVAL = 5000;
   var CYCLE_DELAY = 8000; // 8s per ticker
   var DEBUG = true;
@@ -23,8 +24,8 @@
   var autoCycling = false;
   var cycleCount = 0;
   var totalSent = 0;
-  var watchlistRows = [];
-  var currentRowIndex = 0;
+  var tickerList = [];
+  var tickerIndex = 0;
 
   function log(msg) { if (DEBUG) console.log('[ApexTrade Relay] ' + msg); }
   log('v3.0 starting...');
@@ -164,10 +165,138 @@
   }
 
   // ══════════════════════════════════════════════
-  // AUTO-CYCLE: SMART WATCHLIST ROW DISCOVERY
+  // AUTO-CYCLE: USE TV's INTERNAL API TO CHANGE SYMBOL
   // ══════════════════════════════════════════════
 
-  function discoverWatchlistRows() {
+  function changeSymbolInternal(ticker) {
+    var sym = 'ASX:' + ticker;
+
+    // Method 1: Find the chart widget via window properties
+    // TV exposes chart instances on various internal objects
+    var changed = false;
+
+    // Try TradingViewApi
+    try {
+      var iframes = document.querySelectorAll('iframe');
+      for (var i = 0; i < iframes.length; i++) {
+        try {
+          var w = iframes[i].contentWindow;
+          if (w && w.TradingView && w.TradingView.activeChart) {
+            w.TradingView.activeChart().setSymbol(sym);
+            changed = true;
+            break;
+          }
+        } catch(e){}
+      }
+    } catch(e){}
+
+    // Try window-level chart objects
+    if (!changed) {
+      var props = ['_exposed_chartWidgetCollection', 'tvWidget', 'TradingView'];
+      for (var p = 0; p < props.length; p++) {
+        try {
+          var obj = window[props[p]];
+          if (obj) {
+            if (obj.activeChart) { obj.activeChart().setSymbol(sym); changed = true; break; }
+            if (obj.chart) { obj.chart().setSymbol(sym); changed = true; break; }
+            if (obj.length && obj[0] && obj[0].setSymbol) { obj[0].setSymbol(sym); changed = true; break; }
+            if (obj.setSymbol) { obj.setSymbol(sym); changed = true; break; }
+          }
+        } catch(e){}
+      }
+    }
+
+    // Method 2: Find React fiber and call setSymbol on chart model
+    if (!changed) {
+      try {
+        var chartContainer = document.querySelector('.chart-container, .chart-markup-table, [class*="chart-"]');
+        if (chartContainer) {
+          var fiber = Object.keys(chartContainer).find(function(k) { return k.startsWith('__reactFiber') || k.startsWith('__reactInternalInstance'); });
+          if (fiber) {
+            var node = chartContainer[fiber];
+            var limit = 50;
+            while (node && limit-- > 0) {
+              try {
+                if (node.memoizedProps && node.memoizedProps.chartWidget) {
+                  node.memoizedProps.chartWidget.setSymbol(sym);
+                  changed = true;
+                  break;
+                }
+                if (node.stateNode && node.stateNode._chartWidget) {
+                  node.stateNode._chartWidget.setSymbol(sym);
+                  changed = true;
+                  break;
+                }
+              } catch(e){}
+              node = node.return;
+            }
+          }
+        }
+      } catch(e){}
+    }
+
+    // Method 3: Use the symbol search input programmatically
+    if (!changed) {
+      try {
+        // Find the symbol search button and trigger it
+        var searchBtn = document.querySelector('[id*="header-toolbar-symbol-search"], [data-name="symbol-search"], [aria-label*="Symbol Search"]');
+        if (!searchBtn) {
+          // Try finding by the symbol display in the header
+          var symbolEls = document.querySelectorAll('[class*="symbolTitle"], [class*="title-"] button');
+          for (var s = 0; s < symbolEls.length; s++) {
+            if (symbolEls[s].textContent.trim().length <= 10) { searchBtn = symbolEls[s]; break; }
+          }
+        }
+        if (searchBtn) {
+          // Click to open search
+          searchBtn.click();
+          setTimeout(function() {
+            // Find the search input
+            var inputs = document.querySelectorAll('input[type="text"], input[data-role="search"], input[class*="search"]');
+            var searchInput = null;
+            for (var si = 0; si < inputs.length; si++) {
+              var ir = inputs[si].getBoundingClientRect();
+              if (ir.width > 100 && ir.height > 20) { searchInput = inputs[si]; break; }
+            }
+            if (searchInput) {
+              // Clear and type the symbol
+              var nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+              nativeSetter.call(searchInput, sym);
+              searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+              // Press Enter after results load
+              setTimeout(function() {
+                searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+                setTimeout(function() {
+                  // Press Enter again or click first result
+                  searchInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+                  // Also try clicking the first search result
+                  var results = document.querySelectorAll('[class*="itemRow"], [class*="listRow"], [data-symbol]');
+                  if (results.length) results[0].click();
+                  // Close search dialog by pressing Escape
+                  setTimeout(function() {
+                    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', keyCode: 27, bubbles: true }));
+                  }, 500);
+                }, 1000);
+              }, 1500);
+              changed = true;
+            }
+          }, 500);
+        }
+      } catch(e) {
+        log('Search method failed: ' + e.message);
+      }
+    }
+
+    if (changed) {
+      log('Symbol changed to ' + sym);
+      lastKnownSymbol = ticker;
+    } else {
+      log('Could not change symbol to ' + sym + ' - all methods failed');
+    }
+    return changed;
+  }
+
+  function UNUSED_discoverWatchlistRows() {
     // Use [class*="cell-"] which we confirmed has 348 matches on TV
     var cells = document.querySelectorAll('[class*="cell-"]');
     log('Found ' + cells.length + ' cell elements');
@@ -309,27 +438,42 @@
   function startCycle() {
     if (autoCycling) return;
     autoCycling = true;
+    tickerIndex = parseInt(localStorage.getItem('apextrade_ticker_index') || '0');
     cycleCount = parseInt(localStorage.getItem('apextrade_cycle_count') || '0');
     totalSent = parseInt(localStorage.getItem('apextrade_total_sent') || '0');
 
-    // Discover rows first
-    watchlistRows = discoverWatchlistRows();
+    log('Fetching ASX ticker list...');
+    origFetch(ASX_URL).then(function(r) { return r.json(); }).then(function(data) {
+      tickerList = (data.stocks || []).map(function(t) { return t.ticker || t; });
+      if (!tickerList.length) { log('ERROR: No tickers loaded'); autoCycling = false; return; }
+      log('Loaded ' + tickerList.length + ' tickers, starting from index ' + tickerIndex);
+      localStorage.setItem('apextrade_autocycle', 'true');
 
-    if (watchlistRows.length === 0) {
-      log('No watchlist rows found! Make sure a watchlist panel is visible on the right side.');
+      cycleTimer = setInterval(function() {
+        if (tickerIndex >= tickerList.length) {
+          log('DONE! Cycled through all ' + tickerList.length + ' tickers');
+          stopCycle();
+          return;
+        }
+        // Flush before changing symbol
+        flushCache();
+
+        var ticker = tickerList[tickerIndex];
+        tickerIndex++;
+        cycleCount++;
+        localStorage.setItem('apextrade_ticker_index', tickerIndex);
+        localStorage.setItem('apextrade_cycle_count', cycleCount);
+        localStorage.setItem('apextrade_total_sent', totalSent);
+        updateBadge();
+
+        log('[' + tickerIndex + '/' + tickerList.length + '] Changing to ' + ticker);
+        changeSymbolInternal(ticker);
+      }, CYCLE_DELAY);
+      updateBadge();
+    }).catch(function(e) {
+      log('Failed to load ticker list: ' + e.message);
       autoCycling = false;
-      return;
-    }
-
-    log('Auto-cycle started: ' + watchlistRows.length + ' rows found, cycling every ' + (CYCLE_DELAY/1000) + 's');
-    localStorage.setItem('apextrade_autocycle', 'true');
-    cycleTimer = setInterval(function() {
-      nextWatchlistItem();
-      // Persist progress
-      localStorage.setItem('apextrade_cycle_count', cycleCount);
-      localStorage.setItem('apextrade_total_sent', totalSent);
-    }, CYCLE_DELAY);
-    updateBadge();
+    });
   }
 
   function stopCycle() {
@@ -337,7 +481,7 @@
     if (cycleTimer) clearInterval(cycleTimer);
     cycleTimer = null;
     localStorage.setItem('apextrade_autocycle', 'false');
-    log('Auto-cycle stopped. Cycled: ' + cycleCount + ', Sent: ' + totalSent);
+    log('Auto-cycle stopped. Index: ' + tickerIndex + ', Sent: ' + totalSent);
     updateBadge();
   }
 
@@ -368,7 +512,7 @@
     var b = document.getElementById('apextrade-relay-badge');
     if (!b) return;
     if (autoCycling) {
-      b.textContent = 'Cycling: ' + cycleCount + ' | Sent: ' + totalSent + ' | Rows: ' + watchlistRows.length;
+      b.textContent = 'Cycling: ' + tickerIndex + '/' + tickerList.length + ' | Sent: ' + totalSent;
       b.style.color = '#ffaa00';
       b.style.borderColor = '#ffaa00';
     } else {
