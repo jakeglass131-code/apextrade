@@ -835,6 +835,50 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 #prediction-body .pred-v-val { font-size:20px; font-weight:800; font-family:var(--fm); }
 #prediction-body .pred-v-lbl { font-size:9px; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
 
+
+/* Signal row scanner — modelled on reference ASX Fib scanner */
+.scan-header-bar { background:var(--bg2); border-bottom:1px solid var(--border2); padding:10px 20px; display:flex; align-items:center; gap:12px; flex-shrink:0; flex-wrap:wrap; }
+.scan-kpi { background:var(--bg3); border:1px solid var(--border2); border-radius:8px; padding:10px 16px; min-width:140px; }
+.scan-kpi-label { font-size:9px; color:var(--text3); font-weight:700; letter-spacing:.08em; text-transform:uppercase; margin-bottom:4px; }
+.scan-kpi-val { font-size:22px; font-weight:800; font-family:var(--fd); color:var(--text); line-height:1; }
+.scan-kpi-sub { font-size:10px; color:var(--text3); margin-top:2px; }
+.regime-banner { padding:7px 20px; font-size:11px; font-weight:600; border-bottom:1px solid var(--border2); display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.regime-banner.bear { background:rgba(255,68,102,.07); color:var(--red); border-color:rgba(255,68,102,.2); }
+.regime-banner.bull { background:rgba(0,212,168,.07); color:var(--green); border-color:rgba(0,212,168,.2); }
+.regime-banner.neut { background:rgba(255,176,32,.07); color:var(--amber); border-color:rgba(255,176,32,.2); }
+.grade-badge { font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px; font-family:var(--fd); }
+.grade-ap { background:rgba(0,212,168,.2); color:#00d4a8; border:1px solid rgba(0,212,168,.3); }
+.grade-a  { background:rgba(45,142,255,.2); color:#2d8eff; border:1px solid rgba(45,142,255,.3); }
+.grade-b  { background:rgba(255,176,32,.15); color:var(--amber); border:1px solid rgba(255,176,32,.25); }
+.grade-c  { background:var(--bg5); color:var(--text3); border:1px solid var(--border2); }
+.take-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:3px; background:rgba(0,212,168,.15); color:#00d4a8; letter-spacing:.04em; }
+.skip-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:3px; background:rgba(255,68,102,.12); color:var(--red); letter-spacing:.04em; }
+.wait-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:3px; background:rgba(255,176,32,.12); color:var(--amber); letter-spacing:.04em; }
+.sig-tag { font-size:9px; padding:2px 7px; border-radius:3px; font-weight:600; white-space:nowrap; }
+.sig-tag-bull  { background:rgba(0,212,168,.12); color:#00d4a8; }
+.sig-tag-bear  { background:rgba(255,68,102,.1); color:var(--red); }
+.sig-tag-warn  { background:rgba(255,176,32,.12); color:var(--amber); }
+.sig-tag-neut  { background:var(--bg5); color:var(--text4); }
+.sector-tag { font-size:9px; padding:2px 8px; border-radius:3px; font-weight:600; }
+.sec-materials { background:rgba(251,146,60,.15); color:#fb923c; }
+.sec-energy    { background:rgba(250,204,21,.12); color:#facc15; }
+.sec-financials{ background:rgba(59,130,246,.15); color:#60a5fa; }
+.sec-healthcare{ background:rgba(167,139,250,.15); color:#a78bfa; }
+.sec-tech      { background:rgba(45,212,191,.15); color:#2dd4bf; }
+.sec-consumer  { background:rgba(244,114,182,.15); color:#f472b6; }
+.sec-default   { background:var(--bg5); color:var(--text3); }
+.sig-row { display:flex; align-items:flex-start; gap:12px; padding:11px 20px; border-bottom:1px solid var(--border); cursor:pointer; transition:background .1s; }
+.sig-row:hover { background:var(--bg3); }
+.sig-row:last-child { border-bottom:none; }
+.sig-spark { width:80px; height:28px; flex-shrink:0; }
+.sig-conf-bar { width:80px; height:3px; background:var(--bg5); border-radius:99px; margin-top:4px; overflow:hidden; }
+.sig-conf-fill { height:3px; border-radius:99px; }
+.filter-pill { font-size:11px; padding:4px 12px; border-radius:6px; border:1px solid var(--border2); background:transparent; color:var(--text3); cursor:pointer; font-weight:600; transition:all .12s; }
+.filter-pill:hover { color:var(--text2); border-color:var(--border2); }
+.filter-pill.active { background:var(--accent3); color:var(--accent); border-color:rgba(45,142,255,.35); }
+.filter-pill.best { background:rgba(0,212,168,.12); color:#00d4a8; border-color:rgba(0,212,168,.3); }
+.filter-pill.best.active { background:rgba(0,212,168,.25); }
+
 </style>
 </head>
 <body>
@@ -1022,15 +1066,98 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   </div>
   <!-- CRT SCANNER panel -->
   <div id="asx-panel-crt" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-    <div class="scroll" style="padding:20px">
-      <div id="asx-crt-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px">
-        <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text3)">
-          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:8px">⚡ ASX CRT Scanner</div>
-          <div style="font-size:12px;margin-bottom:20px">Scans all ASX stocks for CRT model setups via the proxy</div>
-          <button class="btn g" onclick="startAsxCrtScan()" style="font-size:12px;padding:9px 24px">Start Scanning ASX</button>
+
+    <!-- Scan controls bar -->
+    <div class="scan-header-bar">
+      <div>
+        <div style="font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-bottom:4px">MAX PRICE</div>
+        <input id="asx-max-price" value="5.00" type="number" step="0.5" style="width:80px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text);font-family:var(--fm)">
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-bottom:4px">MIN RATING</div>
+        <select id="asx-min-grade" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text)">
+          <option value="A+">A+</option>
+          <option value="A" selected>A</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-bottom:4px">MIN VOLUME</div>
+        <input id="asx-min-vol" value="100000" type="number" style="width:100px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text);font-family:var(--fm)">
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-bottom:4px">DIRECTION</div>
+        <select id="asx-crt-dir" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text)">
+          <option value="all">Both</option>
+          <option value="LONG">Longs only</option>
+          <option value="SHORT">Shorts only</option>
+        </select>
+      </div>
+      <button class="btn g" onclick="startAsxCrtScan()" id="asx-crt-start2" style="align-self:flex-end;padding:7px 20px;font-size:12px;font-weight:700">⚡ Scan Now</button>
+      <button class="btn" onclick="stopCrtScan()" id="asx-crt-stop2" style="display:none;align-self:flex-end;padding:7px 16px;font-size:12px;background:rgba(255,68,102,.15);color:var(--red)">■ Stop</button>
+      <button class="btn" onclick="exportCrtCsv()" style="align-self:flex-end;padding:7px 14px;font-size:12px">⬇ CSV</button>
+    </div>
+
+    <!-- Market regime banner -->
+    <div id="asx-regime-banner" class="regime-banner bear">
+      <span>↘ MARKET:</span>
+      <strong id="asx-regime-label">Calculating regime...</strong>
+      <span id="asx-regime-detail" style="font-weight:400;color:var(--text3)"></span>
+    </div>
+
+    <!-- Scan KPIs -->
+    <div style="display:flex;gap:1px;background:var(--border);flex-shrink:0">
+      <div class="scan-kpi" style="border-radius:0;border:none;border-right:1px solid var(--border2);flex:1">
+        <div class="scan-kpi-label">Stocks scanned</div>
+        <div class="scan-kpi-val" id="asx-kpi-scanned">—</div>
+      </div>
+      <div class="scan-kpi" style="border-radius:0;border:none;border-right:1px solid var(--border2);flex:1">
+        <div class="scan-kpi-label">A+ / A setups</div>
+        <div class="scan-kpi-val" id="asx-kpi-quality" style="color:var(--green)">—</div>
+      </div>
+      <div class="scan-kpi" style="border-radius:0;border:none;border-right:1px solid var(--border2);flex:1">
+        <div class="scan-kpi-label">Top pick</div>
+        <div class="scan-kpi-val" id="asx-kpi-top" style="font-size:14px;color:#00d4a8">—</div>
+        <div class="scan-kpi-sub" id="asx-kpi-top-price"></div>
+      </div>
+      <div class="scan-kpi" style="border-radius:0;border:none;flex:1">
+        <div class="scan-kpi-label">Best R:R</div>
+        <div class="scan-kpi-val" id="asx-kpi-rr">—</div>
+      </div>
+    </div>
+
+    <!-- Filter / sort pills -->
+    <div style="padding:8px 20px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:6px;flex-shrink:0;background:var(--bg2)">
+      <span style="font-size:10px;color:var(--text3);font-weight:700;margin-right:4px">FILTER</span>
+      <button class="filter-pill best active" id="asx-f-best" onclick="applyAsxFilter('best')">BEST SETUPS</button>
+      <button class="filter-pill" id="asx-f-all"  onclick="applyAsxFilter('all')">ALL</button>
+      <button class="filter-pill" id="asx-f-ap"   onclick="applyAsxFilter('A+')">A+</button>
+      <button class="filter-pill" id="asx-f-a"    onclick="applyAsxFilter('A')">A</button>
+      <button class="filter-pill" id="asx-f-b"    onclick="applyAsxFilter('B')">B</button>
+      <button class="filter-pill" id="asx-f-long" onclick="applyAsxFilter('long')">LONGS</button>
+      <button class="filter-pill" id="asx-f-short" onclick="applyAsxFilter('short')">SHORTS</button>
+      <div style="flex:1"></div>
+      <span style="font-size:10px;color:var(--text3);font-weight:700;margin-right:4px">SORT</span>
+      <button class="filter-pill active" id="asx-sort-score" onclick="applyAsxSort('score')">Score</button>
+      <button class="filter-pill" id="asx-sort-price" onclick="applyAsxSort('price')">Price</button>
+      <button class="filter-pill" id="asx-sort-az"    onclick="applyAsxSort('az')">A-Z</button>
+    </div>
+
+    <!-- Signal rows -->
+    <div class="scroll" style="padding:0">
+      <div id="asx-crt-rows">
+        <div style="padding:60px 20px;text-align:center;color:var(--text3)">
+          <div style="font-size:32px;margin-bottom:12px">⚡</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text2);margin-bottom:6px">ASX CRT Scanner</div>
+          <div style="font-size:12px;margin-bottom:20px">Scans ASX stocks for CRT model setups · Filters, grades and rates each one</div>
+          <button class="btn g" onclick="startAsxCrtScan()" style="font-size:13px;padding:10px 28px;font-weight:700">⚡ Start Scanning ASX</button>
         </div>
       </div>
     </div>
+
+    <!-- Hidden legacy grid kept for JS bridge -->
+    <div id="asx-crt-grid" style="display:none"></div>
   </div>
   <!-- BULLISH SCANNER panel -->
   <div id="asx-panel-bullish" style="display:none;flex-direction:column;flex:1;overflow:hidden">
@@ -5580,6 +5707,316 @@ function fetchFutNews() {
     const ft = document.getElementById('fut-feed-time');
     if (t && ft) ft.innerHTML = t.innerHTML;
   }).catch(()=>{});
+}
+
+
+// ══════════════════════════════════════════════════════
+// ASX CRT SCANNER — enhanced signal row renderer
+// ══════════════════════════════════════════════════════
+
+let asxCrtSignals   = [];  // full signal list after scan
+let asxCrtFilter    = 'best';
+let asxCrtSort      = 'score';
+let asxScanCount    = 0;   // stocks scanned so far
+
+// Grade a signal 0-100 → A+/A/B/C
+function gradeSignal(conf) {
+  if (conf >= 85) return 'A+';
+  if (conf >= 72) return 'A';
+  if (conf >= 58) return 'B';
+  return 'C';
+}
+
+// Sector from ticker or market string
+function sectorClass(market, ticker) {
+  const m = (market||'').toLowerCase();
+  const t = (ticker||'').toUpperCase();
+  if (['bhp','rio','fmg','min','wds','bpt'].some(x=>t.startsWith(x))) return ['Materials','sec-materials'];
+  if (['wpl','sts','sen','ipa'].some(x=>t.startsWith(x))) return ['Energy','sec-energy'];
+  if (['cba','nab','wbc','anz','mqg','shl'].some(x=>t.startsWith(x))) return ['Financials','sec-financials'];
+  if (['csl','rmx','prn','cwn'].some(x=>t.startsWith(x))) return ['Healthcare','sec-healthcare'];
+  if (['xro','wis','aly','iot'].some(x=>t.startsWith(x))) return ['Technology','sec-tech'];
+  if (['wow','col','jbh','nzm'].some(x=>t.startsWith(x))) return ['Consumer','sec-consumer'];
+  return ['ASX','sec-default'];
+}
+
+// Generate a quick AI-style rationale from signal data
+function generateRationale(sig) {
+  const dir   = sig.direction === 'LONG' ? 'bullish' : 'bearish';
+  const conf  = sig.finalConfidence || sig.baseConfidence || 0;
+  const grade = gradeSignal(conf);
+  const model = sig.model || '';
+  const purge = sig.purgeCount || 1;
+  const tbos  = sig.tbosLevel ? sig.tbosLevel.toFixed(3) : null;
+  const age   = sig.tbosAge || 0;
+
+  const lines = [];
+  if (tbos) lines.push(`TBOS at $${tbos} with ${purge >= 2 ? 'double' : 'single'} purge — ${purge>=2?'high':'moderate'} liquidity sweep.`);
+  if (model.includes('9M') || model.includes('12M')) lines.push('Higher timeframe CRT adds confluence weight.');
+  if (age <= 1) lines.push('Fresh setup — TBOS formed recently, optimal entry window.');
+  else if (age <= 3) lines.push('Setup aging — ${age} candles since TBOS, watch for confirmation.');
+  else lines.push(`TBOS ${age} candles old — entry window closing, reduce position size.`);
+  if (grade === 'A+') lines.push('Full CRT alignment — no disqualifying factors present.');
+  else if (grade === 'A') lines.push('Strong setup with minor caveats, suitable for full position.');
+  else lines.push('Partial alignment — wait for price confirmation before entry.');
+  return lines.join(' ');
+}
+
+// Render signal as a row (like reference UI)
+function renderAsxSignalRow(sig) {
+  const conf  = sig.finalConfidence || sig.baseConfidence || 0;
+  const grade = gradeSignal(conf);
+  const isLong = sig.direction === 'LONG';
+  const dirCol = isLong ? 'var(--green)' : 'var(--red)';
+  const gradeClass = { 'A+':'grade-ap', 'A':'grade-a', 'B':'grade-b', 'C':'grade-c' }[grade] || 'grade-c';
+
+  // TAKE / SKIP / WAIT logic
+  let actionLabel, actionClass;
+  if (grade === 'A+' || (grade === 'A' && (sig.tbosAge||99) <= 2)) {
+    actionLabel = 'TAKE'; actionClass = 'take-badge';
+  } else if (grade === 'C' || (sig.tbosAge||0) > 4) {
+    actionLabel = 'SKIP'; actionClass = 'skip-badge';
+  } else {
+    actionLabel = 'WAIT'; actionClass = 'wait-badge';
+  }
+
+  const [sectorName, sectorCls] = sectorClass('', sig.ticker);
+  const price = sig.price ? `$${parseFloat(sig.price).toFixed(3)}` : '—';
+  const stopPct = sig.tbosLevel && sig.price
+    ? Math.abs((sig.price - sig.tbosLevel) / sig.price * 100).toFixed(1) + '%'
+    : '—';
+  const rationale = generateRationale(sig);
+
+  // Build tag chips
+  const tags = [];
+  if (sig.purgeCount >= 2) tags.push(['DOUBLE PURGE', 'sig-tag-bull']);
+  if ((sig.tbosAge||99) <= 1) tags.push(['FRESH TBOS', 'sig-tag-bull']);
+  if (sig.model) tags.push([sig.model, 'sig-tag-neut']);
+  if (sig.entryTFs && sig.entryTFs.length >= 3) tags.push(['MTF CONFLUENCE', 'sig-tag-bull']);
+  if ((sig.tbosAge||0) > 3) tags.push(['AGING SETUP', 'sig-tag-warn']);
+  if (sig.mlScore && sig.mlScore > 5) tags.push(['ML CONFIRMED', 'sig-tag-bull']);
+  if (sig.mlScore && sig.mlScore < -3) tags.push(['ML DIVERGENCE', 'sig-tag-warn']);
+
+  const tagsHtml = tags.slice(0,4).map(([lbl,cls]) =>
+    `<span class="sig-tag ${cls}">${lbl}</span>`
+  ).join('');
+
+  // Mini sparkline from tbosLevel to price
+  const sparkW = 80, sparkH = 28;
+  const sparkCol = isLong ? '#00d4a8' : '#ff4466';
+  const sparkPath = isLong
+    ? `M0,${sparkH} L${sparkW*0.3},${sparkH*0.7} L${sparkW*0.6},${sparkH*0.8} L${sparkW},${sparkH*0.2}`
+    : `M0,0 L${sparkW*0.3},${sparkH*0.3} L${sparkW*0.6},${sparkH*0.2} L${sparkW},${sparkH*0.75}`;
+  const spark = `<svg class="sig-spark" viewBox="0 0 ${sparkW} ${sparkH}" preserveAspectRatio="none">
+    <polyline points="${sparkPath.match(/[0-9.,]+/g)?.join(' ')||''}" fill="none" stroke="${sparkCol}" stroke-width="1.5" stroke-linejoin="round" opacity=".9"/>
+  </svg>`;
+
+  // Score fraction
+  const scoreNum = Math.round(conf / 100 * 13);
+  const scoreStr = `${scoreNum}/13`;
+
+  // Conf bar colour
+  const confBarCol = conf >= 80 ? '#00d4a8' : conf >= 65 ? '#ffb020' : '#666';
+
+  const div = document.createElement('div');
+  div.className = 'sig-row';
+  div.dataset.conf    = conf;
+  div.dataset.grade   = grade;
+  div.dataset.dir     = sig.direction;
+  div.dataset.price   = sig.price || 0;
+  div.dataset.ticker  = sig.ticker;
+  div.dataset.action  = actionLabel;
+
+  div.innerHTML = `
+    <span class="${gradeClass} grade-badge">${grade}</span>
+    <div style="min-width:0;flex:1">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;flex-wrap:wrap">
+        <strong style="font-size:14px;color:var(--text);font-family:var(--fd)">${sig.ticker}</strong>
+        <span style="font-size:11px;font-weight:700;color:${dirCol}">${sig.direction}</span>
+        <span class="${actionClass}">${actionLabel}</span>
+        <span class="sector-tag ${sectorCls}">${sectorName}</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text);font-family:var(--fm)">${price}</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.5;margin-bottom:5px;max-width:680px">${rationale}</div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">${tagsHtml}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
+      ${spark}
+      <div class="sig-conf-bar"><div class="sig-conf-fill" style="width:${conf}%;background:${confBarCol}"></div></div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;min-width:90px">
+      <div style="font-size:11px;color:var(--text3)">Stop <strong style="color:var(--text)">${stopPct}</strong></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px"><strong style="color:var(--text)">${scoreStr}</strong></div>
+      <div style="font-size:18px;font-weight:800;color:${confBarCol};font-family:var(--fd);margin-top:4px">${conf}%</div>
+    </div>`;
+
+  div.onclick = () => window.open('https://www.tradingview.com/chart/?symbol=ASX:' + sig.ticker, '_blank');
+  return div;
+}
+
+function renderAsxCrtRows() {
+  const container = document.getElementById('asx-crt-rows');
+  if (!container) return;
+
+  let sigs = [...asxCrtSignals];
+
+  // Filter
+  if (asxCrtFilter === 'best') {
+    sigs = sigs.filter(s => {
+      const g = gradeSignal(s.finalConfidence || s.baseConfidence || 0);
+      return (g === 'A+' || g === 'A') && (s.tbosAge || 99) <= 3;
+    });
+  } else if (asxCrtFilter === 'A+') {
+    sigs = sigs.filter(s => gradeSignal(s.finalConfidence||s.baseConfidence||0) === 'A+');
+  } else if (asxCrtFilter === 'A') {
+    sigs = sigs.filter(s => gradeSignal(s.finalConfidence||s.baseConfidence||0) === 'A');
+  } else if (asxCrtFilter === 'B') {
+    sigs = sigs.filter(s => gradeSignal(s.finalConfidence||s.baseConfidence||0) === 'B');
+  } else if (asxCrtFilter === 'long') {
+    sigs = sigs.filter(s => s.direction === 'LONG');
+  } else if (asxCrtFilter === 'short') {
+    sigs = sigs.filter(s => s.direction === 'SHORT');
+  }
+
+  // Direction filter from dropdown
+  const dirSel = document.getElementById('asx-crt-dir')?.value || 'all';
+  if (dirSel !== 'all') sigs = sigs.filter(s => s.direction === dirSel);
+
+  // Sort
+  if (asxCrtSort === 'score') sigs.sort((a,b) => (b.finalConfidence||0) - (a.finalConfidence||0));
+  else if (asxCrtSort === 'price') sigs.sort((a,b) => (a.price||0) - (b.price||0));
+  else if (asxCrtSort === 'az') sigs.sort((a,b) => a.ticker.localeCompare(b.ticker));
+
+  if (sigs.length === 0) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">No signals match current filters. Try changing the filter or run a fresh scan.</div>';
+    return;
+  }
+
+  container.innerHTML = '';
+  sigs.forEach(sig => container.appendChild(renderAsxSignalRow(sig)));
+}
+
+function applyAsxFilter(f) {
+  asxCrtFilter = f;
+  document.querySelectorAll('[id^="asx-f-"]').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('asx-f-' + f.toLowerCase().replace('+','p'));
+  if (btn) btn.classList.add('active');
+  renderAsxCrtRows();
+}
+
+function applyAsxSort(s) {
+  asxCrtSort = s;
+  document.querySelectorAll('[id^="asx-sort-"]').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('asx-sort-' + s);
+  if (btn) btn.classList.add('active');
+  renderAsxCrtRows();
+}
+
+function exportCrtCsv() {
+  if (!asxCrtSignals.length) { showToast('No data', 'Run a scan first', 'warning'); return; }
+  const rows = [['Ticker','Direction','Grade','Confidence','Price','Stop%','TBOS Level','Model','Age']];
+  asxCrtSignals.forEach(s => {
+    const conf = s.finalConfidence||s.baseConfidence||0;
+    const stopP = s.tbosLevel && s.price ? Math.abs((s.price-s.tbosLevel)/s.price*100).toFixed(1)+'%' : '';
+    rows.push([s.ticker, s.direction, gradeSignal(conf), conf+'%', s.price||'', stopP, s.tbosLevel||'', s.model||'', s.tbosAge||'']);
+  });
+  const csv = rows.map(r=>r.join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'asx_crt_signals_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  showToast('Exported', asxCrtSignals.length + ' signals saved as CSV', 'success');
+}
+
+function updateAsxScanKPIs() {
+  const sigs = asxCrtSignals;
+  const quality = sigs.filter(s => {
+    const g = gradeSignal(s.finalConfidence||s.baseConfidence||0);
+    return g === 'A+' || g === 'A';
+  }).length;
+  const top = sigs[0];
+  const bestRR = sigs.reduce((best, s) => {
+    const rr = s.tbosLevel && s.price ? Math.abs(s.price / s.tbosLevel - 1) * 2 : 0;
+    return rr > best ? rr : best;
+  }, 0);
+
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('asx-kpi-scanned', asxScanCount || '—');
+  set('asx-kpi-quality', quality || '—');
+  set('asx-kpi-top', top ? top.ticker : '—');
+  set('asx-kpi-top-price', top && top.price ? '$' + parseFloat(top.price).toFixed(3) : '');
+  set('asx-kpi-rr', bestRR > 0 ? bestRR.toFixed(1) + ':1' : '—');
+
+  // Update regime banner from overnight NQ/ES data
+  const nqPct = typeof pctChange === 'function' ? pctChange('NAS100') : 0;
+  const esPct = typeof pctChange === 'function' ? pctChange('SPX500') : 0;
+  const avg   = (nqPct + esPct) / 2;
+  const banner = document.getElementById('asx-regime-banner');
+  const label  = document.getElementById('asx-regime-label');
+  const detail = document.getElementById('asx-regime-detail');
+  if (banner && label && detail) {
+    if (avg > 0.3) {
+      banner.className = 'regime-banner bull';
+      label.textContent = 'BULLISH';
+      detail.textContent = `NQ ${nqPct>=0?'+':''}${nqPct.toFixed(2)}%  ES ${esPct>=0?'+':''}${esPct.toFixed(2)}% — overnight risk-on, CRT long setups favoured`;
+    } else if (avg < -0.3) {
+      banner.className = 'regime-banner bear';
+      label.textContent = 'BEARISH';
+      detail.textContent = `NQ ${nqPct>=0?'+':''}${nqPct.toFixed(2)}%  ES ${esPct>=0?'+':''}${esPct.toFixed(2)}% — overnight risk-off, quality filter still finds setups`;
+    } else {
+      banner.className = 'regime-banner neut';
+      label.textContent = 'NEUTRAL';
+      detail.textContent = `NQ ${nqPct>=0?'+':''}${nqPct.toFixed(2)}%  ES ${esPct>=0?'+':''}${esPct.toFixed(2)}% — mixed signals, wait for ASX open confirmation`;
+    }
+  }
+}
+
+// Override startAsxCrtScan to use new UI
+const _origStartAsxCrtScan = startAsxCrtScan;
+function startAsxCrtScan() {
+  asxCrtSignals = [];
+  asxScanCount  = 0;
+  const rows = document.getElementById('asx-crt-rows');
+  if (rows) rows.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Scanning ASX...</div></div>';
+
+  // show prog bar
+  const prog = document.getElementById('asx-crt-progress');
+  if (prog) prog.style.display = 'block';
+
+  // start the underlying scan (which populates crtSignals)
+  if (typeof _origStartAsxCrtScan === 'function') _origStartAsxCrtScan();
+
+  // poll and copy signals into our local array + re-render
+  const poll = setInterval(() => {
+    if (typeof crtSignals !== 'undefined') {
+      const newSigs = crtSignals.filter(s => !asxCrtSignals.find(x => x.ticker===s.ticker && x.model===s.model));
+      newSigs.forEach(s => asxCrtSignals.push(s));
+      asxScanCount = (typeof crtScanned !== 'undefined') ? crtScanned : asxCrtSignals.length * 3;
+    }
+    // bridge progress
+    const f = document.getElementById('crt-progress-fill'), af = document.getElementById('asx-crt-fill');
+    const t = document.getElementById('crt-progress-text'), at = document.getElementById('asx-crt-txt');
+    const p = document.getElementById('crt-progress-pct'),  ap = document.getElementById('asx-crt-pct');
+    if (f && af) af.style.width = f.style.width;
+    if (t && at) at.textContent = t.textContent;
+    if (p && ap) ap.textContent = p.textContent;
+
+    if (asxCrtSignals.length > 0) renderAsxCrtRows();
+
+    if (typeof crtScanning !== 'undefined' && !crtScanning) {
+      clearInterval(poll);
+      if (prog) prog.style.display = 'none';
+      asxScanCount = (typeof getAsxTickers !== 'undefined') ? 159 : asxCrtSignals.length * 3;
+      updateAsxScanKPIs();
+      renderAsxCrtRows();
+      const t2 = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+      const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+      set('asx-stat-time', t2 + ' AWST');
+      set('asx-stat-total', asxCrtSignals.length);
+      const stats = document.getElementById('asx-stats'); if(stats) stats.style.display='flex';
+      if (asxCrtSignals.length > 0) showToast('ASX CRT Scan complete', asxCrtSignals.length + ' signals found · ' + asxCrtSignals.filter(s=>gradeSignal(s.finalConfidence||0)==='A+'||gradeSignal(s.finalConfidence||0)==='A').length + ' A/A+ grade', 'success', 5000);
+    }
+  }, 350);
 }
 
 </script>
