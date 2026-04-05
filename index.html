@@ -922,6 +922,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10H12z"/><path d="M12 12L2 12a10 10 0 0 0 10 10z"/></svg>
     <span>Sectors</span>
   </button>
+  <button class="sbb" id="sb-smt" onclick="nav('smt')">
+    <svg viewBox="0 0 24 24"><path d="M4 20L8 4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M20 20L16 4" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="6" cy="12" r="2" fill="currentColor"/><circle cx="18" cy="12" r="2" fill="currentColor"/><path d="M8 12h8" stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2" fill="none"/></svg>
+    <span>SMT</span>
+    <div class="sbadge" id="smt-badge" style="display:none">0</div>
+  </button>
   <button class="sbb" id="sb-log" onclick="nav('log')">
     <svg viewBox="0 0 24 24"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
     <span>Alerts</span>
@@ -1529,6 +1534,98 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <div class="panel">
       <div class="phead"><div class="ptitle">Top Movers</div><div class="pmeta">Live % change</div></div>
       <div id="flow-movers" style="padding:8px 0"><div style="color:var(--text3);font-size:12px;padding:16px">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PAGE: SMT DIVERGENCE ═══════════════ -->
+<div class="page" id="page-smt">
+  <div class="ph">
+    <div><div class="ph-t">SMT Divergence</div><div class="ph-s">Smart Money Technique · Correlated pair divergence scanner</div></div>
+    <div class="ph-r">
+      <button class="btn g" id="smt-scan-btn" onclick="startSmtScan()" style="font-weight:700">⚡ Scan All Pairs</button>
+      <button class="btn" id="smt-stop-btn" onclick="stopSmtScan()" style="display:none;background:var(--red);border-color:var(--red);color:#fff">■ Stop</button>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div id="smt-progress" style="display:none;padding:5px 20px;background:var(--bg2);border-bottom:1px solid var(--border2);flex-shrink:0">
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="flex:1;height:4px;background:var(--bg5);border-radius:2px;overflow:hidden"><div id="smt-progress-fill" style="width:0%;height:100%;background:var(--accent);transition:width .3s"></div></div>
+      <span id="smt-progress-text" style="font-size:10px;color:var(--text3);white-space:nowrap">Scanning...</span>
+    </div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div id="smt-kpis" style="display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border2);border-bottom:1px solid var(--border2)">
+    <div style="background:var(--bg2);padding:12px 16px;text-align:center">
+      <div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Pairs Scanned</div>
+      <div id="smt-kpi-scanned" style="font-size:18px;font-weight:800;color:#fff;margin-top:2px">—</div>
+    </div>
+    <div style="background:var(--bg2);padding:12px 16px;text-align:center">
+      <div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Valid Pairs</div>
+      <div id="smt-kpi-valid" style="font-size:18px;font-weight:800;color:var(--green);margin-top:2px">—</div>
+    </div>
+    <div style="background:var(--bg2);padding:12px 16px;text-align:center">
+      <div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Active Divergences</div>
+      <div id="smt-kpi-divs" style="font-size:18px;font-weight:800;color:var(--amber);margin-top:2px">—</div>
+    </div>
+    <div style="background:var(--bg2);padding:12px 16px;text-align:center">
+      <div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Bullish SMT</div>
+      <div id="smt-kpi-bull" style="font-size:18px;font-weight:800;color:var(--green);margin-top:2px">—</div>
+    </div>
+    <div style="background:var(--bg2);padding:12px 16px;text-align:center">
+      <div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em;font-weight:600">Bearish SMT</div>
+      <div id="smt-kpi-bear" style="font-size:18px;font-weight:800;color:var(--red);margin-top:2px">—</div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div style="display:flex;align-items:center;gap:8px;padding:10px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0;flex-wrap:wrap">
+    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em">FILTER</span>
+    <button class="btn smt-filter active" data-filter="all" onclick="filterSmtResults('all',this)" style="font-size:10px;padding:4px 12px">All Pairs</button>
+    <button class="btn smt-filter" data-filter="divergence" onclick="filterSmtResults('divergence',this)" style="font-size:10px;padding:4px 12px">Active Divergences</button>
+    <button class="btn smt-filter" data-filter="bullish" onclick="filterSmtResults('bullish',this)" style="font-size:10px;padding:4px 12px">Bullish SMT</button>
+    <button class="btn smt-filter" data-filter="bearish" onclick="filterSmtResults('bearish',this)" style="font-size:10px;padding:4px 12px">Bearish SMT</button>
+    <button class="btn smt-filter" data-filter="aplus" onclick="filterSmtResults('aplus',this)" style="font-size:10px;padding:4px 12px">A+ Correlation</button>
+    <div style="flex:1"></div>
+    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em">SORT</span>
+    <button class="btn smt-sort active" onclick="sortSmtResults('correlation',this)" style="font-size:10px;padding:4px 10px">Correlation</button>
+    <button class="btn smt-sort" onclick="sortSmtResults('divergence',this)" style="font-size:10px;padding:4px 10px">Divergence</button>
+    <button class="btn smt-sort" onclick="sortSmtResults('alpha',this)" style="font-size:10px;padding:4px 10px">A-Z</button>
+  </div>
+
+  <!-- Results grid -->
+  <div class="scroll" style="padding:16px 20px">
+    <!-- Active divergences alert panel -->
+    <div id="smt-active-divs" style="display:none;margin-bottom:16px">
+      <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin-bottom:8px">Active SMT Divergences</div>
+      <div id="smt-div-cards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px"></div>
+    </div>
+
+    <!-- All pairs table -->
+    <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin-bottom:8px" id="smt-pairs-header">SMT Pair Universe</div>
+    <div id="smt-results-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px">
+      <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text3)">
+        <div style="font-size:32px;margin-bottom:12px">⚡</div>
+        <div style="font-size:15px;font-weight:700;color:var(--text2);margin-bottom:6px">SMT Divergence Scanner</div>
+        <div style="font-size:12px;margin-bottom:6px">Scans highly correlated ASX pairs for Smart Money divergences</div>
+        <div style="font-size:11px;color:var(--text4);margin-bottom:20px">Banks · Miners · Gold · Energy · Retail · Insurance · REITs · Tech · Lithium</div>
+        <button class="btn g" onclick="startSmtScan()" style="font-size:13px;padding:10px 28px;font-weight:700">⚡ Start SMT Scan</button>
+      </div>
+    </div>
+
+    <!-- Custom pair checker -->
+    <div class="panel" style="margin-top:20px;padding:16px 20px">
+      <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:10px">Custom Pair Checker</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <input id="smt-custom-t1" type="text" placeholder="Ticker 1 (e.g. CBA)" style="width:120px;padding:8px 12px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:#fff;font-size:12px;font-family:var(--fm);text-transform:uppercase">
+        <span style="color:var(--text3);font-size:14px;font-weight:700">vs</span>
+        <input id="smt-custom-t2" type="text" placeholder="Ticker 2 (e.g. WBC)" style="width:120px;padding:8px 12px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:#fff;font-size:12px;font-family:var(--fm);text-transform:uppercase">
+        <button class="btn g" onclick="checkCustomSmtPair()" style="font-size:12px;padding:8px 20px;font-weight:700">Check Pair</button>
+        <span id="smt-custom-status" style="font-size:11px;color:var(--text3)"></span>
+      </div>
+      <div id="smt-custom-result" style="margin-top:12px"></div>
     </div>
   </div>
 </div>
@@ -6604,6 +6701,364 @@ setInterval(() => {
     }).catch(()=>{});
   }
 }, 6 * 3600 * 1000);
+
+// ══════════════════════════════════════════════════════
+// SMT DIVERGENCE SCANNER
+// ══════════════════════════════════════════════════════
+
+const SMT_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions/smt';
+
+// Curated SMT pair universe — every major ASX sector
+const SMT_PAIRS = [
+  // Banks
+  {t1:'CBA',t2:'WBC',sector:'Banks'},{t1:'CBA',t2:'NAB',sector:'Banks'},{t1:'CBA',t2:'ANZ',sector:'Banks'},
+  {t1:'WBC',t2:'NAB',sector:'Banks'},{t1:'WBC',t2:'ANZ',sector:'Banks'},{t1:'NAB',t2:'ANZ',sector:'Banks'},
+  {t1:'CBA',t2:'BEN',sector:'Banks'},{t1:'CBA',t2:'BOQ',sector:'Banks'},{t1:'BEN',t2:'BOQ',sector:'Banks'},
+  // Iron Ore / Diversified Miners
+  {t1:'BHP',t2:'RIO',sector:'Miners'},{t1:'BHP',t2:'FMG',sector:'Miners'},{t1:'RIO',t2:'FMG',sector:'Miners'},
+  {t1:'BHP',t2:'S32',sector:'Miners'},{t1:'BHP',t2:'MIN',sector:'Miners'},{t1:'RIO',t2:'S32',sector:'Miners'},
+  // Gold
+  {t1:'NST',t2:'EVN',sector:'Gold'},{t1:'NCM',t2:'NST',sector:'Gold'},{t1:'NCM',t2:'EVN',sector:'Gold'},
+  {t1:'RMS',t2:'DEG',sector:'Gold'},{t1:'SBM',t2:'RMS',sector:'Gold'},{t1:'GOR',t2:'RSG',sector:'Gold'},
+  {t1:'RRL',t2:'SLR',sector:'Gold'},{t1:'NST',t2:'RMS',sector:'Gold'},{t1:'EVN',t2:'DEG',sector:'Gold'},
+  // Lithium
+  {t1:'PLS',t2:'LTR',sector:'Lithium'},{t1:'PLS',t2:'IGO',sector:'Lithium'},{t1:'MIN',t2:'PLS',sector:'Lithium'},
+  {t1:'AKE',t2:'PLS',sector:'Lithium'},{t1:'CXO',t2:'LTR',sector:'Lithium'},{t1:'IGO',t2:'MIN',sector:'Lithium'},
+  // Energy
+  {t1:'WDS',t2:'STO',sector:'Energy'},{t1:'WDS',t2:'BPT',sector:'Energy'},{t1:'STO',t2:'BPT',sector:'Energy'},
+  {t1:'WDS',t2:'ORG',sector:'Energy'},{t1:'STO',t2:'ORG',sector:'Energy'},
+  // Retail / Consumer
+  {t1:'WES',t2:'WOW',sector:'Retail'},{t1:'JBH',t2:'HVN',sector:'Retail'},{t1:'PMV',t2:'LOV',sector:'Retail'},
+  {t1:'WOW',t2:'COH',sector:'Retail'},{t1:'DMP',t2:'JBH',sector:'Retail'},
+  // Fuel / Convenience
+  {t1:'ALD',t2:'VEA',sector:'Fuel'},
+  // Insurance
+  {t1:'QBE',t2:'SUN',sector:'Insurance'},{t1:'QBE',t2:'IAG',sector:'Insurance'},{t1:'SUN',t2:'IAG',sector:'Insurance'},
+  {t1:'QBE',t2:'MPL',sector:'Insurance'},
+  // REITs
+  {t1:'GMG',t2:'SGP',sector:'REITs'},{t1:'SCG',t2:'GPT',sector:'REITs'},{t1:'DXS',t2:'CHC',sector:'REITs'},
+  {t1:'BWP',t2:'CQR',sector:'REITs'},{t1:'MGR',t2:'VCX',sector:'REITs'},
+  // Tech
+  {t1:'XRO',t2:'WTC',sector:'Tech'},{t1:'XRO',t2:'ALU',sector:'Tech'},{t1:'TNE',t2:'WTC',sector:'Tech'},
+  {t1:'ALU',t2:'WTC',sector:'Tech'},{t1:'PME',t2:'TNE',sector:'Tech'},
+  // Healthcare
+  {t1:'CSL',t2:'RHC',sector:'Healthcare'},{t1:'CSL',t2:'SHL',sector:'Healthcare'},{t1:'RHC',t2:'SHL',sector:'Healthcare'},
+  {t1:'RMD',t2:'COH',sector:'Healthcare'},{t1:'CSL',t2:'RMD',sector:'Healthcare'},
+  // Infrastructure / Utilities
+  {t1:'TCL',t2:'APA',sector:'Infrastructure'},{t1:'APA',t2:'AGL',sector:'Infrastructure'},
+  // Telco
+  {t1:'TLS',t2:'TPG',sector:'Telco'},
+  // Building / Materials
+  {t1:'JHX',t2:'BLD',sector:'Building'},{t1:'AMC',t2:'ORA',sector:'Building'},{t1:'BXB',t2:'AMC',sector:'Building'},
+  // Diversified / Other
+  {t1:'MQG',t2:'ASX',sector:'Diversified'},{t1:'ALL',t2:'TAH',sector:'Gaming'},
+  {t1:'QAN',t2:'WEB',sector:'Travel'},{t1:'FLT',t2:'WEB',sector:'Travel'},
+  // Cross-market (ASX vs US proxy via ASX-listed)
+  {t1:'BHP',t2:'WDS',sector:'Resources-X'},{t1:'CBA',t2:'BHP',sector:'Macro-X'},
+  {t1:'CSL',t2:'XRO',sector:'Growth-X'},{t1:'WES',t2:'TLS',sector:'Defensive-X'}
+];
+
+let smtResults = [];
+let smtScanning = false;
+let smtAbort = false;
+
+async function startSmtScan() {
+  if (smtScanning) return;
+  smtScanning = true;
+  smtAbort = false;
+  smtResults = [];
+
+  document.getElementById('smt-scan-btn').style.display = 'none';
+  document.getElementById('smt-stop-btn').style.display = 'flex';
+  document.getElementById('smt-progress').style.display = 'block';
+  document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div style="font-size:13px;color:var(--text2)">Scanning ' + SMT_PAIRS.length + ' pairs...</div></div>';
+
+  const total = SMT_PAIRS.length;
+  let scanned = 0, valid = 0, divs = 0, bull = 0, bear = 0;
+
+  // Batch scan — 3 pairs at a time
+  for (let i = 0; i < total; i += 3) {
+    if (smtAbort) break;
+    const batch = SMT_PAIRS.slice(i, i + 3);
+    const promises = batch.map(pair =>
+      fetch(SMT_PROXY + '?action=full&t1=' + pair.t1 + '&t2=' + pair.t2)
+        .then(r => r.json())
+        .then(data => {
+          if (data.error) return null;
+          data.sector = pair.sector;
+          return data;
+        })
+        .catch(() => null)
+    );
+    const results = await Promise.all(promises);
+    results.forEach(r => {
+      if (!r) return;
+      smtResults.push(r);
+      if (r.isValid) valid++;
+      if (r.activeDivergence) {
+        divs++;
+        if (r.activeDivergence.type === 'BULLISH') bull++;
+        else bear++;
+      }
+    });
+    scanned += batch.length;
+    const pct = Math.round(scanned / total * 100);
+    document.getElementById('smt-progress-fill').style.width = pct + '%';
+    document.getElementById('smt-progress-text').textContent = 'Scanning ' + scanned + '/' + total + ' · ' + valid + ' valid · ' + divs + ' divergences';
+    updateSmtKPIs(scanned, valid, divs, bull, bear);
+    renderSmtResults();
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  smtScanning = false;
+  document.getElementById('smt-scan-btn').style.display = 'flex';
+  document.getElementById('smt-stop-btn').style.display = 'none';
+  document.getElementById('smt-progress-text').textContent = 'Complete · ' + scanned + ' pairs · ' + divs + ' divergences';
+
+  const badge = document.getElementById('smt-badge');
+  if (badge && divs > 0) { badge.style.display = 'flex'; badge.textContent = divs; }
+
+  renderSmtResults();
+  if (divs > 0) showToast('SMT Scanner', divs + ' active divergence' + (divs > 1 ? 's' : '') + ' found', 'success', 5000);
+
+  // Save to localStorage
+  try {
+    localStorage.setItem('apex_smt_results', JSON.stringify({
+      time: new Date().toISOString(),
+      results: smtResults.filter(r => r.isValid || r.activeDivergence)
+    }));
+  } catch(e) {}
+}
+
+function stopSmtScan() {
+  smtAbort = true;
+  smtScanning = false;
+  document.getElementById('smt-scan-btn').style.display = 'flex';
+  document.getElementById('smt-stop-btn').style.display = 'none';
+  document.getElementById('smt-progress-text').textContent = 'Stopped';
+}
+
+function updateSmtKPIs(scanned, valid, divs, bull, bear) {
+  const el = id => document.getElementById(id);
+  if (el('smt-kpi-scanned')) el('smt-kpi-scanned').textContent = scanned;
+  if (el('smt-kpi-valid')) el('smt-kpi-valid').textContent = valid;
+  if (el('smt-kpi-divs')) el('smt-kpi-divs').textContent = divs;
+  if (el('smt-kpi-bull')) el('smt-kpi-bull').textContent = bull;
+  if (el('smt-kpi-bear')) el('smt-kpi-bear').textContent = bear;
+}
+
+function renderSmtResults() {
+  const grid = document.getElementById('smt-results-grid');
+  const divPanel = document.getElementById('smt-active-divs');
+  const divCards = document.getElementById('smt-div-cards');
+  if (!grid) return;
+
+  // Get current filter
+  const activeFilter = document.querySelector('.smt-filter.active');
+  const filter = activeFilter ? activeFilter.dataset.filter : 'all';
+
+  // Get current sort
+  const activeSort = document.querySelector('.smt-sort.active');
+  const sortBy = activeSort ? activeSort.textContent.trim().toLowerCase() : 'correlation';
+
+  // Filter
+  let filtered = smtResults.filter(r => {
+    if (filter === 'all') return r.isValid || r.activeDivergence;
+    if (filter === 'divergence') return r.activeDivergence;
+    if (filter === 'bullish') return r.activeDivergence && r.activeDivergence.type === 'BULLISH';
+    if (filter === 'bearish') return r.activeDivergence && r.activeDivergence.type === 'BEARISH';
+    if (filter === 'aplus') return r.grade === 'A+';
+    return true;
+  });
+
+  // Sort
+  filtered.sort((a, b) => {
+    if (sortBy === 'correlation') return (b.pearson || 0) - (a.pearson || 0);
+    if (sortBy === 'divergence') return (b.activeDivergence ? 1 : 0) - (a.activeDivergence ? 1 : 0);
+    if (sortBy === 'a-z') return (a.t1 || '').localeCompare(b.t1 || '');
+    return 0;
+  });
+
+  // Render active divergence cards
+  const activeDivs = smtResults.filter(r => r.activeDivergence);
+  if (activeDivs.length > 0 && divPanel && divCards) {
+    divPanel.style.display = 'block';
+    divCards.innerHTML = activeDivs.map(r => {
+      const d = r.activeDivergence;
+      const isBull = d.type === 'BULLISH';
+      const col = isBull ? 'var(--green)' : 'var(--red)';
+      const bg = isBull ? 'rgba(0,212,168,.08)' : 'rgba(255,68,102,.08)';
+      const border = isBull ? 'rgba(0,212,168,.3)' : 'rgba(255,68,102,.3)';
+      return `<div class="panel" style="padding:0;overflow:hidden;border-color:${border};box-shadow:inset 3px 0 0 ${col}">
+        <div style="padding:12px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:16px;font-weight:800;color:#fff">${r.t1}</span>
+              <span style="color:var(--text4);font-size:12px">vs</span>
+              <span style="font-size:16px;font-weight:800;color:#fff">${r.t2}</span>
+              <span style="font-size:9px;padding:2px 8px;border-radius:3px;background:${bg};color:${col};font-weight:700">${d.type} SMT</span>
+            </div>
+            <span style="font-size:10px;color:var(--text4)">${d.age}d ago · ${r.sector}</span>
+          </div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:6px">${d.description}</div>
+          <div style="display:flex;gap:12px;font-size:10px;color:var(--text3)">
+            <span>Pearson: <strong style="color:${r.pearson >= 0.85 ? 'var(--green)' : 'var(--amber)'}">${r.pearson?.toFixed(3)}</strong></span>
+            <span>R²: <strong>${r.rSquared?.toFixed(3)}</strong></span>
+            <span>Grade: <strong style="color:${r.grade === 'A+' ? 'var(--green)' : r.grade === 'A' ? 'var(--accent)' : 'var(--text2)'}">${r.grade}</strong></span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  } else if (divPanel) {
+    divPanel.style.display = 'none';
+  }
+
+  // Render pair cards
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1;padding:40px;text-align:center;color:var(--text3);font-size:12px">' + (smtScanning ? 'Scanning...' : 'No results match this filter') + '</div>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(r => {
+    const hasDiv = r.activeDivergence;
+    const gradeCol = r.grade === 'A+' ? 'var(--green)' : r.grade === 'A' ? 'var(--accent)' : r.grade === 'B' ? 'var(--amber)' : 'var(--text3)';
+    const pearsonCol = r.pearson >= 0.90 ? 'var(--green)' : r.pearson >= 0.80 ? 'var(--accent)' : r.pearson >= 0.70 ? 'var(--amber)' : 'var(--red)';
+    const borderCol = hasDiv ? (r.activeDivergence.type === 'BULLISH' ? 'rgba(0,212,168,.3)' : 'rgba(255,68,102,.3)') : 'var(--border2)';
+    const glow = hasDiv ? (r.activeDivergence.type === 'BULLISH' ? 'box-shadow:inset 3px 0 0 var(--green),0 0 8px rgba(0,212,168,.08)' : 'box-shadow:inset 3px 0 0 var(--red),0 0 8px rgba(255,68,102,.08)') : '';
+
+    let divBadge = '';
+    if (hasDiv) {
+      const dc = r.activeDivergence.type === 'BULLISH' ? 'var(--green)' : 'var(--red)';
+      const dbg = r.activeDivergence.type === 'BULLISH' ? 'rgba(0,212,168,.12)' : 'rgba(255,68,102,.12)';
+      divBadge = `<div style="padding:6px 12px;border-top:1px solid var(--border);font-size:10px;background:${dbg};color:${dc};font-weight:600">${r.activeDivergence.type} · ${r.activeDivergence.description} · ${r.activeDivergence.age}d ago</div>`;
+    }
+
+    return `<div class="panel" style="padding:0;overflow:hidden;border-color:${borderCol};${glow};cursor:pointer" onclick="window.open('https://www.tradingview.com/chart/?symbol=ASX:${r.t1}','_blank')">
+      <div style="padding:12px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:14px;font-weight:800;padding:2px 6px;border-radius:4px;background:rgba(45,142,255,.12);color:${gradeCol}">${r.grade}</span>
+            <span style="font-size:15px;font-weight:800;color:#fff">${r.t1}</span>
+            <span style="color:var(--text4);font-size:11px">×</span>
+            <span style="font-size:15px;font-weight:800;color:#fff">${r.t2}</span>
+          </div>
+          <span style="font-size:9px;padding:2px 8px;border-radius:3px;background:var(--bg5);color:var(--text3);font-weight:600">${r.sector}</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">
+          <div style="background:var(--bg4);border-radius:4px;padding:6px 8px;text-align:center">
+            <div style="font-size:8px;color:var(--text4);font-weight:600;letter-spacing:.05em">PEARSON</div>
+            <div style="font-size:13px;font-weight:700;color:${pearsonCol}">${r.pearson?.toFixed(3) || '—'}</div>
+          </div>
+          <div style="background:var(--bg4);border-radius:4px;padding:6px 8px;text-align:center">
+            <div style="font-size:8px;color:var(--text4);font-weight:600;letter-spacing:.05em">SPEARMAN</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text2)">${r.spearman?.toFixed(3) || '—'}</div>
+          </div>
+          <div style="background:var(--bg4);border-radius:4px;padding:6px 8px;text-align:center">
+            <div style="font-size:8px;color:var(--text4);font-weight:600;letter-spacing:.05em">R-SQUARED</div>
+            <div style="font-size:13px;font-weight:700;color:var(--text2)">${r.rSquared?.toFixed(3) || '—'}</div>
+          </div>
+          <div style="background:var(--bg4);border-radius:4px;padding:6px 8px;text-align:center">
+            <div style="font-size:8px;color:var(--text4);font-weight:600;letter-spacing:.05em">ATR RATIO</div>
+            <div style="font-size:13px;font-weight:700;color:${(r.atrRatio || 0) <= 2 ? 'var(--green)' : 'var(--amber)'}">${r.atrRatio?.toFixed(1) || '—'}x</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px;font-size:10px;color:var(--text3)">
+          <span>Trend: <strong style="color:${r.trendAligned ? 'var(--green)' : 'var(--red)'}">${r.trendAligned ? 'ALIGNED' : 'DIVERGENT'}</strong></span>
+          <span>Rolling: <strong>${r.rollingAvg?.toFixed(3) || '—'}</strong></span>
+          <span>${r.dataPoints || 0} bars</span>
+        </div>
+      </div>
+      ${divBadge}
+    </div>`;
+  }).join('');
+
+  document.getElementById('smt-pairs-header').textContent = 'SMT Pair Universe · ' + filtered.length + ' pairs';
+}
+
+function filterSmtResults(filter, btn) {
+  document.querySelectorAll('.smt-filter').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderSmtResults();
+}
+
+function sortSmtResults(sortBy, btn) {
+  document.querySelectorAll('.smt-sort').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderSmtResults();
+}
+
+async function checkCustomSmtPair() {
+  const t1 = (document.getElementById('smt-custom-t1').value || '').trim().toUpperCase();
+  const t2 = (document.getElementById('smt-custom-t2').value || '').trim().toUpperCase();
+  const status = document.getElementById('smt-custom-status');
+  const result = document.getElementById('smt-custom-result');
+  if (!t1 || !t2) { if (status) status.textContent = 'Enter both tickers'; return; }
+  if (t1 === t2) { if (status) status.textContent = 'Tickers must be different'; return; }
+  if (status) status.innerHTML = '<span style="color:var(--accent)">Checking ' + t1 + ' vs ' + t2 + '...</span>';
+  if (result) result.innerHTML = '<div style="display:flex;align-items:center;gap:8px;color:var(--text3);font-size:12px"><div class="lpulse" style="background:var(--accent)"></div>Fetching data and computing correlation...</div>';
+
+  try {
+    const r = await fetch(SMT_PROXY + '?action=full&t1=' + t1 + '&t2=' + t2);
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+
+    const gradeCol = data.grade === 'A+' ? 'var(--green)' : data.grade === 'A' ? 'var(--accent)' : data.grade === 'B' ? 'var(--amber)' : 'var(--text3)';
+    const valid = data.isValid;
+    if (status) status.innerHTML = valid
+      ? '<span style="color:var(--green)">Valid SMT pair (' + data.grade + ')</span>'
+      : '<span style="color:var(--red)">Not a valid SMT pair</span>';
+
+    let html = `<div class="panel" style="margin-top:8px;padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <span style="font-size:16px;font-weight:800;color:#fff">${t1}</span>
+        <span style="color:var(--text4)">×</span>
+        <span style="font-size:16px;font-weight:800;color:#fff">${t2}</span>
+        <span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(45,142,255,.12);color:${gradeCol}">${data.grade}</span>
+        <span style="font-size:11px;color:${valid ? 'var(--green)' : 'var(--red)'}; font-weight:700">${valid ? 'VALID PAIR' : 'NOT VALID'}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;font-size:11px">
+        <div style="background:var(--bg4);padding:6px;border-radius:4px;text-align:center"><div style="font-size:8px;color:var(--text4);font-weight:600">PEARSON</div><div style="font-weight:700;color:${data.pearson >= 0.85 ? 'var(--green)' : data.pearson >= 0.70 ? 'var(--amber)' : 'var(--red)'}">${data.pearson?.toFixed(4)}</div></div>
+        <div style="background:var(--bg4);padding:6px;border-radius:4px;text-align:center"><div style="font-size:8px;color:var(--text4);font-weight:600">SPEARMAN</div><div style="font-weight:700">${data.spearman?.toFixed(4)}</div></div>
+        <div style="background:var(--bg4);padding:6px;border-radius:4px;text-align:center"><div style="font-size:8px;color:var(--text4);font-weight:600">ROLLING</div><div style="font-weight:700">${data.rollingAvg?.toFixed(4)}</div></div>
+        <div style="background:var(--bg4);padding:6px;border-radius:4px;text-align:center"><div style="font-size:8px;color:var(--text4);font-weight:600">R-SQUARED</div><div style="font-weight:700">${data.rSquared?.toFixed(4)}</div></div>
+        <div style="background:var(--bg4);padding:6px;border-radius:4px;text-align:center"><div style="font-size:8px;color:var(--text4);font-weight:600">ATR RATIO</div><div style="font-weight:700">${data.atrRatio?.toFixed(2)}x</div></div>
+      </div>`;
+    if (data.activeDivergence) {
+      const d = data.activeDivergence;
+      const dc = d.type === 'BULLISH' ? 'var(--green)' : 'var(--red)';
+      html += `<div style="margin-top:8px;padding:8px 12px;border-radius:6px;background:${d.type === 'BULLISH' ? 'rgba(0,212,168,.08)' : 'rgba(255,68,102,.08)'};border:1px solid ${dc}">
+        <div style="font-size:11px;font-weight:700;color:${dc}">${d.type} SMT DIVERGENCE ACTIVE</div>
+        <div style="font-size:10px;color:var(--text2);margin-top:2px">${d.description} · ${d.age} days ago</div>
+      </div>`;
+    } else if (data.divergences && data.divergences.length > 0) {
+      html += `<div style="margin-top:6px;font-size:10px;color:var(--text3)">${data.divergences.length} historical divergence(s) detected (not currently active)</div>`;
+    } else {
+      html += `<div style="margin-top:6px;font-size:10px;color:var(--text3)">No divergences detected in recent history</div>`;
+    }
+    html += '</div>';
+    if (result) result.innerHTML = html;
+  } catch(e) {
+    if (status) status.innerHTML = '<span style="color:var(--red)">Error: ' + e.message + '</span>';
+    if (result) result.innerHTML = '';
+  }
+}
+
+// Load cached SMT results on page load
+(function() {
+  try {
+    const saved = localStorage.getItem('apex_smt_results');
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.results && data.results.length > 0) {
+        smtResults = data.results;
+        const divs = smtResults.filter(r => r.activeDivergence);
+        const bull = divs.filter(d => d.activeDivergence.type === 'BULLISH');
+        updateSmtKPIs(smtResults.length, smtResults.filter(r => r.isValid).length, divs.length, bull.length, divs.length - bull.length);
+        renderSmtResults();
+      }
+    }
+  } catch(e) {}
+})();
 
 </script>
 
