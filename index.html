@@ -665,7 +665,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 
 /* Journal improvements */
 .journal-stats-grid {
-  display:grid; grid-template-columns:repeat(5,1fr); gap:12px; margin-bottom:20px;
+  display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:20px;
 }
 .jstat { background:var(--bg4); border:1px solid var(--border2); border-radius:10px; padding:14px 16px; }
 .jstat-label { font-size:9px; color:var(--text3); font-weight:600; letter-spacing:.06em; text-transform:uppercase; }
@@ -766,11 +766,38 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 /* Mobile responsive */
 @media (max-width:768px) {
   .sidebar { width:48px !important; }
-  .sbb-label { display:none; }
+  .sbb span { font-size:7px; }
   .scan-header-bar, .scanrow-v2 { grid-template-columns:100px 80px 1fr 80px; }
   .scan-col-head:nth-child(4), .scan-col-head:nth-child(5) { display:none; }
   .stat-value { font-size:22px; }
-  .journal-stats-grid { grid-template-columns:repeat(3,1fr); }
+  .journal-stats-grid { grid-template-columns:repeat(2,1fr) !important; gap:8px !important; }
+  .scroll > .panel { break-inside:avoid; }
+  .topbar .ticker-wrap { max-width:40vw; }
+  #overnight-grid { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)) !important; }
+  .ph-t { font-size:15px; }
+  .pred-verdict { grid-template-columns:1fr !important; gap:8px !important; }
+}
+@media (max-width:480px) {
+  .sidebar { width:42px !important; }
+  .sbb { width:34px; height:34px; }
+  .sbb svg { width:13px; height:13px; }
+  .sbb span { display:none; }
+  .topbar { padding:0 8px; height:38px; }
+  .logo { font-size:14px; margin-right:8px; }
+  .topbar-r { gap:6px; }
+  #clock, #dstatus { font-size:9px; }
+  .ph { padding:8px 12px; }
+  .ph-t { font-size:14px; }
+  .scroll { padding:10px !important; }
+  .scroll > div[style*="grid-template-columns:1fr 1fr"] { grid-template-columns:1fr !important; }
+  .scan-header-bar, .scanrow-v2 { grid-template-columns:80px 60px 1fr; }
+  .scan-col-head:nth-child(3), .scan-col-head:nth-child(4), .scan-col-head:nth-child(5) { display:none; }
+  #overnight-grid { grid-template-columns:repeat(2,1fr) !important; }
+  .heatmap-grid { grid-template-columns:50px repeat(3,1fr) !important; min-width:0 !important; }
+  .risk-calc .rc-row { flex-direction:column; gap:4px; }
+  .form-grid { grid-template-columns:1fr !important; }
+  .ss-row { flex-direction:column; gap:6px; }
+  .ss-input { width:100% !important; }
 }
 
 
@@ -873,7 +900,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <button class="sbb" id="sb-scanner" onclick="nav('scanner')">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <span>SCAN</span>
-    <div class="sbadge">9</div>
+    <div class="sbadge" id="scan-badge-count" style="display:none">0</div>
   </button>
   <button class="sbb" id="sb-intel" onclick="nav('intel')">
     <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -886,7 +913,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <div class="sdiv"></div>
   <button class="sbb" id="sb-sectors" onclick="nav('sectors')">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10H12z"/><path d="M12 12L2 12a10 10 0 0 0 10 10z"/></svg>
-    <span>FLOW</span>
+    <span>SCTRS</span>
   </button>
   <button class="sbb" id="sb-log" onclick="nav('log')">
     <svg viewBox="0 0 24 24"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
@@ -914,10 +941,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   </div>
   <div class="scroll">
     <div class="metrics">
-      <div class="mc"><div class="mc-l">P&L today</div><div class="mc-v up" id="m-pnl">+$3,241</div><div class="mc-s"><span class="up">+2.1%</span> vs yesterday</div></div>
-      <div class="mc"><div class="mc-l">Open positions</div><div class="mc-v" id="m-pos">7</div><div class="mc-s">4 long · 3 short</div></div>
-      <div class="mc"><div class="mc-l">Win rate (30d)</div><div class="mc-v up" id="m-wr">61%</div><div class="mc-s">44 of 72 trades</div></div>
-      <div class="mc"><div class="mc-l">Max drawdown</div><div class="mc-v dn" id="m-dd">−4.2%</div><div class="mc-s">Peak: $83,400</div></div>
+      <div class="mc"><div class="mc-l">P&L today</div><div class="mc-v up" id="m-pnl">—</div><div class="mc-s" id="m-pnl-sub">Calculating...</div></div>
+      <div class="mc"><div class="mc-l">Open positions</div><div class="mc-v" id="m-pos">—</div><div class="mc-s" id="m-pos-sub">Loading...</div></div>
+      <div class="mc"><div class="mc-l">Win rate (30d)</div><div class="mc-v" id="m-wr">—</div><div class="mc-s" id="m-wr-sub">Loading...</div></div>
+      <div class="mc"><div class="mc-l">Max drawdown</div><div class="mc-v" id="m-dd">—</div><div class="mc-s" id="m-dd-sub">Loading...</div></div>
     </div>
 
     <div class="g2">
@@ -936,38 +963,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <div class="vcol">
         <!-- Correlation Matrix -->
         <div class="panel">
-          <div class="phead"><div class="ptitle">Correlation matrix</div><div class="pmeta">Live positions</div></div>
-          <div class="corr-grid">
-            <div class="corr-head">
-              <div></div>
-              <div class="corr-sym-h">AUD</div><div class="corr-sym-h">GOLD</div><div class="corr-sym-h">BHP</div><div class="corr-sym-h">WTI</div>
-            </div>
-            <div class="corr-row"><div class="corr-label">AUD/USD</div>
-              <div class="corr-cell" style="background:#14532d;color:#4ade80">1.0</div>
-              <div class="corr-cell" style="background:#166534;color:#86efac">0.71</div>
-              <div class="corr-cell" style="background:#1e3a5f;color:#93c5fd">0.58</div>
-              <div class="corr-cell" style="background:#2a1a0a;color:#fb923c">0.21</div>
-            </div>
-            <div class="corr-row"><div class="corr-label">XAU/USD</div>
-              <div class="corr-cell" style="background:#166534;color:#86efac">0.71</div>
-              <div class="corr-cell" style="background:#14532d;color:#4ade80">1.0</div>
-              <div class="corr-cell" style="background:#1a3a5c;color:#93c5fd">0.63</div>
-              <div class="corr-cell" style="background:#1e2233;color:#7a8aa0">0.08</div>
-            </div>
-            <div class="corr-row"><div class="corr-label">BHP.ASX</div>
-              <div class="corr-cell" style="background:#1e3a5f;color:#93c5fd">0.58</div>
-              <div class="corr-cell" style="background:#1a3a5c;color:#93c5fd">0.63</div>
-              <div class="corr-cell" style="background:#14532d;color:#4ade80">1.0</div>
-              <div class="corr-cell" style="background:#2a1a0a;color:#fb923c">0.34</div>
-            </div>
-            <div class="corr-row"><div class="corr-label">WTI</div>
-              <div class="corr-cell" style="background:#2a1a0a;color:#fb923c">0.21</div>
-              <div class="corr-cell" style="background:#1e2233;color:#7a8aa0">0.08</div>
-              <div class="corr-cell" style="background:#2a1a0a;color:#fb923c">0.34</div>
-              <div class="corr-cell" style="background:#14532d;color:#4ade80">1.0</div>
-            </div>
+          <div class="phead"><div class="ptitle">Correlation matrix</div><div class="pmeta">Live from prices</div></div>
+          <div id="corr-matrix-container">
+            <div style="padding:16px;color:var(--text3);font-size:12px;text-align:center">Calculating...</div>
           </div>
-          <div style="padding:6px 16px 10px;font-size:10px;color:var(--amber)">⚠ AUD/USD + XAU/USD highly correlated (0.71) — review exposure</div>
         </div>
 
         <!-- Risk Calculator -->
@@ -989,28 +988,22 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     </div>
 
     <!-- Equity Curve -->
-    <div class="panel">
-      <div class="phead"><div class="ptitle">Equity curve & drawdown</div><div class="pmeta">30-day view</div></div>
+    <div class="panel" id="equity-panel">
+      <div class="phead"><div class="ptitle">Equity curve & drawdown</div><div class="pmeta" id="eq-meta">From journal</div></div>
       <div class="eq-curve">
-        <div class="eq-stats">
-          <div class="eq-stat"><div class="eq-stat-v up">$83,241</div><div class="eq-stat-l">Current equity</div></div>
-          <div class="eq-stat"><div class="eq-stat-v">$80,000</div><div class="eq-stat-l">Starting capital</div></div>
-          <div class="eq-stat"><div class="eq-stat-v up">+4.1%</div><div class="eq-stat-l">Total return</div></div>
-          <div class="eq-stat"><div class="eq-stat-v dn">−4.2%</div><div class="eq-stat-l">Max drawdown</div></div>
+        <div class="eq-stats" id="eq-stats">
+          <div class="eq-stat"><div class="eq-stat-v" id="eq-equity">—</div><div class="eq-stat-l">Current equity</div></div>
+          <div class="eq-stat"><div class="eq-stat-v" id="eq-start">—</div><div class="eq-stat-l">Starting capital</div></div>
+          <div class="eq-stat"><div class="eq-stat-v" id="eq-return">—</div><div class="eq-stat-l">Total return</div></div>
+          <div class="eq-stat"><div class="eq-stat-v" id="eq-dd">—</div><div class="eq-stat-l">Max drawdown</div></div>
         </div>
-        <svg class="eq-svg" viewBox="0 0 800 120" preserveAspectRatio="none">
+        <svg class="eq-svg" id="eq-svg" viewBox="0 0 800 120" preserveAspectRatio="none">
           <defs>
             <linearGradient id="eqg" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stop-color="#2d8eff" stop-opacity="0.3"/>
               <stop offset="100%" stop-color="#2d8eff" stop-opacity="0"/>
             </linearGradient>
           </defs>
-          <path d="M0,80 L40,75 L80,70 L120,85 L160,78 L200,65 L240,72 L280,60 L320,55 L360,68 L400,58 L440,45 L480,52 L520,40 L560,35 L600,42 L640,30 L680,25 L720,20 L760,15 L800,18 L800,120 L0,120Z" fill="url(#eqg)"/>
-          <path d="M0,80 L40,75 L80,70 L120,85 L160,78 L200,65 L240,72 L280,60 L320,55 L360,68 L400,58 L440,45 L480,52 L520,40 L560,35 L600,42 L640,30 L680,25 L720,20 L760,15 L800,18" fill="none" stroke="#2d8eff" stroke-width="2"/>
-          <!-- Drawdown zone -->
-          <path d="M80,70 L120,85 L160,78" fill="none" stroke="#ff3d5a" stroke-width="2" stroke-dasharray="4 2"/>
-          <line x1="80" y1="70" x2="120" y2="70" stroke="#ff3d5a" stroke-width="1" stroke-dasharray="2 2" opacity="0.5"/>
-          <text x="100" y="68" font-size="8" fill="#ff3d5a" text-anchor="middle" font-family="DM Mono">−4.2%</text>
         </svg>
       </div>
     </div>
@@ -1026,13 +1019,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         <div class="cal-row"><div class="cal-time">18:00</div><div class="cal-impact" style="background:var(--text4)"></div><div class="cal-event">ASX 200 Close</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act" style="color:var(--text3)">EOD</div></div>
       </div>
       <div class="panel">
-        <div class="phead"><div class="ptitle">P&L by market</div><div class="pmeta">Today</div></div>
-        <div style="padding:6px 0">
-          <div style="padding:8px 16px;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px"><span>ASX equities</span><span class="up">+$1,820</span></div><div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:75%;height:4px;border-radius:2px;background:var(--green)"></div></div></div>
-          <div style="padding:8px 16px;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px"><span>Commodities</span><span class="up">+$838</span></div><div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:48%;height:4px;border-radius:2px;background:var(--green)"></div></div></div>
-          <div style="padding:8px 16px;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px"><span>Futures</span><span class="up">+$700</span></div><div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:40%;height:4px;border-radius:2px;background:var(--green)"></div></div></div>
-          <div style="padding:8px 16px;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px"><span>Forex</span><span class="up">+$574</span></div><div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:33%;height:4px;border-radius:2px;background:var(--green)"></div></div></div>
-          <div style="padding:8px 16px"><div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px"><span>US equities</span><span class="dn">−$88</span></div><div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:8%;height:4px;border-radius:2px;background:var(--red)"></div></div></div>
+        <div class="phead"><div class="ptitle">P&L by market</div><div class="pmeta">From journal</div></div>
+        <div id="pnl-by-market" style="padding:6px 0">
+          <div style="padding:16px;color:var(--text3);font-size:12px;text-align:center">Log trades to see breakdown</div>
         </div>
       </div>
     </div>
@@ -1291,6 +1280,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         <div class="jstat-label">Profit Factor</div>
         <div class="jstat-val" id="jstat-pf">—</div>
       </div>
+      <div class="jstat">
+        <div class="jstat-label">Expectancy</div>
+        <div class="jstat-val" id="jstat-exp">—</div>
+      </div>
+      <div class="jstat">
+        <div class="jstat-label">Sharpe Ratio</div>
+        <div class="jstat-val" id="jstat-sharpe">—</div>
+      </div>
+      <div class="jstat">
+        <div class="jstat-label">Streak</div>
+        <div class="jstat-val" id="jstat-streak">—</div>
+      </div>
     </div>
   </div>
   <div class="ph">
@@ -1314,38 +1315,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <!-- Behavioral Heatmap -->
     <div class="panel">
       <div class="phead"><div class="ptitle">Behavioral heatmap — when do you trade best?</div><div class="pmeta">Last 90 days · Win rate by session</div></div>
-      <div class="heatmap-wrap">
-        <div class="heatmap-grid">
-          <div></div>
-          <div class="hm-head">Monday</div><div class="hm-head">Tuesday</div><div class="hm-head">Wednesday</div><div class="hm-head">Thursday</div><div class="hm-head">Friday</div>
-          <div class="hm-label">Pre-mkt<br><span style="font-size:9px;color:var(--text3)">7–9am</span></div>
-          <div class="hm-cell" style="background:rgba(255,176,32,.25)" title="6 trades"><div class="hm-wr am">52%</div><div class="hm-n">6 trades</div></div>
-          <div class="hm-cell" style="background:rgba(0,232,150,.35)" title="8 trades"><div class="hm-wr up">68%</div><div class="hm-n">8t</div></div>
-          <div class="hm-cell" style="background:rgba(0,232,150,.2)" title="5 trades"><div class="hm-wr up">60%</div><div class="hm-n">5t</div></div>
-          <div class="hm-cell" style="background:rgba(255,61,90,.2)" title="4 trades"><div class="hm-wr dn">40%</div><div class="hm-n">4t</div></div>
-          <div class="hm-cell" style="background:rgba(255,61,90,.15)" title="3 trades"><div class="hm-wr dn">33%</div><div class="hm-n">3t</div></div>
-          <div class="hm-label">ASX open<br><span style="font-size:9px;color:var(--text3)">10am–1pm</span></div>
-          <div class="hm-cell" style="background:rgba(0,232,150,.4)" title="12 trades"><div class="hm-wr up">67%</div><div class="hm-n">12t</div></div>
-          <div class="hm-cell" style="background:rgba(0,232,150,.6)" title="14 trades"><div class="hm-wr up" style="font-size:13px">74%</div><div class="hm-n">14t</div></div>
-          <div class="hm-cell" style="background:rgba(0,232,150,.45)" title="11 trades"><div class="hm-wr up">70%</div><div class="hm-n">11t</div></div>
-          <div class="hm-cell" style="background:rgba(0,232,150,.3)" title="9 trades"><div class="hm-wr up">64%</div><div class="hm-n">9t</div></div>
-          <div class="hm-cell" style="background:rgba(255,176,32,.2)" title="7 trades"><div class="hm-wr am">48%</div><div class="hm-n">7t</div></div>
-          <div class="hm-label">Midday<br><span style="font-size:9px;color:var(--text3)">1–4pm</span></div>
-          <div class="hm-cell" style="background:rgba(255,176,32,.15)" title="5 trades"><div class="hm-wr am">45%</div><div class="hm-n">5t</div></div>
-          <div class="hm-cell" style="background:rgba(0,232,150,.25)" title="6 trades"><div class="hm-wr up">62%</div><div class="hm-n">6t</div></div>
-          <div class="hm-cell" style="background:rgba(255,176,32,.2)" title="7 trades"><div class="hm-wr am">50%</div><div class="hm-n">7t</div></div>
-          <div class="hm-cell" style="background:rgba(255,61,90,.15)" title="4 trades"><div class="hm-wr dn">42%</div><div class="hm-n">4t</div></div>
-          <div class="hm-cell" style="background:rgba(255,61,90,.25)" title="6 trades"><div class="hm-wr dn">38%</div><div class="hm-n">6t</div></div>
-          <div class="hm-label">US open<br><span style="font-size:9px;color:var(--text3)">11pm–2am</span></div>
-          <div class="hm-cell" style="background:rgba(255,61,90,.3)" title="5 trades"><div class="hm-wr dn">35%</div><div class="hm-n">5t</div></div>
-          <div class="hm-cell" style="background:rgba(255,176,32,.2)" title="4 trades"><div class="hm-wr am">50%</div><div class="hm-n">4t</div></div>
-          <div class="hm-cell" style="background:rgba(255,61,90,.2)" title="3 trades"><div class="hm-wr dn">40%</div><div class="hm-n">3t</div></div>
-          <div class="hm-cell" style="background:rgba(0,232,150,.2)" title="4 trades"><div class="hm-wr up">60%</div><div class="hm-n">4t</div></div>
-          <div class="hm-cell" style="background:rgba(255,61,90,.4)" title="5 trades"><div class="hm-wr dn">28%</div><div class="hm-n">5t</div></div>
-        </div>
-        <div style="margin-top:12px;font-size:11px;color:var(--text3)">
-          Insight: <span style="color:var(--green);font-weight:600">Tuesday ASX open is your strongest session (74% win rate)</span> · <span style="color:var(--red);font-weight:600">Friday PM and US open on Monday are your weakest — consider not trading these</span>
-        </div>
+      <div class="heatmap-wrap" id="heatmap-container">
+        <div style="padding:16px;color:var(--text3);font-size:12px;text-align:center">Loading heatmap from journal...</div>
       </div>
     </div>
 
@@ -1389,6 +1360,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         <div class="form-group"><label>Direction</label><select class="form-input" id="ft-dir"><option>Long</option><option>Short</option></select></div>
         <div class="form-group"><label>Entry price</label><input class="form-input" id="ft-entry" placeholder="0.00"></div>
         <div class="form-group"><label>Exit price</label><input class="form-input" id="ft-exit" placeholder="0.00"></div>
+        <div class="form-group"><label>Position size</label><input class="form-input" id="ft-size" type="number" placeholder="e.g. 500 units"></div>
         <div class="form-group"><label>MAE (max adverse)</label><input class="form-input" id="ft-mae" placeholder="e.g. -$80"></div>
         <div class="form-group"><label>MFE (max favourable)</label><input class="form-input" id="ft-mfe" placeholder="e.g. +$400"></div>
         <div class="form-group"><label>Followed plan?</label><select class="form-input" id="ft-plan"><option>YES</option><option>NO</option></select></div>
@@ -2542,11 +2514,13 @@ const CFG = {
   strategy: {
     timeframes: ['1m','3m','5m','15m','1H','4H','D','W'],
     triggers: ['CRT','BOS','MTF','NEWS','VOL'],
-    minConfidence: 65,
-    rvolThreshold: 2.0,
-    mtfRequired: 3,
-    riskPct: 1.0,
-    account: 80000,
+    minConfidence: parseInt(localStorage.getItem('apex_conf')) || 65,
+    rvolThreshold: parseFloat(localStorage.getItem('apex_rvol')) || 2.0,
+    mtfRequired: parseInt(localStorage.getItem('apex_mtf')) || 3,
+    riskPct: parseFloat(localStorage.getItem('apex_risk_pct')) || 1.0,
+    account: parseFloat(localStorage.getItem('apex_account')) || 80000,
+    maxDrawdown: parseFloat(localStorage.getItem('apex_max_dd')) || 5,
+    maxCorrelation: parseFloat(localStorage.getItem('apex_max_corr')) || 30,
   }
 };
 
@@ -3067,9 +3041,13 @@ function updateScannerUI(results) {
 
   scanBody.innerHTML = html;
 
-  // Update badge
+  // Update badge — show count only when signals exist
   const badge = document.getElementById('scan-badge-count');
-  if (badge) badge.textContent = filtered.length;
+  if (badge) {
+    const hiCount = hiSigs.length;
+    badge.textContent = hiCount;
+    badge.style.display = hiCount > 0 ? 'flex' : 'none';
+  }
 }
 
 function renderScanRow(sig) {
@@ -3344,10 +3322,7 @@ async function fetchRSSviaProxy(rssUrl, sourceName) {
   return parseRSSXml(text, sourceName);
 }
 
-async function fetchNewsViaProxy() { throw new Error('no /news endpoint on proxy'); }
-async function fetchCurrents() { throw new Error('deprecated'); }
-async function fetchMediaStack() { throw new Error('deprecated'); }
-async function fetchGNews() { throw new Error('GNews key invalid'); }
+// Legacy news functions removed — all news fetched via fetchNews()
 
 function renderNewsItems(items) {
   const feed = document.getElementById('news-feed');
@@ -3420,7 +3395,9 @@ function calcRisk() {
 // ═══════════════════════════════════════════════════════
 // JOURNAL
 // ═══════════════════════════════════════════════════════
-let journalTrades = JSON.parse(localStorage.getItem('apex_journal') || '[]');
+let journalTrades = [];
+try { journalTrades = JSON.parse(localStorage.getItem('apex_journal') || '[]'); }
+catch(e) { console.warn('Journal data corrupted, resetting:', e.message); localStorage.removeItem('apex_journal'); }
 
 function showAddTrade() {
   const el = document.getElementById('add-trade-form');
@@ -3435,10 +3412,12 @@ function saveJournalTrade() {
   const tags = Array.from(document.querySelectorAll('.tag-opt.sel')).map(e => e.textContent);
   const entry = parseFloat(document.getElementById('ft-entry')?.value || 0);
   const exit  = parseFloat(document.getElementById('ft-exit')?.value  || 0);
+  const size  = parseFloat(document.getElementById('ft-size')?.value  || 0);
   const dir   = document.getElementById('ft-dir')?.value || 'Long';
-  const pnl   = ((exit - entry) * (dir === 'Long' ? 1 : -1)).toFixed(2);
+  const pricePnl = (exit - entry) * (dir === 'Long' ? 1 : -1);
+  const pnl   = size > 0 ? (pricePnl * size).toFixed(2) : pricePnl.toFixed(2);
   const trade = {
-    date: new Date().toLocaleDateString('en-AU'), sym, dir,
+    date: new Date().toLocaleDateString('en-AU'), sym, dir, size: size || '',
     entry: document.getElementById('ft-entry')?.value,
     exit:  document.getElementById('ft-exit')?.value,
     mae:   document.getElementById('ft-mae')?.value,
@@ -3508,8 +3487,37 @@ function saveSettings() {
   }
   const k = document.getElementById('key-news')?.value.trim();
   if (k) { CFG.newsKey = k; localStorage.setItem('apex_news_key', k); }
+
+  // Persist scanner parameters
+  const rvol = parseFloat(document.getElementById('set-rvol')?.value);
+  if (rvol > 0) { CFG.strategy.rvolThreshold = rvol; localStorage.setItem('apex_rvol', rvol); }
+  const mtf = parseInt(document.getElementById('set-mtf')?.value);
+  if (mtf >= 2) { CFG.strategy.mtfRequired = mtf; localStorage.setItem('apex_mtf', mtf); }
+  const conf = parseInt(document.getElementById('set-conf')?.value);
+  if (conf >= 50) { CFG.strategy.minConfidence = conf; localStorage.setItem('apex_conf', conf); }
+
+  // Persist risk parameters
+  const acctVal = parseFloat((document.getElementById('set-account')?.value || '').replace(/[,$%]/g,''));
+  if (acctVal > 0) {
+    CFG.strategy.account = acctVal;
+    localStorage.setItem('apex_account', acctVal);
+    const rcAcct = document.getElementById('rc-account');
+    if (rcAcct) rcAcct.value = acctVal;
+  }
+  const riskVal = parseFloat((document.getElementById('set-risk')?.value || '').replace(/[%]/g,''));
+  if (riskVal > 0) {
+    CFG.strategy.riskPct = riskVal;
+    localStorage.setItem('apex_risk_pct', riskVal);
+    const rcRisk = document.getElementById('rc-risk');
+    if (rcRisk) rcRisk.value = riskVal;
+  }
+  const ddVal = parseFloat((document.getElementById('set-dd')?.value || '').replace(/[%]/g,''));
+  if (ddVal > 0) { CFG.strategy.maxDrawdown = ddVal; localStorage.setItem('apex_max_dd', ddVal); }
+  const corrVal = parseFloat((document.getElementById('set-corr')?.value || '').replace(/[%]/g,''));
+  if (corrVal > 0) { CFG.strategy.maxCorrelation = corrVal; localStorage.setItem('apex_max_corr', corrVal); }
+
   calcRisk();
-  alert('Settings saved. Live prices activating...');
+  showToast('Settings Saved', 'All parameters updated · Live prices activating', 'success', 3000);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -4101,6 +4109,29 @@ function updateJournalStats() {
   if (pnlEl) pnlEl.style.color = totalPnl >= 0 ? 'var(--green)' : 'var(--red)';
   const wrEl = document.getElementById('jstat-wr');
   if (wrEl) wrEl.style.color = winRate >= 55 ? 'var(--green)' : winRate >= 45 ? 'var(--amber)' : 'var(--red)';
+
+  // Advanced performance metrics
+  if (typeof calcPerformanceMetrics === 'function') {
+    const pm = calcPerformanceMetrics();
+    if (pm) {
+      const expEl = document.getElementById('jstat-exp');
+      if (expEl) {
+        expEl.textContent = (pm.expectancy >= 0 ? '+$' : '-$') + Math.abs(pm.expectancy).toFixed(0);
+        expEl.style.color = pm.expectancy >= 0 ? 'var(--green)' : 'var(--red)';
+      }
+      const shEl = document.getElementById('jstat-sharpe');
+      if (shEl) {
+        shEl.textContent = pm.sharpe.toFixed(2);
+        shEl.style.color = pm.sharpe >= 1 ? 'var(--green)' : pm.sharpe >= 0.5 ? 'var(--amber)' : 'var(--red)';
+      }
+      const stEl = document.getElementById('jstat-streak');
+      if (stEl) {
+        const s = pm.currentStreak;
+        stEl.textContent = s > 0 ? s + 'W' : s < 0 ? Math.abs(s) + 'L' : '—';
+        stEl.style.color = s > 0 ? 'var(--green)' : s < 0 ? 'var(--red)' : 'var(--text3)';
+      }
+    }
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -4451,6 +4482,22 @@ const kn = document.getElementById('key-news');
 if (kn) kn.value = CFG.newsKey;
 const ktd = document.getElementById('key-td');
 if (ktd) ktd.value = localStorage.getItem('apex_td_key') || '';
+
+// Restore saved settings into inputs
+(function restoreSettingsUI() {
+  const s = CFG.strategy;
+  const el = id => document.getElementById(id);
+  if (el('set-rvol'))    el('set-rvol').value = s.rvolThreshold;
+  if (el('set-conf'))    el('set-conf').value = s.minConfidence;
+  if (el('set-account')) el('set-account').value = s.account.toLocaleString();
+  if (el('set-risk'))    el('set-risk').value = s.riskPct + '%';
+  if (el('set-dd'))      el('set-dd').value = (s.maxDrawdown || 5) + '%';
+  if (el('set-corr'))    el('set-corr').value = (s.maxCorrelation || 30) + '%';
+  if (el('rc-account'))  el('rc-account').value = s.account;
+  if (el('rc-risk'))     el('rc-risk').value = s.riskPct;
+  const mtfSel = el('set-mtf');
+  if (mtfSel) mtfSel.value = String(s.mtfRequired);
+})();
 
 // Close modal on background click
 const mw = document.getElementById('modal-wrap');
@@ -5152,16 +5199,18 @@ Structure your response with these exact sections using these HTML tags:
 Respond with only the HTML sections above. Be specific, data-driven, and opinionated — not generic. Include actual numbers. Write like a senior quant at a hedge fund briefing the trading desk at 8am.`;
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const proxyUrl = 'https://apextrade-proxy.netlify.app/.netlify/functions/predict';
+    const resp = await fetch(proxyUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [{ role: 'user', content: prompt }]
+        prompt: prompt,
+        max_tokens: 1500,
+        model: 'claude-sonnet-4-20250514'
       })
     });
     const data = await resp.json();
+    if (data.error) throw new Error(data.error);
     const text = data.content?.find(b => b.type === 'text')?.text || '';
 
     if (!text) throw new Error('No response');
@@ -5198,8 +5247,16 @@ Respond with only the HTML sections above. Be specific, data-driven, and opinion
       badge.style.borderColor = biasCol.replace('var(--','rgba(').replace(')',',.35)');
     }
   } catch(e) {
-    body.innerHTML = `<div style="color:var(--red);font-size:12px;padding:16px">Analysis failed: ${e.message}. Check API key or try again.</div>`;
-    if (badge) { badge.textContent = 'Error'; badge.style.color='var(--red)'; }
+    const isProxyErr = e.message.includes('ANTHROPIC_API_KEY') || e.message.includes('503');
+    const errMsg = isProxyErr
+      ? 'Set the <code>ANTHROPIC_API_KEY</code> environment variable on apextrade-proxy.netlify.app to enable AI predictions.'
+      : `Analysis failed: ${e.message}. Try again shortly.`;
+    body.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:20px;text-align:center;line-height:1.8">
+      <div style="font-size:24px;margin-bottom:8px">🔮</div>
+      ${errMsg}<br><br>
+      <div style="color:var(--text4);font-size:11px">The overnight data panel above still shows live market moves.</div>
+    </div>`;
+    if (badge) { badge.textContent = isProxyErr ? 'Setup needed' : 'Retry'; badge.style.color='var(--amber)'; badge.style.borderColor='rgba(255,170,0,.3)'; }
   }
 
   if (btn) btn.disabled = false;
@@ -5209,6 +5266,530 @@ Respond with only the HTML sections above. Be specific, data-driven, and opinion
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(fetchOvernightData, 800);
 });
+
+// ══════════════════════════════════��════════════════════
+// DYNAMIC DASHBOARD ENGINE
+// ═══════════════════════════════════════════════════════
+
+// Price history buffer for correlation calculation
+const priceHistory = {};
+const CORR_BUFFER_SIZE = 60; // 60 ticks ≈ 5 min of data
+
+function recordPriceTick() {
+  const syms = ['AUD/USD','XAU/USD','EUR/USD','GBP/USD','WTI','NAS100'];
+  syms.forEach(s => {
+    if (!priceHistory[s]) priceHistory[s] = [];
+    const p = prices[s];
+    if (p > 0) {
+      priceHistory[s].push(p);
+      if (priceHistory[s].length > CORR_BUFFER_SIZE) priceHistory[s].shift();
+    }
+  });
+}
+
+function updateDashboardMetrics() {
+  const today = new Date().toLocaleDateString('en-AU');
+  const todayTrades = journalTrades.filter(t => t.date === today);
+  const last30 = journalTrades.slice(0, 100).filter(t => {
+    if (!t.date) return false;
+    const parts = t.date.split('/');
+    if (parts.length !== 3) return false;
+    const d = new Date(parts[2], parts[1]-1, parts[0]);
+    return (Date.now() - d.getTime()) < 30*86400000;
+  });
+
+  // P&L today
+  const todayPnl = todayTrades.reduce((a,t) => a + parseFloat(t.pnl||0), 0);
+  const pnlEl = document.getElementById('m-pnl');
+  const pnlSub = document.getElementById('m-pnl-sub');
+  if (pnlEl) {
+    pnlEl.textContent = (todayPnl >= 0 ? '+$' : '-$') + Math.abs(todayPnl).toLocaleString('en-AU',{maximumFractionDigits:0});
+    pnlEl.className = 'mc-v ' + (todayPnl >= 0 ? 'up' : 'dn');
+  }
+  if (pnlSub) {
+    const acct = CFG.strategy.account;
+    const pct = acct > 0 ? (todayPnl / acct * 100).toFixed(2) : '0';
+    pnlSub.innerHTML = `<span class="${todayPnl>=0?'up':'dn'}">${todayPnl>=0?'+':''}${pct}%</span> · ${todayTrades.length} trade${todayTrades.length!==1?'s':''} today`;
+  }
+
+  // Open positions (count from DOM)
+  const posRows = document.querySelectorAll('.prow');
+  const posEl = document.getElementById('m-pos');
+  const posSub = document.getElementById('m-pos-sub');
+  if (posEl) posEl.textContent = posRows.length;
+  if (posSub) {
+    const longs = document.querySelectorAll('.badge.bg').length;
+    const shorts = document.querySelectorAll('.badge.br').length;
+    posSub.textContent = `${longs} long · ${shorts} short`;
+  }
+
+  // Win rate (30d)
+  const wrEl = document.getElementById('m-wr');
+  const wrSub = document.getElementById('m-wr-sub');
+  if (last30.length > 0) {
+    const wins = last30.filter(t => parseFloat(t.pnl) > 0).length;
+    const wr = Math.round(wins / last30.length * 100);
+    if (wrEl) { wrEl.textContent = wr + '%'; wrEl.className = 'mc-v ' + (wr >= 55 ? 'up' : wr >= 45 ? 'am' : 'dn'); }
+    if (wrSub) wrSub.textContent = `${wins} of ${last30.length} trades`;
+  } else {
+    if (wrEl) wrEl.textContent = '—';
+    if (wrSub) wrSub.textContent = 'No trades in last 30 days';
+  }
+
+  // Max drawdown from equity curve
+  const acct = CFG.strategy.account;
+  let peak = acct, maxDD = 0, cumPnl = 0;
+  const sorted = [...journalTrades].reverse();
+  sorted.forEach(t => {
+    cumPnl += parseFloat(t.pnl||0);
+    const equity = acct + cumPnl;
+    if (equity > peak) peak = equity;
+    const dd = (peak - equity) / peak * 100;
+    if (dd > maxDD) maxDD = dd;
+  });
+  const ddEl = document.getElementById('m-dd');
+  const ddSub = document.getElementById('m-dd-sub');
+  if (ddEl) { ddEl.textContent = maxDD > 0 ? `−${maxDD.toFixed(1)}%` : '0%'; ddEl.className = 'mc-v ' + (maxDD > 5 ? 'dn' : maxDD > 2 ? 'am' : 'up'); }
+  if (ddSub) ddSub.textContent = journalTrades.length > 0 ? `Peak: $${peak.toLocaleString('en-AU',{maximumFractionDigits:0})}` : 'Log trades to track';
+}
+
+// ═══════════════════════════════════════════════════════
+// DYNAMIC EQUITY CURVE
+// ═══════════════════════════════════════════════════════
+function renderEquityCurve() {
+  const svg = document.getElementById('eq-svg');
+  if (!svg) return;
+  const acct = CFG.strategy.account;
+
+  if (!journalTrades.length) {
+    svg.innerHTML = svg.querySelector('defs')?.outerHTML || '';
+    svg.innerHTML += '<text x="400" y="65" font-size="11" fill="#5a7aaa" text-anchor="middle" font-family="Inter">Log trades in Journal to build your equity curve</text>';
+    const el = id => document.getElementById(id);
+    if (el('eq-equity')) el('eq-equity').textContent = '$' + acct.toLocaleString();
+    if (el('eq-start'))  el('eq-start').textContent = '$' + acct.toLocaleString();
+    if (el('eq-return')) el('eq-return').textContent = '0%';
+    if (el('eq-dd'))     el('eq-dd').textContent = '0%';
+    if (el('eq-meta'))   el('eq-meta').textContent = 'No trades yet';
+    return;
+  }
+
+  // Build equity points from oldest to newest
+  const sorted = [...journalTrades].reverse();
+  const points = [acct];
+  let cum = 0;
+  sorted.forEach(t => { cum += parseFloat(t.pnl||0); points.push(acct + cum); });
+
+  const W = 800, H = 120, PAD = 5;
+  const mn = Math.min(...points), mx = Math.max(...points);
+  const range = mx - mn || 1;
+
+  // Build SVG path
+  const coords = points.map((p, i) => {
+    const x = (i / (points.length - 1)) * W;
+    const y = PAD + (1 - (p - mn) / range) * (H - PAD * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const linePath = 'M' + coords.join(' L');
+  const fillPath = linePath + ` L${W},${H} L0,${H}Z`;
+
+  // Find drawdown zones
+  let peak = points[0], ddStart = -1, maxDD = 0, maxDDIdx = 0, peakVal = points[0];
+  const ddZones = [];
+  points.forEach((p, i) => {
+    if (p > peak) { peak = p; if (ddStart >= 0) { ddZones.push([ddStart, i-1]); ddStart = -1; } }
+    else if (p < peak && ddStart < 0) ddStart = i;
+    const dd = (peak - p) / peak * 100;
+    if (dd > maxDD) { maxDD = dd; maxDDIdx = i; peakVal = peak; }
+  });
+  if (ddStart >= 0) ddZones.push([ddStart, points.length - 1]);
+
+  // Drawdown overlay paths
+  let ddSvg = '';
+  ddZones.forEach(([s, e]) => {
+    if (e - s < 1) return;
+    const ddCoords = coords.slice(s, e + 1);
+    ddSvg += `<path d="M${ddCoords.join(' L')}" fill="none" stroke="#ff3d5a" stroke-width="2" stroke-dasharray="4 2" opacity="0.6"/>`;
+  });
+
+  const defs = '<defs><linearGradient id="eqg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2d8eff" stop-opacity="0.3"/><stop offset="100%" stop-color="#2d8eff" stop-opacity="0"/></linearGradient></defs>';
+  svg.innerHTML = defs
+    + `<path d="${fillPath}" fill="url(#eqg)"/>`
+    + `<path d="${linePath}" fill="none" stroke="#2d8eff" stroke-width="2"/>`
+    + ddSvg;
+
+  // Stats
+  const finalEquity = points[points.length - 1];
+  const totalReturn = ((finalEquity - acct) / acct * 100);
+  const el = id => document.getElementById(id);
+  if (el('eq-equity')) { el('eq-equity').textContent = '$' + Math.round(finalEquity).toLocaleString(); el('eq-equity').className = 'eq-stat-v ' + (finalEquity >= acct ? 'up' : 'dn'); }
+  if (el('eq-start'))  el('eq-start').textContent = '$' + acct.toLocaleString();
+  if (el('eq-return')) { el('eq-return').textContent = (totalReturn >= 0 ? '+' : '') + totalReturn.toFixed(1) + '%'; el('eq-return').className = 'eq-stat-v ' + (totalReturn >= 0 ? 'up' : 'dn'); }
+  if (el('eq-dd'))     { el('eq-dd').textContent = maxDD > 0 ? '−' + maxDD.toFixed(1) + '%' : '0%'; el('eq-dd').className = 'eq-stat-v ' + (maxDD > 5 ? 'dn' : 'am'); }
+  if (el('eq-meta'))   el('eq-meta').textContent = `${journalTrades.length} trades`;
+}
+
+// ═══════════════════════════════════════════════════════
+// LIVE CORRELATION MATRIX
+// ═══════════════════════════════════════════════════════
+function pearsonCorrelation(a, b) {
+  const n = Math.min(a.length, b.length);
+  if (n < 5) return null;
+  const ax = a.slice(-n), bx = b.slice(-n);
+  const ma = ax.reduce((s,v)=>s+v,0)/n, mb = bx.reduce((s,v)=>s+v,0)/n;
+  let num=0, da=0, db=0;
+  for (let i=0; i<n; i++) {
+    const x = ax[i]-ma, y = bx[i]-mb;
+    num += x*y; da += x*x; db += y*y;
+  }
+  const denom = Math.sqrt(da*db);
+  return denom > 0 ? num/denom : 0;
+}
+
+function corrColor(r) {
+  const abs = Math.abs(r);
+  if (abs > 0.7) return r > 0 ? {bg:'#14532d',fg:'#4ade80'} : {bg:'#4c1d2e',fg:'#fb7185'};
+  if (abs > 0.4) return r > 0 ? {bg:'#1a3a5c',fg:'#93c5fd'} : {bg:'#3b1f0b',fg:'#fb923c'};
+  return {bg:'#1e2233',fg:'#7a8aa0'};
+}
+
+function updateCorrelationMatrix() {
+  const container = document.getElementById('corr-matrix-container');
+  if (!container) return;
+
+  // Use returns (pct changes) for correlation
+  const corrSyms = [
+    {sym:'AUD/USD', label:'AUD'},
+    {sym:'XAU/USD', label:'GOLD'},
+    {sym:'EUR/USD', label:'EUR'},
+    {sym:'WTI',     label:'WTI'},
+    {sym:'NAS100',  label:'NAS'},
+  ];
+
+  // Need price history; fall back to pctChange-based proxy
+  const returns = {};
+  corrSyms.forEach(s => {
+    const hist = priceHistory[s.sym];
+    if (hist && hist.length >= 5) {
+      returns[s.sym] = hist.map((p,i) => i > 0 ? (p - hist[i-1]) / hist[i-1] : 0).slice(1);
+    }
+  });
+
+  const hasData = Object.values(returns).some(r => r && r.length >= 5);
+
+  let html = '<div class="corr-grid"><div class="corr-head"><div></div>';
+  corrSyms.forEach(s => html += `<div class="corr-sym-h">${s.label}</div>`);
+  html += '</div>';
+
+  let warnings = [];
+  corrSyms.forEach((row, ri) => {
+    html += `<div class="corr-row"><div class="corr-label">${row.label}</div>`;
+    corrSyms.forEach((col, ci) => {
+      if (ri === ci) {
+        html += '<div class="corr-cell" style="background:#14532d;color:#4ade80">1.0</div>';
+      } else if (hasData && returns[row.sym]?.length >= 5 && returns[col.sym]?.length >= 5) {
+        const r = pearsonCorrelation(returns[row.sym], returns[col.sym]);
+        const c = corrColor(r || 0);
+        html += `<div class="corr-cell" style="background:${c.bg};color:${c.fg}">${(r||0).toFixed(2)}</div>`;
+        if (ri < ci && Math.abs(r) > 0.7) warnings.push(`${row.label} + ${col.label} (${(r||0).toFixed(2)})`);
+      } else {
+        html += '<div class="corr-cell" style="background:#1e2233;color:#5a7aaa">···</div>';
+      }
+    });
+    html += '</div>';
+  });
+  html += '</div>';
+
+  if (warnings.length) {
+    html += `<div style="padding:6px 16px 10px;font-size:10px;color:var(--amber)">⚠ High correlation: ${warnings.join(', ')} — review exposure</div>`;
+  } else if (hasData) {
+    html += '<div style="padding:6px 16px 10px;font-size:10px;color:var(--green)">✓ No dangerously correlated positions</div>';
+  } else {
+    html += '<div style="padding:6px 16px 10px;font-size:10px;color:var(--text3)">Building correlation data from live prices...</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════
+// DYNAMIC BEHAVIORAL HEATMAP
+// ═══════════════════════════════════════════════════════
+function renderBehavioralHeatmap() {
+  const container = document.getElementById('heatmap-container');
+  if (!container) return;
+
+  const sessions = [
+    {label:'Pre-mkt', sub:'7–9am', key:'Pre-market'},
+    {label:'ASX open', sub:'10am–1pm', key:'ASX open'},
+    {label:'Midday', sub:'1–4pm', key:'Midday'},
+    {label:'US open', sub:'11pm–2am', key:'US open'},
+  ];
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+
+  // Build data grid from journal
+  const grid = {};
+  sessions.forEach(s => days.forEach(d => { grid[`${s.key}_${d}`] = {wins:0,total:0}; }));
+
+  journalTrades.forEach(t => {
+    if (!t.date || !t.session) return;
+    const parts = t.date.split('/');
+    if (parts.length !== 3) return;
+    const d = new Date(parts[2], parts[1]-1, parts[0]);
+    const dayName = d.toLocaleDateString('en-AU', {weekday:'long'});
+    const key = `${t.session}_${dayName}`;
+    if (grid[key]) {
+      grid[key].total++;
+      if (parseFloat(t.pnl) > 0) grid[key].wins++;
+    }
+  });
+
+  // Find best and worst cells
+  let best = null, worst = null;
+  Object.entries(grid).forEach(([k, v]) => {
+    if (v.total < 2) return;
+    const wr = v.wins / v.total * 100;
+    if (!best || wr > best.wr || (wr === best.wr && v.total > best.total)) best = {key:k, wr, total:v.total};
+    if (!worst || wr < worst.wr || (wr === worst.wr && v.total > worst.total)) worst = {key:k, wr, total:v.total};
+  });
+
+  let html = '<div class="heatmap-grid"><div></div>';
+  days.forEach(d => html += `<div class="hm-head">${d}</div>`);
+
+  sessions.forEach(s => {
+    html += `<div class="hm-label">${s.label}<br><span style="font-size:9px;color:var(--text3)">${s.sub}</span></div>`;
+    days.forEach(d => {
+      const cell = grid[`${s.key}_${d}`];
+      if (cell.total === 0) {
+        html += '<div class="hm-cell" style="background:var(--bg4)"><div class="hm-wr" style="color:var(--text4)">—</div><div class="hm-n">0t</div></div>';
+      } else {
+        const wr = Math.round(cell.wins / cell.total * 100);
+        const cls = wr >= 60 ? 'up' : wr >= 45 ? 'am' : 'dn';
+        const alpha = wr >= 60 ? (0.2 + (wr-60)/100*1.2) : wr >= 45 ? 0.2 : (0.15 + (45-wr)/100*0.8);
+        const rgb = wr >= 60 ? '0,232,150' : wr >= 45 ? '255,176,32' : '255,61,90';
+        const big = cell.total >= 10 ? 'font-size:13px;' : '';
+        html += `<div class="hm-cell" style="background:rgba(${rgb},${alpha.toFixed(2)})" title="${cell.total} trades">`;
+        html += `<div class="hm-wr ${cls}" style="${big}">${wr}%</div><div class="hm-n">${cell.total}t</div></div>`;
+      }
+    });
+  });
+  html += '</div>';
+
+  // Insight line
+  if (best && worst && best.key !== worst.key) {
+    const fmtKey = k => k.replace('_', ' ');
+    html += `<div style="margin-top:12px;font-size:11px;color:var(--text3)">Insight: `
+      + `<span style="color:var(--green);font-weight:600">${fmtKey(best.key)} is your strongest (${Math.round(best.wr)}% win rate)</span> · `
+      + `<span style="color:var(--red);font-weight:600">${fmtKey(worst.key)} is weakest (${Math.round(worst.wr)}%) — consider skipping</span></div>`;
+  } else if (journalTrades.length === 0) {
+    html += '<div style="margin-top:12px;font-size:11px;color:var(--text3)">Log trades with session tags to build your behavioral heatmap</div>';
+  }
+
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════
+// DYNAMIC P&L BY MARKET
+// ═══════════════════════════════════════════════════════
+function updatePnlByMarket() {
+  const el = document.getElementById('pnl-by-market');
+  if (!el || !journalTrades.length) return;
+
+  const markets = {};
+  journalTrades.forEach(t => {
+    const sym = (t.sym || '').toUpperCase();
+    let mkt = 'Other';
+    if (sym.includes('.ASX') || sym.includes('.AX')) mkt = 'ASX equities';
+    else if (sym.includes('USD') || sym.includes('EUR') || sym.includes('GBP') || sym.includes('JPY') || sym.includes('AUD') || sym.includes('NZD') || sym.includes('CHF') || sym.includes('CAD')) mkt = 'Forex';
+    else if (sym.includes('XAU') || sym.includes('XAG') || sym.includes('GOLD') || sym.includes('WTI') || sym.includes('BRENT') || sym.includes('CRUDE')) mkt = 'Commodities';
+    else if (sym.includes('ES') || sym.includes('NQ') || sym.includes('NAS') || sym.includes('SPX') || sym.includes('YM') || sym.includes('RTY')) mkt = 'Futures';
+    else if (sym.includes('BTC') || sym.includes('ETH') || sym.includes('SOL')) mkt = 'Crypto';
+    if (!markets[mkt]) markets[mkt] = 0;
+    markets[mkt] += parseFloat(t.pnl || 0);
+  });
+
+  const sorted = Object.entries(markets).sort((a,b) => b[1] - a[1]);
+  const maxAbs = Math.max(...sorted.map(([,v]) => Math.abs(v)), 1);
+
+  el.innerHTML = sorted.map(([name, pnl], i) => {
+    const up = pnl >= 0;
+    const pct = Math.abs(pnl) / maxAbs * 100;
+    const col = up ? 'var(--green)' : 'var(--red)';
+    const border = i < sorted.length - 1 ? 'border-bottom:1px solid var(--border);' : '';
+    return `<div style="padding:8px 16px;${border}">
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px">
+        <span>${name}</span><span class="${up?'up':'dn'}">${up?'+':'-'}$${Math.abs(pnl).toLocaleString('en-AU',{maximumFractionDigits:0})}</span>
+      </div>
+      <div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:${pct.toFixed(0)}%;height:4px;border-radius:2px;background:${col}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS — Power trader navigation
+// ═══════════════════════════════════════════════════════
+document.addEventListener('keydown', function(e) {
+  // Skip if user is typing in an input/textarea/select
+  if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return;
+
+  const key = e.key.toLowerCase();
+  const ctrl = e.ctrlKey || e.metaKey;
+
+  // Navigation: 1-6 for pages
+  if (!ctrl && !e.altKey) {
+    switch(key) {
+      case '1': nav('dashboard'); break;
+      case '2': nav('scanner'); break;
+      case '3': nav('intel'); break;
+      case '4': nav('journal'); break;
+      case '5': nav('sectors'); break;
+      case '6': nav('flow'); break;
+      case '7': nav('settings'); break;
+      case 'n': if (!e.shiftKey) { nav('dashboard'); setTimeout(()=> showAddTrade && showAddTrade(), 100); } break;
+      case 'escape':
+        const mw = document.getElementById('modal-wrap');
+        if (mw && mw.style.display !== 'none') closeModal();
+        const atf = document.getElementById('add-trade-form');
+        if (atf && atf.style.display !== 'none') atf.style.display = 'none';
+        break;
+      case '?':
+        if (e.shiftKey) showToast('Keyboard Shortcuts', '1-7: Navigate pages · N: New trade · Esc: Close modal · ?: This help', 'info', 6000);
+        break;
+    }
+  }
+
+  // Ctrl+S = save settings (prevent default browser save)
+  if (ctrl && key === 's') {
+    e.preventDefault();
+    saveSettings();
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+// SOUND ALERTS — Subtle audio feedback
+// ═══════════════════════════════════════════════════════
+let audioCtx = null;
+function playAlertSound(type) {
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    gain.gain.value = 0.08;
+
+    if (type === 'signal') {
+      osc.frequency.value = 880; osc.type = 'sine';
+      gain.gain.setTargetAtTime(0, audioCtx.currentTime + 0.15, 0.05);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+      // Second tone
+      setTimeout(() => {
+        const o2 = audioCtx.createOscillator();
+        const g2 = audioCtx.createGain();
+        o2.connect(g2); g2.connect(audioCtx.destination);
+        g2.gain.value = 0.08;
+        o2.frequency.value = 1100; o2.type = 'sine';
+        g2.gain.setTargetAtTime(0, audioCtx.currentTime + 0.15, 0.05);
+        o2.start(); o2.stop(audioCtx.currentTime + 0.2);
+      }, 150);
+    } else {
+      osc.frequency.value = 660; osc.type = 'sine';
+      gain.gain.setTargetAtTime(0, audioCtx.currentTime + 0.1, 0.03);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+    }
+  } catch(e) { /* audio not available */ }
+}
+
+// Patch fireAlert to include sound
+const _origFireAlert = fireAlert;
+fireAlert = function(sig) {
+  _origFireAlert(sig);
+  playAlertSound('signal');
+};
+
+// ═══════════════════════════════════════════════════════
+// ADVANCED PERFORMANCE METRICS
+// ═══════════════════════════════════════════════════════
+function calcPerformanceMetrics() {
+  if (!journalTrades.length) return null;
+
+  const pnls = journalTrades.map(t => parseFloat(t.pnl||0));
+  const wins = pnls.filter(p => p > 0);
+  const losses = pnls.filter(p => p < 0);
+  const totalPnl = pnls.reduce((a,b)=>a+b,0);
+  const avgWin = wins.length ? wins.reduce((a,b)=>a+b,0)/wins.length : 0;
+  const avgLoss = losses.length ? Math.abs(losses.reduce((a,b)=>a+b,0)/losses.length) : 0;
+
+  // Expectancy = (WR × avg win) - (LR × avg loss)
+  const wr = wins.length / pnls.length;
+  const expectancy = (wr * avgWin) - ((1-wr) * avgLoss);
+
+  // Profit factor
+  const grossProfit = wins.reduce((a,b)=>a+b,0);
+  const grossLoss = Math.abs(losses.reduce((a,b)=>a+b,0));
+  const profitFactor = grossLoss > 0 ? grossProfit / grossLoss : grossProfit > 0 ? Infinity : 0;
+
+  // Sharpe ratio (simplified: mean return / std dev)
+  const mean = totalPnl / pnls.length;
+  const variance = pnls.reduce((a,p) => a + Math.pow(p - mean, 2), 0) / pnls.length;
+  const stdDev = Math.sqrt(variance);
+  const sharpe = stdDev > 0 ? (mean / stdDev) * Math.sqrt(252) : 0; // annualized
+
+  // Streaks
+  let curStreak = 0, maxWinStreak = 0, maxLossStreak = 0;
+  pnls.forEach(p => {
+    if (p > 0) { curStreak = curStreak > 0 ? curStreak + 1 : 1; maxWinStreak = Math.max(maxWinStreak, curStreak); }
+    else if (p < 0) { curStreak = curStreak < 0 ? curStreak - 1 : -1; maxLossStreak = Math.max(maxLossStreak, Math.abs(curStreak)); }
+    else curStreak = 0;
+  });
+
+  // Current streak
+  let streak = 0;
+  for (let i = 0; i < pnls.length; i++) {
+    if (i === 0) { streak = pnls[i] > 0 ? 1 : pnls[i] < 0 ? -1 : 0; }
+    else if (pnls[i] > 0 && streak > 0) streak++;
+    else if (pnls[i] < 0 && streak < 0) streak--;
+    else break;
+  }
+
+  return {
+    totalTrades: pnls.length, winRate: wr, avgWin, avgLoss,
+    expectancy, profitFactor, sharpe,
+    maxWinStreak, maxLossStreak, currentStreak: streak,
+    totalPnl, grossProfit, grossLoss
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+// MASTER UPDATE LOOP — ties everything together
+// ═══════════════════════════════════════════════════════
+function dashboardUpdate() {
+  recordPriceTick();
+  updateDashboardMetrics();
+  updateCorrelationMatrix();
+}
+
+// Initial render + periodic updates
+setTimeout(() => {
+  updateDashboardMetrics();
+  renderEquityCurve();
+  renderBehavioralHeatmap();
+  updatePnlByMarket();
+  updateCorrelationMatrix();
+}, 1200);
+
+setInterval(dashboardUpdate, 5500);
+
+// Re-render charts when journal changes
+const _origSaveJournal = saveJournalTrade;
+saveJournalTrade = function() {
+  _origSaveJournal();
+  setTimeout(() => {
+    updateDashboardMetrics();
+    renderEquityCurve();
+    renderBehavioralHeatmap();
+    updatePnlByMarket();
+    updateJournalStats();
+  }, 200);
+};
 
 </script>
 
