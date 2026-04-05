@@ -119,7 +119,139 @@ async function scanTicker(ticker) {
   }
 
   var price = day1.length ? day1[day1.length - 1].c : null;
-  return { ticker: ticker, signals: signals, meta: { price: price, date: day1.length ? day1[day1.length - 1].date : null } };
+
+  // ── EMA levels for trade context ──
+  var emaLevels = {};
+  if (day1.length >= 144) {
+    var closes = day1.map(function(c) { return c.c; });
+    [8, 13, 21, 34, 55, 89, 144].forEach(function(p) {
+      emaLevels['ema' + p] = calcEMA(closes, p);
+    });
+  }
+
+  // ── EMA alignment ──
+  var emaKeys = [8, 13, 21, 34, 55, 89, 144];
+  var aligned = true, partialBull = true;
+  for (var ei = 0; ei < emaKeys.length - 1; ei++) {
+    var a = emaLevels['ema' + emaKeys[ei]], b = emaLevels['ema' + emaKeys[ei + 1]];
+    if (a == null || b == null || a <= b) aligned = false;
+    if (ei < 3 && (a == null || b == null || a <= b)) partialBull = false;
+  }
+  var emaStatus = aligned ? 'ALIGNED' : partialBull ? 'PARTIAL' : 'MIXED';
+
+  // ── Trend structure: swing highs/lows ──
+  var swingHighs = [], swingLows = [];
+  var lookback = Math.min(day1.length, 180);
+  var recent = day1.slice(-lookback);
+  for (var si = 2; si < recent.length - 2; si++) {
+    if (recent[si].h > recent[si-1].h && recent[si].h > recent[si-2].h && recent[si].h > recent[si+1].h && recent[si].h > recent[si+2].h) {
+      swingHighs.push(recent[si].h);
+    }
+    if (recent[si].l < recent[si-1].l && recent[si].l < recent[si-2].l && recent[si].l < recent[si+1].l && recent[si].l < recent[si+2].l) {
+      swingLows.push(recent[si].l);
+    }
+  }
+  var lastHighs = swingHighs.slice(-3);
+  var lastLows = swingLows.slice(-3);
+  var hhhl = lastHighs.length >= 2 && lastLows.length >= 2 &&
+    lastHighs[lastHighs.length-1] > lastHighs[lastHighs.length-2] &&
+    lastLows[lastLows.length-1] > lastLows[lastLows.length-2];
+  var lhll = lastHighs.length >= 2 && lastLows.length >= 2 &&
+    lastHighs[lastHighs.length-1] < lastHighs[lastHighs.length-2] &&
+    lastLows[lastLows.length-1] < lastLows[lastLows.length-2];
+  var structure = hhhl ? 'HH/HL' : lhll ? 'LH/LL' : 'MIXED';
+  var trend = hhhl ? 'Uptrend' : lhll ? 'Downtrend' : 'Consolidation';
+
+  // ── S/R levels from 180-bar pivots ──
+  var srLevels = [];
+  swingHighs.forEach(function(h) { srLevels.push({ level: h, type: 'R' }); });
+  swingLows.forEach(function(l) { srLevels.push({ level: l, type: 'S' }); });
+  srLevels.sort(function(a, b) { return a.level - b.level; });
+  // Cluster nearby levels (within 2%)
+  var clustered = [];
+  srLevels.forEach(function(sr) {
+    var found = false;
+    for (var ci = 0; ci < clustered.length; ci++) {
+      if (Math.abs(sr.level - clustered[ci].level) / clustered[ci].level < 0.02) {
+        clustered[ci].level = (clustered[ci].level + sr.level) / 2;
+        clustered[ci].touches++;
+        found = true;
+        break;
+      }
+    }
+    if (!found) clustered.push({ level: sr.level, type: sr.type, touches: 1 });
+  });
+  var resistance = clustered.filter(function(s) { return price && s.level > price; }).slice(0, 5);
+  var support = clustered.filter(function(s) { return price && s.level < price; }).reverse().slice(0, 5);
+
+  // ── ATR for trailing stop ──
+  var atr = 0;
+  if (day1.length >= 15) {
+    var atrSum = 0;
+    for (var ai = day1.length - 14; ai < day1.length; ai++) {
+      var tr = Math.max(day1[ai].h - day1[ai].l, Math.abs(day1[ai].h - day1[ai-1].c), Math.abs(day1[ai].l - day1[ai-1].c));
+      atrSum += tr;
+    }
+    atr = atrSum / 14;
+  }
+  var trailingStop = emaLevels.ema8 ? +(emaLevels.ema8 - atr).toFixed(4) : null;
+  var trailPct = price && trailingStop ? +((price - trailingStop) / price * 100).toFixed(1) : null;
+
+  // ── Volume context ──
+  var vol5 = 0, vol20 = 0;
+  if (day1.length >= 20) {
+    for (var vi = day1.length - 5; vi < day1.length; vi++) vol5 += (day1[vi].v || 0);
+    for (var vj = day1.length - 20; vj < day1.length; vj++) vol20 += (day1[vj].v || 0);
+  }
+  var rvol = vol20 > 0 ? +((vol5 / 5) / (vol20 / 20)).toFixed(1) : 0;
+  var volStatus = rvol >= 1.5 ? 'Expanding' : rvol >= 0.8 ? 'Normal' : 'Contracting';
+
+  // ── Attach trade context to each signal ──
+  signals.forEach(function(sig) {
+    sig.emaLevels = emaLevels;
+    sig.emaStatus = emaStatus;
+    sig.structure = structure;
+    sig.trend = trend;
+    sig.swingHighs = lastHighs;
+    sig.swingLows = lastLows;
+    sig.resistance = resistance;
+    sig.support = support;
+    sig.atr = +atr.toFixed(4);
+    sig.trailingStop = trailingStop;
+    sig.trailPct = trailPct;
+    sig.rvol = rvol;
+    sig.volStatus = volStatus;
+    // Entry/stop/target
+    if (sig.direction === 'LONG') {
+      sig.entry = price;
+      sig.stopLoss = sig.crtLow ? +(sig.crtLow - atr * 0.5).toFixed(4) : null;
+      sig.target = resistance.length ? resistance[0].level : null;
+    } else {
+      sig.entry = price;
+      sig.stopLoss = sig.crtHigh ? +(sig.crtHigh + atr * 0.5).toFixed(4) : null;
+      sig.target = support.length ? support[0].level : null;
+    }
+    if (sig.entry && sig.stopLoss && sig.target) {
+      var risk = Math.abs(sig.entry - sig.stopLoss);
+      var reward = Math.abs(sig.target - sig.entry);
+      sig.rr = risk > 0 ? +(reward / risk).toFixed(1) : null;
+    }
+  });
+
+  return { ticker: ticker, signals: signals, meta: { price: price, date: day1.length ? day1[day1.length - 1].date : null, emaStatus: emaStatus, structure: structure, trend: trend, rvol: rvol } };
+}
+
+// ── EMA calculator ──
+function calcEMA(prices, period) {
+  if (prices.length < period) return null;
+  var k = 2 / (period + 1);
+  var ema = 0;
+  for (var i = 0; i < period; i++) ema += prices[i];
+  ema /= period;
+  for (var j = period; j < prices.length; j++) {
+    ema = prices[j] * k + ema * (1 - k);
+  }
+  return +ema.toFixed(4);
 }
 
 // ── Cached Yahoo fetch ──
