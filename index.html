@@ -5799,6 +5799,16 @@ function setAsxTab(tab) {
   const stats = document.getElementById('asx-stats');
   if (stats) stats.style.display = tab !== 'intel' ? 'flex' : 'none';
   updateAsxMomBar();
+  // Auto-load fundamentals when intel tab opens
+  if (tab === 'intel' && typeof fundData !== 'undefined' && fundData.length === 0 && typeof FUND_PROXY !== 'undefined') {
+    fetch(FUND_PROXY + '?action=get&limit=100').then(r => r.json()).then(d => {
+      if (d.results?.length > 0) {
+        fundData = d.results; if (typeof renderFundamentals === 'function') renderFundamentals();
+        const s = document.getElementById('fund-status');
+        if (s && typeof fundTimeSince === 'function') s.innerHTML = '<span style="color:var(--green)">✓</span> ' + d.count + ' stocks · ' + fundTimeSince(new Date(d.lastRun));
+      } else { if (typeof runFundamentalsAgent === 'function') setTimeout(runFundamentalsAgent, 800); }
+    }).catch(() => {});
+  }
 }
 
 function updateAsxMomBar() {
@@ -5984,39 +5994,7 @@ function runAsxIntel() {
   }
 }
 
-function startAsxCrtScan() {
-  const prog = document.getElementById('asx-crt-progress');
-  const grid = document.getElementById('asx-crt-grid');
-  if (prog) prog.style.display = 'block';
-  if (grid) grid.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);grid-column:1/-1"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div style="font-size:13px;color:var(--text2)">Scanning ASX...</div></div>';
-  if (typeof startCrtScan === 'function') startCrtScan();
-  const poll = setInterval(() => {
-    const origGrid = document.getElementById('crt-signals-grid');
-    const asxGrid  = document.getElementById('asx-crt-grid');
-    if (origGrid && asxGrid) asxGrid.innerHTML = origGrid.innerHTML;
-    const f = document.getElementById('crt-progress-fill');
-    const af = document.getElementById('asx-crt-fill');
-    if (f && af) af.style.width = f.style.width;
-    const t = document.getElementById('crt-progress-text');
-    const at = document.getElementById('asx-crt-txt');
-    if (t && at) at.textContent = t.textContent;
-    const pp = document.getElementById('crt-progress-pct');
-    const ap = document.getElementById('asx-crt-pct');
-    if (pp && ap) ap.textContent = pp.textContent;
-    if (typeof crtScanning !== 'undefined' && !crtScanning) {
-      clearInterval(poll);
-      if (prog) prog.style.display = 'none';
-      const sigs = typeof crtSignals !== 'undefined' ? crtSignals : [];
-      const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-      set('asx-stat-total', sigs.length);
-      set('asx-stat-long',  sigs.filter(s=>s.direction==='LONG').length);
-      set('asx-stat-short', sigs.filter(s=>s.direction==='SHORT').length);
-      const t2 = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
-      set('asx-stat-time', t2 + ' AWST');
-      const stats = document.getElementById('asx-stats'); if(stats) stats.style.display='flex';
-    }
-  }, 400);
-}
+// startAsxCrtScan is defined later with the new UI version
 
 async function runAsxBullishScan() {
   const body = document.getElementById('asx-bull-body');
@@ -6443,7 +6421,6 @@ function updateAsxScanKPIs() {
 }
 
 // Override startAsxCrtScan to use new UI
-const _origStartAsxCrtScan = startAsxCrtScan;
 function startAsxCrtScan() {
   asxCrtSignals = [];
   asxScanCount  = 0;
@@ -6455,7 +6432,7 @@ function startAsxCrtScan() {
   if (prog) prog.style.display = 'block';
 
   // start the underlying scan (which populates crtSignals)
-  if (typeof _origStartAsxCrtScan === 'function') _origStartAsxCrtScan();
+  if (typeof startCrtScan === 'function') startCrtScan();
 
   // poll and copy signals into our local array + re-render
   const poll = setInterval(() => {
@@ -6614,20 +6591,7 @@ function renderFundamentals() {
     }).join('')}`;
 }
 
-// Auto-load when ASX intel tab opens
-const _origSetAsxTab = typeof setAsxTab === 'function' ? setAsxTab : null;
-function setAsxTab(tab) {
-  if (_origSetAsxTab) _origSetAsxTab(tab);
-  if (tab === 'intel' && fundData.length === 0) {
-    fetch(FUND_PROXY + '?action=get&limit=100').then(r => r.json()).then(d => {
-      if (d.results?.length > 0) {
-        fundData = d.results; renderFundamentals();
-        const s = document.getElementById('fund-status');
-        if (s) s.innerHTML = `<span style="color:var(--green)">✓</span> ${d.count} stocks · ${fundTimeSince(new Date(d.lastRun))}`;
-      } else { setTimeout(runFundamentalsAgent, 800); }
-    }).catch(() => {});
-  }
-}
+// Auto-load when ASX intel tab opens — merged into setAsxTab above
 
 // Refresh every 6h while app is open
 setInterval(() => {
