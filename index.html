@@ -175,15 +175,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 /* ═══════════════════════════════
    DASHBOARD STYLES
 ═══════════════════════════════ */
-.prow{display:grid;grid-template-columns:100px 60px 1fr 80px 76px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
-.prow:hover{background:var(--bg4)}
-.prow:last-child{border-bottom:none}
-.psym{font-size:13px;font-weight:700;font-family:var(--fd)}
-.pmkt2{font-size:10px;color:var(--text3);margin-top:1px}
-.pd{font-size:11px;color:var(--text2)}
-.pp{font-size:13px;font-weight:600}
-.ppnl{font-size:13px;font-weight:700;text-align:right}
-
 /* Risk Calculator */
 .risk-calc{padding:16px}
 .rc-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -194,22 +185,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .rc-res-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px}
 .rc-res-row:last-child{margin-bottom:0;padding-top:8px;border-top:1px solid var(--border);font-size:14px}
 .rc-res-val{font-weight:700;font-family:var(--fd)}
-
-/* Correlation Matrix */
-.corr-grid{display:grid;padding:12px 16px;gap:0}
-.corr-head{display:flex;gap:0;padding-left:80px;margin-bottom:4px}
-.corr-sym-h{font-size:9px;color:var(--text3);width:52px;text-align:center;letter-spacing:.05em}
-.corr-row{display:flex;align-items:center;gap:0;margin-bottom:4px}
-.corr-label{font-size:11px;color:var(--text2);width:80px;font-weight:500}
-.corr-cell{width:52px;height:28px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;margin:1px}
-
-/* Equity Curve */
-.eq-curve{padding:14px 16px}
-.eq-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
-.eq-stat{text-align:center}
-.eq-stat-v{font-family:var(--fd);font-size:18px;font-weight:700}
-.eq-stat-l{font-size:10px;color:var(--text3);margin-top:2px}
-.eq-svg{width:100%;height:120px}
 
 /* Economic Calendar */
 .cal-row{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
@@ -700,15 +675,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .rc-result-label { font-size:11px; color:var(--text3); }
 .rc-result-val { font-family:var(--fm); font-weight:700; font-size:14px; color:var(--accent); }
 
-/* Correlation matrix improvements */
-.corr-cell {
-  width:48px; height:48px; border-radius:4px;
-  display:flex; align-items:center; justify-content:center;
-  font-size:10px; font-weight:700; font-family:var(--fm);
-  cursor:default; transition:transform .1s;
-}
-.corr-cell:hover { transform:scale(1.1); z-index:1; position:relative; }
-
 /* Notification toast */
 .toast {
   position:fixed; bottom:24px; right:24px;
@@ -933,93 +899,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     </div>
   </div>
   <div class="scroll">
-    <div class="metrics">
-      <div class="mc"><div class="mc-l">P&L today</div><div class="mc-v up" id="m-pnl">—</div><div class="mc-s" id="m-pnl-sub">Calculating...</div></div>
-      <div class="mc"><div class="mc-l">Open positions</div><div class="mc-v" id="m-pos">—</div><div class="mc-s" id="m-pos-sub">Loading...</div></div>
-      <div class="mc"><div class="mc-l">Win rate (30d)</div><div class="mc-v" id="m-wr">—</div><div class="mc-s" id="m-wr-sub">Loading...</div></div>
-      <div class="mc"><div class="mc-l">Max drawdown</div><div class="mc-v" id="m-dd">—</div><div class="mc-s" id="m-dd-sub">Loading...</div></div>
-    </div>
-
-    <div class="g2">
-      <!-- Positions -->
-      <div class="panel">
-        <div class="phead"><div class="ptitle">Open positions</div><div class="pmeta g">7 active</div></div>
-        <div class="prow"><div><div class="psym">BHP.ASX</div><div class="pmkt2">ASX</div></div><span class="badge bg">Long</span><div class="pd">200sh · $46.80</div><div class="pp" id="p-bhp">$47.38</div><div class="ppnl up" id="pnl-bhp">+$342</div></div>
-        <div class="prow"><div><div class="psym">EUR/USD</div><div class="pmkt2">Forex</div></div><span class="badge br">Short</span><div class="pd">1 lot · 1.0821</div><div class="pp" id="p-eur">1.0834</div><div class="ppnl up" id="pnl-eur">+$194</div></div>
-        <div class="prow"><div><div class="psym">XAU/USD</div><div class="pmkt2">Commodity</div></div><span class="badge bg">Long</span><div class="pd">5oz · $2,318</div><div class="pp" id="p-gold">2,341.80</div><div class="ppnl up" id="pnl-gold">+$610</div></div>
-        <div class="prow"><div><div class="psym">AUD/USD</div><div class="pmkt2">Forex</div></div><span class="badge bg">Long</span><div class="pd">2 lots · 0.6451</div><div class="pp" id="p-aud">0.6482</div><div class="ppnl up" id="pnl-aud">+$310</div></div>
-        <div class="prow"><div><div class="psym">WTI Crude</div><div class="pmkt2">Commodity</div></div><span class="badge br">Short</span><div class="pd">3 contracts · $81.20</div><div class="pp" id="p-wti">80.44</div><div class="ppnl up" id="pnl-wti">+$228</div></div>
-        <div class="prow"><div><div class="psym">ES1! (S&P)</div><div class="pmkt2">Future</div></div><span class="badge br">Short</span><div class="pd">1 contract · 5,360</div><div class="pp" id="p-es">5,332</div><div class="ppnl up" id="pnl-es">+$700</div></div>
-        <div class="prow"><div><div class="psym">GBP/JPY</div><div class="pmkt2">Forex</div></div><span class="badge br">Short</span><div class="pd">0.5 lots · 198.10</div><div class="pp" id="p-gbpjpy">197.82</div><div class="ppnl up" id="pnl-gbpjpy">+$70</div></div>
-      </div>
-
-      <div class="vcol">
-        <!-- Correlation Matrix -->
-        <div class="panel">
-          <div class="phead"><div class="ptitle">Correlation matrix</div><div class="pmeta">Live from prices</div></div>
-          <div id="corr-matrix-container">
-            <div style="padding:16px;color:var(--text3);font-size:12px;text-align:center">Calculating...</div>
-          </div>
-        </div>
-
-        <!-- Risk Calculator -->
-        <div class="panel">
-          <div class="phead"><div class="ptitle">Risk calculator</div><div class="pmeta">1% rule</div></div>
-          <div class="risk-calc">
-            <div class="rc-row"><div class="rc-label">Account size</div><input class="rc-input" id="rc-account" value="80000" oninput="calcRisk()"></div>
-            <div class="rc-row"><div class="rc-label">Risk %</div><input class="rc-input" id="rc-risk" value="1" oninput="calcRisk()"></div>
-            <div class="rc-row"><div class="rc-label">Entry price</div><input class="rc-input" id="rc-entry" placeholder="e.g. 47.38" oninput="calcRisk()"></div>
-            <div class="rc-row"><div class="rc-label">Stop loss</div><input class="rc-input" id="rc-stop" placeholder="e.g. 46.50" oninput="calcRisk()"></div>
-            <div class="rc-result">
-              <div class="rc-res-row"><span style="color:var(--text3)">Risk amount</span><span class="rc-res-val" id="rc-amount" style="color:var(--amber)">$800</span></div>
-              <div class="rc-res-row"><span style="color:var(--text3)">Position size</span><span class="rc-res-val up" id="rc-size">—</span></div>
-              <div class="rc-res-row"><span style="font-weight:600">Total position value</span><span class="rc-res-val" id="rc-value" style="font-family:var(--fd);font-size:16px">—</span></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Equity Curve -->
-    <div class="panel" id="equity-panel">
-      <div class="phead"><div class="ptitle">Equity curve & drawdown</div><div class="pmeta" id="eq-meta">From journal</div></div>
-      <div class="eq-curve">
-        <div class="eq-stats" id="eq-stats">
-          <div class="eq-stat"><div class="eq-stat-v" id="eq-equity">—</div><div class="eq-stat-l">Current equity</div></div>
-          <div class="eq-stat"><div class="eq-stat-v" id="eq-start">—</div><div class="eq-stat-l">Starting capital</div></div>
-          <div class="eq-stat"><div class="eq-stat-v" id="eq-return">—</div><div class="eq-stat-l">Total return</div></div>
-          <div class="eq-stat"><div class="eq-stat-v" id="eq-dd">—</div><div class="eq-stat-l">Max drawdown</div></div>
-        </div>
-        <svg class="eq-svg" id="eq-svg" viewBox="0 0 800 120" preserveAspectRatio="none">
-          <defs>
-            <linearGradient id="eqg" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#2d8eff" stop-opacity="0.3"/>
-              <stop offset="100%" stop-color="#2d8eff" stop-opacity="0"/>
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
-    </div>
-
-    <!-- Economic Calendar + P&L breakdown -->
-    <div class="g2">
-      <div class="panel">
-        <div class="phead"><div class="ptitle">Economic calendar</div><div class="pmeta">High-impact events today</div></div>
-        <div class="cal-row"><div class="cal-time">09:30</div><div class="cal-impact" style="background:var(--red)"></div><div class="cal-event">US CPI (MoM)</div><div class="cal-prev" style="min-width:80px">Prev: 0.3%</div><div class="cal-act am">PENDING</div></div>
-        <div class="cal-row"><div class="cal-time">10:00</div><div class="cal-impact" style="background:var(--amber)"></div><div class="cal-event">RBA Meeting Minutes</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act up">Released</div></div>
-        <div class="cal-row"><div class="cal-time">14:30</div><div class="cal-impact" style="background:var(--red)"></div><div class="cal-event">Fed Chair Powell Speech</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act am">PENDING</div></div>
-        <div class="cal-row"><div class="cal-time">16:00</div><div class="cal-impact" style="background:var(--amber)"></div><div class="cal-event">EIA Crude Inventories</div><div class="cal-prev" style="min-width:80px">Prev: −2.1M</div><div class="cal-act am">PENDING</div></div>
-        <div class="cal-row"><div class="cal-time">18:00</div><div class="cal-impact" style="background:var(--text4)"></div><div class="cal-event">ASX 200 Close</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act" style="color:var(--text3)">EOD</div></div>
-      </div>
-      <div class="panel">
-        <div class="phead"><div class="ptitle">P&L by market</div><div class="pmeta">From journal</div></div>
-        <div id="pnl-by-market" style="padding:6px 0">
-          <div style="padding:16px;color:var(--text3);font-size:12px;text-align:center">Log trades to see breakdown</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── Overnight Indices ── -->
+    <!-- ── Overnight Indices (lead with market context) ── -->
     <div class="panel" id="overnight-panel">
       <div class="phead">
         <div class="ptitle">Overnight · Global indices</div>
@@ -1042,6 +922,32 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       </div>
       <div id="prediction-body" style="padding:20px">
         <div style="color:var(--text3);font-size:12px;text-align:center;padding:30px">Running deep analysis...</div>
+      </div>
+    </div>
+
+    <!-- Scanner + Calendar side-by-side -->
+    <div class="g2">
+      <div class="panel">
+        <div class="phead"><div class="ptitle">Economic calendar</div><div class="pmeta">High-impact events today</div></div>
+        <div class="cal-row"><div class="cal-time">09:30</div><div class="cal-impact" style="background:var(--red)"></div><div class="cal-event">US CPI (MoM)</div><div class="cal-prev" style="min-width:80px">Prev: 0.3%</div><div class="cal-act am">PENDING</div></div>
+        <div class="cal-row"><div class="cal-time">10:00</div><div class="cal-impact" style="background:var(--amber)"></div><div class="cal-event">RBA Meeting Minutes</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act up">Released</div></div>
+        <div class="cal-row"><div class="cal-time">14:30</div><div class="cal-impact" style="background:var(--red)"></div><div class="cal-event">Fed Chair Powell Speech</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act am">PENDING</div></div>
+        <div class="cal-row"><div class="cal-time">16:00</div><div class="cal-impact" style="background:var(--amber)"></div><div class="cal-event">EIA Crude Inventories</div><div class="cal-prev" style="min-width:80px">Prev: −2.1M</div><div class="cal-act am">PENDING</div></div>
+        <div class="cal-row"><div class="cal-time">18:00</div><div class="cal-impact" style="background:var(--text4)"></div><div class="cal-event">ASX 200 Close</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act" style="color:var(--text3)">EOD</div></div>
+      </div>
+      <div class="panel">
+        <div class="phead"><div class="ptitle">Risk calculator</div><div class="pmeta">1% rule</div></div>
+        <div class="risk-calc">
+          <div class="rc-row"><div class="rc-label">Account size</div><input class="rc-input" id="rc-account" value="80000" oninput="calcRisk()"></div>
+          <div class="rc-row"><div class="rc-label">Risk %</div><input class="rc-input" id="rc-risk" value="1" oninput="calcRisk()"></div>
+          <div class="rc-row"><div class="rc-label">Entry price</div><input class="rc-input" id="rc-entry" placeholder="e.g. 47.38" oninput="calcRisk()"></div>
+          <div class="rc-row"><div class="rc-label">Stop loss</div><input class="rc-input" id="rc-stop" placeholder="e.g. 46.50" oninput="calcRisk()"></div>
+          <div class="rc-result">
+            <div class="rc-res-row"><span style="color:var(--text3)">Risk amount</span><span class="rc-res-val" id="rc-amount" style="color:var(--amber)">$800</span></div>
+            <div class="rc-res-row"><span style="color:var(--text3)">Position size</span><span class="rc-res-val up" id="rc-size">—</span></div>
+            <div class="rc-res-row"><span style="font-weight:600">Total position value</span><span class="rc-res-val" id="rc-value" style="font-family:var(--fd);font-size:16px">—</span></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -5266,248 +5172,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(fetchOvernightData, 800);
 });
 
-// ═══════════════════════════════════════════════════════
-// DYNAMIC DASHBOARD ENGINE
-// ═══════════════════════════════════════════════════════
-
-// Price history buffer for correlation calculation
-const priceHistory = {};
-const CORR_BUFFER_SIZE = 60; // 60 ticks ≈ 5 min of data
-
-function recordPriceTick() {
-  const syms = ['AUD/USD','XAU/USD','EUR/USD','GBP/USD','WTI','NAS100'];
-  syms.forEach(s => {
-    if (!priceHistory[s]) priceHistory[s] = [];
-    const p = prices[s];
-    if (p > 0) {
-      priceHistory[s].push(p);
-      if (priceHistory[s].length > CORR_BUFFER_SIZE) priceHistory[s].shift();
-    }
-  });
-}
-
-function updateDashboardMetrics() {
-  const today = new Date().toLocaleDateString('en-AU');
-  const todayTrades = journalTrades.filter(t => t.date === today);
-  const last30 = journalTrades.slice(0, 100).filter(t => {
-    if (!t.date) return false;
-    const parts = t.date.split('/');
-    if (parts.length !== 3) return false;
-    const d = new Date(parts[2], parts[1]-1, parts[0]);
-    return (Date.now() - d.getTime()) < 30*86400000;
-  });
-
-  // P&L today
-  const todayPnl = todayTrades.reduce((a,t) => a + parseFloat(t.pnl||0), 0);
-  const pnlEl = document.getElementById('m-pnl');
-  const pnlSub = document.getElementById('m-pnl-sub');
-  if (pnlEl) {
-    pnlEl.textContent = (todayPnl >= 0 ? '+$' : '-$') + Math.abs(todayPnl).toLocaleString('en-AU',{maximumFractionDigits:0});
-    pnlEl.className = 'mc-v ' + (todayPnl >= 0 ? 'up' : 'dn');
-  }
-  if (pnlSub) {
-    const acct = CFG.strategy.account;
-    const pct = acct > 0 ? (todayPnl / acct * 100).toFixed(2) : '0';
-    pnlSub.innerHTML = `<span class="${todayPnl>=0?'up':'dn'}">${todayPnl>=0?'+':''}${pct}%</span> · ${todayTrades.length} trade${todayTrades.length!==1?'s':''} today`;
-  }
-
-  // Open positions (count from DOM)
-  const posRows = document.querySelectorAll('.prow');
-  const posEl = document.getElementById('m-pos');
-  const posSub = document.getElementById('m-pos-sub');
-  if (posEl) posEl.textContent = posRows.length;
-  if (posSub) {
-    const longs = document.querySelectorAll('.badge.bg').length;
-    const shorts = document.querySelectorAll('.badge.br').length;
-    posSub.textContent = `${longs} long · ${shorts} short`;
-  }
-
-  // Win rate (30d)
-  const wrEl = document.getElementById('m-wr');
-  const wrSub = document.getElementById('m-wr-sub');
-  if (last30.length > 0) {
-    const wins = last30.filter(t => parseFloat(t.pnl) > 0).length;
-    const wr = Math.round(wins / last30.length * 100);
-    if (wrEl) { wrEl.textContent = wr + '%'; wrEl.className = 'mc-v ' + (wr >= 55 ? 'up' : wr >= 45 ? 'am' : 'dn'); }
-    if (wrSub) wrSub.textContent = `${wins} of ${last30.length} trades`;
-  } else {
-    if (wrEl) wrEl.textContent = '—';
-    if (wrSub) wrSub.textContent = 'No trades in last 30 days';
-  }
-
-  // Max drawdown from equity curve
-  const acct = CFG.strategy.account;
-  let peak = acct, maxDD = 0, cumPnl = 0;
-  const sorted = [...journalTrades].reverse();
-  sorted.forEach(t => {
-    cumPnl += parseFloat(t.pnl||0);
-    const equity = acct + cumPnl;
-    if (equity > peak) peak = equity;
-    const dd = (peak - equity) / peak * 100;
-    if (dd > maxDD) maxDD = dd;
-  });
-  const ddEl = document.getElementById('m-dd');
-  const ddSub = document.getElementById('m-dd-sub');
-  if (ddEl) { ddEl.textContent = maxDD > 0 ? `−${maxDD.toFixed(1)}%` : '0%'; ddEl.className = 'mc-v ' + (maxDD > 5 ? 'dn' : maxDD > 2 ? 'am' : 'up'); }
-  if (ddSub) ddSub.textContent = journalTrades.length > 0 ? `Peak: $${peak.toLocaleString('en-AU',{maximumFractionDigits:0})}` : 'Log trades to track';
-}
-
-// ═══════════════════════════════════════════════════════
-// DYNAMIC EQUITY CURVE
-// ═══════════════════════════════════════════════════════
-function renderEquityCurve() {
-  const svg = document.getElementById('eq-svg');
-  if (!svg) return;
-  const acct = CFG.strategy.account;
-
-  if (!journalTrades.length) {
-    svg.innerHTML = svg.querySelector('defs')?.outerHTML || '';
-    svg.innerHTML += '<text x="400" y="65" font-size="11" fill="#5a7aaa" text-anchor="middle" font-family="Inter">Log trades in Journal to build your equity curve</text>';
-    const el = id => document.getElementById(id);
-    if (el('eq-equity')) el('eq-equity').textContent = '$' + acct.toLocaleString();
-    if (el('eq-start'))  el('eq-start').textContent = '$' + acct.toLocaleString();
-    if (el('eq-return')) el('eq-return').textContent = '0%';
-    if (el('eq-dd'))     el('eq-dd').textContent = '0%';
-    if (el('eq-meta'))   el('eq-meta').textContent = 'No trades yet';
-    return;
-  }
-
-  // Build equity points from oldest to newest
-  const sorted = [...journalTrades].reverse();
-  const points = [acct];
-  let cum = 0;
-  sorted.forEach(t => { cum += parseFloat(t.pnl||0); points.push(acct + cum); });
-
-  const W = 800, H = 120, PAD = 5;
-  const mn = Math.min(...points), mx = Math.max(...points);
-  const range = mx - mn || 1;
-
-  // Build SVG path
-  const coords = points.map((p, i) => {
-    const x = (i / (points.length - 1)) * W;
-    const y = PAD + (1 - (p - mn) / range) * (H - PAD * 2);
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  const linePath = 'M' + coords.join(' L');
-  const fillPath = linePath + ` L${W},${H} L0,${H}Z`;
-
-  // Find drawdown zones
-  let peak = points[0], ddStart = -1, maxDD = 0, maxDDIdx = 0, peakVal = points[0];
-  const ddZones = [];
-  points.forEach((p, i) => {
-    if (p > peak) { peak = p; if (ddStart >= 0) { ddZones.push([ddStart, i-1]); ddStart = -1; } }
-    else if (p < peak && ddStart < 0) ddStart = i;
-    const dd = (peak - p) / peak * 100;
-    if (dd > maxDD) { maxDD = dd; maxDDIdx = i; peakVal = peak; }
-  });
-  if (ddStart >= 0) ddZones.push([ddStart, points.length - 1]);
-
-  // Drawdown overlay paths
-  let ddSvg = '';
-  ddZones.forEach(([s, e]) => {
-    if (e - s < 1) return;
-    const ddCoords = coords.slice(s, e + 1);
-    ddSvg += `<path d="M${ddCoords.join(' L')}" fill="none" stroke="#ff3d5a" stroke-width="2" stroke-dasharray="4 2" opacity="0.6"/>`;
-  });
-
-  const defs = '<defs><linearGradient id="eqg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2d8eff" stop-opacity="0.3"/><stop offset="100%" stop-color="#2d8eff" stop-opacity="0"/></linearGradient></defs>';
-  svg.innerHTML = defs
-    + `<path d="${fillPath}" fill="url(#eqg)"/>`
-    + `<path d="${linePath}" fill="none" stroke="#2d8eff" stroke-width="2"/>`
-    + ddSvg;
-
-  // Stats
-  const finalEquity = points[points.length - 1];
-  const totalReturn = ((finalEquity - acct) / acct * 100);
-  const el = id => document.getElementById(id);
-  if (el('eq-equity')) { el('eq-equity').textContent = '$' + Math.round(finalEquity).toLocaleString(); el('eq-equity').className = 'eq-stat-v ' + (finalEquity >= acct ? 'up' : 'dn'); }
-  if (el('eq-start'))  el('eq-start').textContent = '$' + acct.toLocaleString();
-  if (el('eq-return')) { el('eq-return').textContent = (totalReturn >= 0 ? '+' : '') + totalReturn.toFixed(1) + '%'; el('eq-return').className = 'eq-stat-v ' + (totalReturn >= 0 ? 'up' : 'dn'); }
-  if (el('eq-dd'))     { el('eq-dd').textContent = maxDD > 0 ? '−' + maxDD.toFixed(1) + '%' : '0%'; el('eq-dd').className = 'eq-stat-v ' + (maxDD > 5 ? 'dn' : 'am'); }
-  if (el('eq-meta'))   el('eq-meta').textContent = `${journalTrades.length} trades`;
-}
-
-// ═══════════════════════════════════════════════════════
-// LIVE CORRELATION MATRIX
-// ═══════════════════════════════════════════════════════
-function pearsonCorrelation(a, b) {
-  const n = Math.min(a.length, b.length);
-  if (n < 5) return null;
-  const ax = a.slice(-n), bx = b.slice(-n);
-  const ma = ax.reduce((s,v)=>s+v,0)/n, mb = bx.reduce((s,v)=>s+v,0)/n;
-  let num=0, da=0, db=0;
-  for (let i=0; i<n; i++) {
-    const x = ax[i]-ma, y = bx[i]-mb;
-    num += x*y; da += x*x; db += y*y;
-  }
-  const denom = Math.sqrt(da*db);
-  return denom > 0 ? num/denom : 0;
-}
-
-function corrColor(r) {
-  const abs = Math.abs(r);
-  if (abs > 0.7) return r > 0 ? {bg:'#14532d',fg:'#4ade80'} : {bg:'#4c1d2e',fg:'#fb7185'};
-  if (abs > 0.4) return r > 0 ? {bg:'#1a3a5c',fg:'#93c5fd'} : {bg:'#3b1f0b',fg:'#fb923c'};
-  return {bg:'#1e2233',fg:'#7a8aa0'};
-}
-
-function updateCorrelationMatrix() {
-  const container = document.getElementById('corr-matrix-container');
-  if (!container) return;
-
-  // Use returns (pct changes) for correlation
-  const corrSyms = [
-    {sym:'AUD/USD', label:'AUD'},
-    {sym:'XAU/USD', label:'GOLD'},
-    {sym:'EUR/USD', label:'EUR'},
-    {sym:'WTI',     label:'WTI'},
-    {sym:'NAS100',  label:'NAS'},
-  ];
-
-  // Need price history; fall back to pctChange-based proxy
-  const returns = {};
-  corrSyms.forEach(s => {
-    const hist = priceHistory[s.sym];
-    if (hist && hist.length >= 5) {
-      returns[s.sym] = hist.map((p,i) => i > 0 ? (p - hist[i-1]) / hist[i-1] : 0).slice(1);
-    }
-  });
-
-  const hasData = Object.values(returns).some(r => r && r.length >= 5);
-
-  let html = '<div class="corr-grid"><div class="corr-head"><div></div>';
-  corrSyms.forEach(s => html += `<div class="corr-sym-h">${s.label}</div>`);
-  html += '</div>';
-
-  let warnings = [];
-  corrSyms.forEach((row, ri) => {
-    html += `<div class="corr-row"><div class="corr-label">${row.label}</div>`;
-    corrSyms.forEach((col, ci) => {
-      if (ri === ci) {
-        html += '<div class="corr-cell" style="background:#14532d;color:#4ade80">1.0</div>';
-      } else if (hasData && returns[row.sym]?.length >= 5 && returns[col.sym]?.length >= 5) {
-        const r = pearsonCorrelation(returns[row.sym], returns[col.sym]);
-        const c = corrColor(r || 0);
-        html += `<div class="corr-cell" style="background:${c.bg};color:${c.fg}">${(r||0).toFixed(2)}</div>`;
-        if (ri < ci && Math.abs(r) > 0.7) warnings.push(`${row.label} + ${col.label} (${(r||0).toFixed(2)})`);
-      } else {
-        html += '<div class="corr-cell" style="background:#1e2233;color:#5a7aaa">···</div>';
-      }
-    });
-    html += '</div>';
-  });
-  html += '</div>';
-
-  if (warnings.length) {
-    html += `<div style="padding:6px 16px 10px;font-size:10px;color:var(--amber)">⚠ High correlation: ${warnings.join(', ')} — review exposure</div>`;
-  } else if (hasData) {
-    html += '<div style="padding:6px 16px 10px;font-size:10px;color:var(--green)">✓ No dangerously correlated positions</div>';
-  } else {
-    html += '<div style="padding:6px 16px 10px;font-size:10px;color:var(--text3)">Building correlation data from live prices...</div>';
-  }
-
-  container.innerHTML = html;
-}
 
 // ═══════════════════════════════════════════════════════
 // DYNAMIC BEHAVIORAL HEATMAP
@@ -5585,42 +5249,6 @@ function renderBehavioralHeatmap() {
   container.innerHTML = html;
 }
 
-// ═══════════════════════════════════════════════════════
-// DYNAMIC P&L BY MARKET
-// ═══════════════════════════════════════════════════════
-function updatePnlByMarket() {
-  const el = document.getElementById('pnl-by-market');
-  if (!el || !journalTrades.length) return;
-
-  const markets = {};
-  journalTrades.forEach(t => {
-    const sym = (t.sym || '').toUpperCase();
-    let mkt = 'Other';
-    if (sym.includes('.ASX') || sym.includes('.AX')) mkt = 'ASX equities';
-    else if (sym.includes('USD') || sym.includes('EUR') || sym.includes('GBP') || sym.includes('JPY') || sym.includes('AUD') || sym.includes('NZD') || sym.includes('CHF') || sym.includes('CAD')) mkt = 'Forex';
-    else if (sym.includes('XAU') || sym.includes('XAG') || sym.includes('GOLD') || sym.includes('WTI') || sym.includes('BRENT') || sym.includes('CRUDE')) mkt = 'Commodities';
-    else if (sym.includes('ES') || sym.includes('NQ') || sym.includes('NAS') || sym.includes('SPX') || sym.includes('YM') || sym.includes('RTY')) mkt = 'Futures';
-    else if (sym.includes('BTC') || sym.includes('ETH') || sym.includes('SOL')) mkt = 'Crypto';
-    if (!markets[mkt]) markets[mkt] = 0;
-    markets[mkt] += parseFloat(t.pnl || 0);
-  });
-
-  const sorted = Object.entries(markets).sort((a,b) => b[1] - a[1]);
-  const maxAbs = Math.max(...sorted.map(([,v]) => Math.abs(v)), 1);
-
-  el.innerHTML = sorted.map(([name, pnl], i) => {
-    const up = pnl >= 0;
-    const pct = Math.abs(pnl) / maxAbs * 100;
-    const col = up ? 'var(--green)' : 'var(--red)';
-    const border = i < sorted.length - 1 ? 'border-bottom:1px solid var(--border);' : '';
-    return `<div style="padding:8px 16px;${border}">
-      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:500;color:var(--text);margin-bottom:5px">
-        <span>${name}</span><span class="${up?'up':'dn'}">${up?'+':'-'}$${Math.abs(pnl).toLocaleString('en-AU',{maximumFractionDigits:0})}</span>
-      </div>
-      <div style="background:var(--bg5);border-radius:2px;height:4px"><div style="width:${pct.toFixed(0)}%;height:4px;border-radius:2px;background:${col}"></div></div>
-    </div>`;
-  }).join('');
-}
 
 // ══════════════════════════════════════════
 // ASX PAGE
@@ -5790,35 +5418,17 @@ function calcPerformanceMetrics() {
   };
 }
 
-// ═══════════════════════════════════════════════════════
-// MASTER UPDATE LOOP — ties everything together
-// ═══════════════════════════════════════════════════════
-function dashboardUpdate() {
-  recordPriceTick();
-  updateDashboardMetrics();
-  updateCorrelationMatrix();
-}
-
-// Initial render + periodic updates
+// Initial render
 setTimeout(() => {
-  updateDashboardMetrics();
-  renderEquityCurve();
   renderBehavioralHeatmap();
-  updatePnlByMarket();
-  updateCorrelationMatrix();
 }, 1200);
 
-setInterval(dashboardUpdate, 5500);
-
-// Re-render charts when journal changes
+// Re-render heatmap when journal changes
 const _origSaveJournal = saveJournalTrade;
 saveJournalTrade = function() {
   _origSaveJournal();
   setTimeout(() => {
-    updateDashboardMetrics();
-    renderEquityCurve();
     renderBehavioralHeatmap();
-    updatePnlByMarket();
     updateJournalStats();
   }, 200);
 };
