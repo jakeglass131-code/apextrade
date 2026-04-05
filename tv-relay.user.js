@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ApexTrade TV Relay
 // @namespace    https://apextrade-proxy.netlify.app
-// @version      3.0
+// @version      3.1
 // @description  Captures TradingView candle data and auto-cycles through watchlist
 // @match        https://www.tradingview.com/*
 // @match        https://tradingview.com/*
@@ -235,17 +235,40 @@
       return;
     }
 
-    // Click the current row
+    // Click the current row — try multiple click targets
     var row = watchlistRows[currentRowIndex];
     try {
-      // Try clicking different parts of the row
-      row.click();
-      // Also try mousedown+mouseup (some TV elements need this)
-      row.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true }));
-      row.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true }));
+      // Find the first cell (ticker name) inside the row — TV listens on these
+      var firstCell = row.querySelector('[class*="cell-"]');
+      var target = firstCell || row;
+
+      // Simulate a full mouse click sequence at the element's center
+      var rect = target.getBoundingClientRect();
+      var cx = rect.left + rect.width / 2;
+      var cy = rect.top + rect.height / 2;
+      var opts = { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy, button: 0 };
+
+      target.dispatchEvent(new MouseEvent('mousedown', opts));
+      target.dispatchEvent(new MouseEvent('mouseup', opts));
+      target.dispatchEvent(new MouseEvent('click', opts));
+
+      // Also try clicking the row itself
+      if (firstCell) {
+        row.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy }));
+        row.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy }));
+        row.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window, clientX: cx, clientY: cy }));
+      }
+
+      // Also try using document.elementFromPoint to get the REAL element TV renders
+      var realEl = document.elementFromPoint(cx, cy);
+      if (realEl && realEl !== target && realEl !== row) {
+        realEl.dispatchEvent(new MouseEvent('mousedown', opts));
+        realEl.dispatchEvent(new MouseEvent('mouseup', opts));
+        realEl.dispatchEvent(new MouseEvent('click', opts));
+      }
 
       var rowText = row.textContent.trim().substring(0, 30);
-      log('Clicked row ' + currentRowIndex + '/' + watchlistRows.length + ': "' + rowText + '"');
+      log('Clicked row ' + currentRowIndex + '/' + watchlistRows.length + ' at (' + Math.round(cx) + ',' + Math.round(cy) + '): "' + rowText + '"');
     } catch(e) {
       log('Click failed: ' + e.message);
     }
