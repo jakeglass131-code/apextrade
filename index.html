@@ -3232,10 +3232,9 @@ function checkAlerts(results) {
 async function fetchNews() {
   // News fetch chain — proxy-first for reliable CORS, fallback to direct RSS
   const sources = [
-    () => fetchNewsViaProxy(),
-    () => fetchRSSviaProxy('https://feeds.finance.yahoo.com/rss/2.0/headline?s=AUD%3DX%2CGC%3DF%2CCL%3DF%2CBHP.AX&region=AU&lang=en-AU&count=20', 'Yahoo Finance'),
-    () => fetchRSSviaProxy('https://www.abc.net.au/news/feed/2811686/rss.xml', 'ABC Business'),
     () => fetchRSSviaProxy('https://feeds.bbci.co.uk/news/business/rss.xml', 'BBC Business'),
+    () => fetchRSSviaProxy('https://www.abc.net.au/news/feed/2811686/rss.xml', 'ABC Business'),
+    () => fetchRSSviaProxy('https://feeds.finance.yahoo.com/rss/2.0/headline?s=AUD%3DX%2CGC%3DF%2CCL%3DF%2CBHP.AX&region=AU&lang=en-AU&count=20', 'Yahoo Finance'),
     () => fetchRSSviaProxy('https://rss.nytimes.com/services/xml/rss/nyt/Business.xml', 'NY Times'),
   ];
 
@@ -3251,36 +3250,33 @@ async function fetchNews() {
   renderNewsPlaceholder();
 }
 
-async function fetchNewsViaProxy() {
-  // Use our proxy to fetch financial RSS — avoids all CORS issues
-  const PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions';
-  const r = await fetch(`${PROXY}/news`, { signal: AbortSignal.timeout(8000) });
-  if (!r.ok) throw new Error('proxy news ' + r.status);
-  const d = await r.json();
-  if (!Array.isArray(d) || d.length < 3) throw new Error('proxy news empty');
-  return d.map(a => ({
-    title: (a.title || '').replace(/<[^>]+>/g, ''),
-    source: a.source || 'News',
-    pubDate: new Date(a.pubDate || a.published_at || Date.now()),
-    link: a.link || a.url || '#',
-  }));
+// Parse RSS XML text into item array
+function parseRSSXml(xmlText, sourceName) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(xmlText, 'text/xml');
+  const items = Array.from(doc.querySelectorAll('item'));
+  if (!items.length) throw new Error('no items in RSS');
+  return items.slice(0, 10).map(el => {
+    const get = tag => el.querySelector(tag)?.textContent?.trim() || '';
+    return {
+      title: get('title').replace(/<[^>]+>/g, ''),
+      source: sourceName,
+      pubDate: new Date(get('pubDate') || Date.now()),
+      link: get('link') || get('guid') || '#',
+    };
+  }).filter(i => i.title);
 }
 
 async function fetchRSSviaProxy(rssUrl, sourceName) {
-  // Fallback: fetch RSS through rss2json (still works for some feeds)
-  const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&count=10&api_key=`;
-  const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
-  if (!r.ok) throw new Error('rss2json http ' + r.status);
-  const d = await r.json();
-  if (d.status !== 'ok' || !d.items?.length) throw new Error('rss2json: ' + (d.message || 'no items'));
-  return d.items.slice(0, 8).map(item => ({
-    title: (item.title || '').replace(/<[^>]+>/g, ''),
-    source: sourceName,
-    pubDate: new Date(item.pubDate),
-    link: item.link,
-  }));
+  // corsproxy.io — free, reliable, no key needed
+  const url = `https://corsproxy.io/?url=${encodeURIComponent(rssUrl)}`;
+  const r = await fetch(url, { signal: AbortSignal.timeout(9000) });
+  if (!r.ok) throw new Error(`corsproxy ${r.status} for ${sourceName}`);
+  const text = await r.text();
+  return parseRSSXml(text, sourceName);
 }
 
+async function fetchNewsViaProxy() { throw new Error('no /news endpoint on proxy'); }
 async function fetchCurrents() { throw new Error('deprecated'); }
 async function fetchMediaStack() { throw new Error('deprecated'); }
 async function fetchGNews() { throw new Error('GNews key invalid'); }
