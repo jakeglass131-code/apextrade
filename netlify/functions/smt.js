@@ -55,6 +55,22 @@ exports.handler = async function(event) {
       return { statusCode: 200, headers: H, body: JSON.stringify(Object.assign({}, corr, { divergences: div.divergences, activeDivergence: div.activeDivergence })) };
     }
 
+    if (action === 'candles') {
+      // ?action=candles&tickers=BHP,CBA,WBC,... — bulk fetch candle data (up to 15 tickers)
+      var tickers = (params.tickers || '').split(',').map(function(t){return t.trim()}).filter(Boolean).slice(0, 15);
+      if (!tickers.length) throw new Error('tickers required');
+      var results = {};
+      var fetches = await Promise.all(tickers.map(function(t){
+        return fetchCandles(t).then(function(d){return {t:t,d:d};}).catch(function(){return {t:t,d:null};});
+      }));
+      fetches.forEach(function(f) {
+        if (f.d && f.d.length >= 60) {
+          results[f.t] = f.d.slice(-260).map(function(c){ return {d:c.date,h:c.h,l:c.l,c:c.c}; });
+        }
+      });
+      return { statusCode: 200, headers: H, body: JSON.stringify(results) };
+    }
+
     throw new Error('Unknown action: ' + action);
   } catch (err) {
     return { statusCode: 200, headers: H, body: JSON.stringify({ error: err.message }) };

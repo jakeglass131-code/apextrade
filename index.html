@@ -7595,6 +7595,77 @@ let smtScanning = false;
 let smtAbort = false;
 let smtScannedCount = 0;
 
+
+var smtCandleCache = {};
+
+// ── SMT Client-Side Math (avoids per-pair Netlify calls) ──
+function smtCC(x,y){
+  var n=Math.min(x.length,y.length);if(n<10)return 0;
+  var sx=0,sy=0,sxy=0,sx2=0,sy2=0;
+  for(var i=0;i<n;i++){sx+=x[i];sy+=y[i];sxy+=x[i]*y[i];sx2+=x[i]*x[i];sy2+=y[i]*y[i];}
+  var d=Math.sqrt((n*sx2-sx*sx)*(n*sy2-sy*sy));
+  return d===0?0:(n*sxy-sx*sy)/d;
+}
+
+function smtAnalysePair(t1,d1,t2,d2){
+  var m1={},m2={};
+  d1.forEach(function(c){m1[c.d]=c;});
+  d2.forEach(function(c){m2[c.d]=c;});
+  var dates=Object.keys(m1).filter(function(d){return m2[d];}).sort();
+  if(dates.length<60)return null;
+  var ud=dates.slice(-250);
+  var p1=ud.map(function(d){return m1[d].c;}),p2=ud.map(function(d){return m2[d].c;});
+  // Returns
+  var r1=[],r2=[];
+  for(var i=1;i<p1.length;i++){r1.push((p1[i]-p1[i-1])/p1[i-1]);r2.push((p2[i]-p2[i-1])/p2[i-1]);}
+  var pearson=smtCC(r1,r2);
+  // Spearman
+  var rn=Math.min(r1.length,r2.length);
+  function rank(a){var s=a.slice(0,rn).map(function(v,i){return{v:v,i:i}}).sort(function(a,b){return a.v-b.v});var rv=new Array(rn);for(var i=0;i<s.length;i++)rv[s[i].i]=i+1;return rv;}
+  var spearman=smtCC(rank(r1),rank(r2));
+  // Rolling 60-bar
+  var rsum=0,rcnt=0;
+  for(var i=0;i<=rn-60;i+=15){rsum+=smtCC(r1.slice(i,i+60),r2.slice(i,i+60));rcnt++;}
+  var rollingAvg=rcnt>0?rsum/rcnt:pearson;
+  // R-squared
+  function norm(a){var mn=Infinity,mx=-Infinity;for(var i=0;i<a.length;i++){if(a[i]<mn)mn=a[i];if(a[i]>mx)mx=a[i];}var rg=mx-mn||1;return a.map(function(v){return(v-mn)/rg;});}
+  var rSquared=Math.pow(smtCC(norm(p1),norm(p2)),2);
+  // ATR ratio
+  function atr(mp){var cd=dates.slice(-60),s=0,ct=0;for(var i=1;i<cd.length;i++){var a=mp[cd[i]],b=mp[cd[i-1]];if(!a||!b)continue;s+=Math.max(a.h-a.l,Math.abs(a.h-b.c),Math.abs(a.l-b.c));ct++;}return ct>0?s/ct:1;}
+  var a1=atr(m1),a2=atr(m2),atrR=Math.max(a1,a2)/(Math.min(a1,a2)||1);
+  // Slopes
+  function slope(a){var n=a.length;if(n<2)return 0;var sx=0,sy=0,sxy=0,sx2=0;for(var i=0;i<n;i++){sx+=i;sy+=a[i];sxy+=i*a[i];sx2+=i*i;}return(n*sxy-sx*sy)/(n*sx2-sx*sx);}
+  var s1=slope(p1.slice(-60)),s2=slope(p2.slice(-60)),ta=(s1>0&&s2>0)||(s1<0&&s2<0);
+  // Validity + grade
+  var isValid=pearson>=0.70&&spearman>=0.65&&rollingAvg>=0.60&&rSquared>=0.50&&atrR<=4.0;
+  var sc=0;
+  if(pearson>=0.90)sc+=3;else if(pearson>=0.80)sc+=2;else if(pearson>=0.70)sc+=1;
+  if(spearman>=0.85)sc+=2;else if(spearman>=0.75)sc+=1;
+  if(rollingAvg>=0.80)sc+=2;else if(rollingAvg>=0.70)sc+=1;
+  if(rSquared>=0.80)sc+=2;else if(rSquared>=0.65)sc+=1;
+  if(ta)sc+=1;
+  var grade=sc>=9?'A+':sc>=7?'A':sc>=5?'B':sc>=3?'C':'D';
+  // Divergence detection
+  var rd=dates.slice(-40);
+  var c1=rd.map(function(d){return m1[d];}).filter(Boolean),c2=rd.map(function(d){return m2[d];}).filter(Boolean);
+  function swH(c){var h=[];for(var i=3;i<c.length-3;i++){var ok=true;for(var j=1;j<=3;j++){if(c[i].h<=c[i-j].h||c[i].h<=c[i+j].h){ok=false;break;}}if(ok)h.push(c[i]);}return h;}
+  function swL(c){var h=[];for(var i=3;i<c.length-3;i++){var ok=true;for(var j=1;j<=3;j++){if(c[i].l>=c[i-j].l||c[i].l>=c[i+j].l){ok=false;break;}}if(ok)h.push(c[i]);}return h;}
+  var sh1=swH(c1),sl1=swL(c1),sh2=swH(c2),sl2=swL(c2);
+  var divs=[];
+  if(sh1.length>=2&&sh2.length>=2){
+    var la=sh1[sh1.length-1],lb=sh1[sh1.length-2],le=sh2[sh2.length-1],lf=sh2[sh2.length-2];
+    if(la.h>lb.h&&le.h<lf.h)divs.push({type:'BEARISH',description:t1+' higher high, '+t2+' lower high',date:la.d,age:rd.length-rd.indexOf(la.d)-1});
+    if(le.h>lf.h&&la.h<lb.h)divs.push({type:'BEARISH',description:t2+' higher high, '+t1+' lower high',date:le.d,age:rd.length-rd.indexOf(le.d)-1});
+  }
+  if(sl1.length>=2&&sl2.length>=2){
+    var la=sl1[sl1.length-1],lb=sl1[sl1.length-2],le=sl2[sl2.length-1],lf=sl2[sl2.length-2];
+    if(la.l<lb.l&&le.l>lf.l)divs.push({type:'BULLISH',description:t1+' lower low, '+t2+' higher low',date:la.d,age:rd.length-rd.indexOf(la.d)-1});
+    if(le.l<lf.l&&la.l>lb.l)divs.push({type:'BULLISH',description:t2+' lower low, '+t1+' higher low',date:le.d,age:rd.length-rd.indexOf(le.d)-1});
+  }
+  var actDiv=divs.filter(function(d){return d.age<=5;});
+  return {t1:t1,t2:t2,pearson:+pearson.toFixed(4),spearman:+spearman.toFixed(4),rollingAvg:+rollingAvg.toFixed(4),rSquared:+rSquared.toFixed(4),atrRatio:+atrR.toFixed(2),trendAligned:ta,isValid:isValid,grade:grade,score:sc,dataPoints:ud.length,lastPrice1:p1[p1.length-1],lastPrice2:p2[p2.length-1],divergences:divs,activeDivergence:actDiv.length>0?actDiv[0]:null};
+}
+
 async function startSmtScan() {
   if (smtScanning) return;
   smtScanning = true;
@@ -7604,64 +7675,93 @@ async function startSmtScan() {
   document.getElementById('smt-scan-btn').style.display = 'none';
   document.getElementById('smt-stop-btn').style.display = 'flex';
   document.getElementById('smt-progress').style.display = 'block';
-  document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div id="smt-scan-counter" style="font-size:13px;color:var(--text2)">Scanning 0 / ' + SMT_ALL_PAIRS.length + ' pairs...</div></div>';
 
-  const total = SMT_ALL_PAIRS.length;
-  let scanned = 0, valid = 0, divs = 0, bull = 0, bear = 0;
+  // Extract unique tickers (474 tickers vs 2231 individual pair calls)
+  var tickers = [], seen = {};
+  SMT_ALL_PAIRS.forEach(function(p) {
+    if (!seen[p.t1]) { tickers.push(p.t1); seen[p.t1] = true; }
+    if (!seen[p.t2]) { tickers.push(p.t2); seen[p.t2] = true; }
+  });
+  var total = SMT_ALL_PAIRS.length;
 
-  // Batch scan — 3 pairs at a time
-  for (let i = 0; i < total; i += 3) {
+  document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div id="smt-scan-counter" style="font-size:13px;color:var(--text2)">Fetching data for ' + tickers.length + ' tickers...</div></div>';
+
+  // Phase 1: Bulk-fetch candle data — 10 tickers per call (~48 calls vs 2231)
+  var batchSz = 10;
+  for (var i = 0; i < tickers.length; i += batchSz) {
     if (smtAbort) break;
-    const batch = SMT_ALL_PAIRS.slice(i, i + 3);
-    const promises = batch.map(pair =>
-      fetch(SMT_PROXY + '?action=full&t1=' + pair.t1 + '&t2=' + pair.t2)
-        .then(r => r.json())
-        .then(data => {
-          if (data.error) return null;
-          data.sector = pair.sector;
-          data.strength = pair.strength || 'strong';
-          return data;
-        })
-        .catch(() => null)
-    );
-    const results = await Promise.all(promises);
-    results.forEach(r => {
-      if (!r) return;
-      smtResults.push(r);
-      if (r.isValid) valid++;
-      // Only count divergences from pairs with meaningful correlation (Pearson ≥ 0.50)
-      if (r.activeDivergence && (r.pearson || 0) >= 0.50) {
-        divs++;
-        if (r.activeDivergence.type === 'BULLISH') bull++;
-        else bear++;
+    var batch = tickers.slice(i, i + batchSz);
+    try {
+      var r = await fetch(SMT_PROXY + '?action=candles&tickers=' + batch.join(','));
+      var data = await r.json();
+      if (data && typeof data === 'object') {
+        Object.keys(data).forEach(function(k) { smtCandleCache[k] = data[k]; });
       }
-    });
-    scanned += batch.length;
-    smtScannedCount = scanned;
-    const pct = Math.round(scanned / total * 100);
+    } catch(e) { /* skip failed batch */ }
+    var fetched = Math.min(i + batchSz, tickers.length);
+    var pct = Math.round(fetched / tickers.length * 30);
     document.getElementById('smt-progress-fill').style.width = pct + '%';
-    document.getElementById('smt-progress-text').textContent = 'Scanning ' + scanned + ' / ' + total + ' · ' + valid + ' valid · ' + divs + ' divergences';
-    updateSmtKPIs(scanned, valid, divs, bull, bear);
-    renderSmtResults();
-    await new Promise(r => setTimeout(r, 100));
+    document.getElementById('smt-progress-text').textContent = 'Fetching ' + fetched + ' / ' + tickers.length + ' tickers...';
+    var counter = document.getElementById('smt-scan-counter');
+    if (counter) counter.textContent = 'Fetched ' + fetched + ' / ' + tickers.length + ' tickers...';
   }
 
+  if (smtAbort) { smtFinish(0, 0, 0, 0, 0); return; }
+
+  // Phase 2: Compute all 2231 pairs locally (instant, no network)
+  var scanned = 0, valid = 0, divs = 0, bull = 0, bear = 0;
+  for (var i = 0; i < total; i++) {
+    if (smtAbort) break;
+    var pair = SMT_ALL_PAIRS[i];
+    var d1 = smtCandleCache[pair.t1], d2 = smtCandleCache[pair.t2];
+    if (d1 && d2) {
+      try {
+        var result = smtAnalysePair(pair.t1, d1, pair.t2, d2);
+        if (result) {
+          result.sector = pair.sector;
+          result.strength = pair.strength || 'strong';
+          smtResults.push(result);
+          if (result.isValid) valid++;
+          if (result.activeDivergence && result.pearson >= 0.50) {
+            divs++;
+            if (result.activeDivergence.type === 'BULLISH') bull++;
+            else bear++;
+          }
+        }
+      } catch(e) { /* skip pair */ }
+    }
+    scanned++;
+    // Update UI every 100 pairs to keep it responsive
+    if (i % 100 === 0 || i === total - 1) {
+      smtScannedCount = scanned;
+      var pct = 30 + Math.round(scanned / total * 70);
+      document.getElementById('smt-progress-fill').style.width = pct + '%';
+      document.getElementById('smt-progress-text').textContent = 'Analysing ' + scanned + ' / ' + total + ' \u00b7 ' + valid + ' valid \u00b7 ' + divs + ' divergences';
+      updateSmtKPIs(scanned, valid, divs, bull, bear);
+      renderSmtResults();
+      await new Promise(function(r) { setTimeout(r, 0); });
+    }
+  }
+
+  smtFinish(scanned, valid, divs, bull, bear);
+}
+
+function smtFinish(scanned, valid, divs, bull, bear) {
   smtScanning = false;
   document.getElementById('smt-scan-btn').style.display = 'flex';
   document.getElementById('smt-stop-btn').style.display = 'none';
-  document.getElementById('smt-progress-text').textContent = 'Complete · ' + scanned + ' pairs · ' + divs + ' divergences';
-
-  const badge = document.getElementById('smt-badge');
-  if (badge && divs > 0) { badge.style.display = 'flex'; badge.textContent = divs; }
-
+  document.getElementById('smt-progress-text').textContent = 'Complete \u00b7 ' + scanned + ' pairs \u00b7 ' + divs + ' divergences';
+  updateSmtKPIs(scanned, valid, divs, bull, bear);
   renderSmtResults();
+
+  var badge = document.getElementById('smt-badge');
+  if (badge && divs > 0) { badge.style.display = 'flex'; badge.textContent = divs; }
   if (divs > 0) showToast('SMT Scanner', divs + ' active divergence' + (divs > 1 ? 's' : '') + ' found', 'success', 5000);
 
-  // Save to localStorage
   try {
     localStorage.setItem('apex_smt_results', JSON.stringify({
       time: new Date().toISOString(),
-      results: smtResults.filter(r => r.isValid || (r.activeDivergence && (r.pearson || 0) >= 0.50))
+      results: smtResults.filter(function(r) { return r.isValid || (r.activeDivergence && (r.pearson || 0) >= 0.50); })
     }));
   } catch(e) {}
 }
