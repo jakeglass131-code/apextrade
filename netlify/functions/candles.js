@@ -5,6 +5,25 @@ exports.handler = async (event) => {
   const H = {'Access-Control-Allow-Origin':'*','Content-Type':'application/json'};
   if(event.httpMethod==='OPTIONS')return{statusCode:200,headers:H,body:''};
   const {ticker,interval,range} = event.queryStringParameters||{};
+  
+  // Batch mode: ?tickers=BHP,CBA,CSL — fetch multiple tickers in one call
+  if((event.queryStringParameters||{}).tickers){
+    const tickers=(event.queryStringParameters.tickers||'').split(',').map(t=>t.trim()).filter(Boolean).slice(0,12);
+    const results={};
+    await Promise.all(tickers.map(async t=>{
+      const sym=t.startsWith('^')?t:t.includes('.')?t:t+'.AX';
+      const iv=interval||'1d';const rg=range||'2y';
+      try{
+        const r=await fetch('https://query1.finance.yahoo.com/v8/finance/chart/'+sym+'?interval='+iv+'&range='+rg,{headers:{'User-Agent':'Mozilla/5.0'}});
+        if(!r.ok)return;const d=await r.json();
+        const res=d.chart&&d.chart.result&&d.chart.result[0];if(!res)return;
+        const ts=res.timestamp||[],q=res.indicators&&res.indicators.quote&&res.indicators.quote[0]||{};
+        results[t]=ts.map((tm,i)=>({t:tm*1000,date:new Date(tm*1000).toISOString().slice(0,10),o:q.open&&q.open[i],h:q.high&&q.high[i],l:q.low&&q.low[i],c:q.close&&q.close[i],v:q.volume&&q.volume[i]||0})).filter(c=>c.o!=null&&c.c!=null);
+      }catch(e){}
+    }));
+    return{statusCode:200,headers:H,body:JSON.stringify(results)};
+  }
+
   if(!ticker)return{statusCode:400,headers:H,body:JSON.stringify({error:'ticker required'})};
 
   // Step 1: Try TV cache

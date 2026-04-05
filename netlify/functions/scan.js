@@ -13,7 +13,7 @@ exports.handler = async function(event) {
 
   // Batch mode: ?tickers=BHP,CBA,CSL
   if (params.tickers) {
-    var list = params.tickers.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+    var list = params.tickers.split(',').map(function(t) { return t.trim(); }).filter(Boolean).slice(0, 10);
     var results = await Promise.all(list.map(function(t) { return scanTicker(t).catch(function(e) { return { ticker: t, signals: [], error: e.message }; }); }));
     return { statusCode: 200, headers: H, body: JSON.stringify({ results: results }) };
   }

@@ -4808,8 +4808,8 @@ function updateDashScanSummary(scanned, signals) {
 })();
 async function getAsxTickers(){try{var r=await fetch(PROXY+'/asx-list');if(r.ok){var d=await r.json();if(d.stocks&&d.stocks.length>100)return d.stocks;}}catch(e){}return['BHP','CBA','CSL','NAB','WBC','ANZ','WES','MQG','RIO','FMG','WOW','GMG','REA','TLS','XRO','ALL','STO','WDS','QAN','COH','MIN','LYC','PLS','EVN','NST','WHC','IGO','S32','ORA','NHC','SFR','AWC','ILU','NXT','CQR','BWP','ARF','SGP','GPT','MGR','SCG','DXS','CHC','BAP','APE','GNC','CIA','CHN','DEG','WAF','DRR','GOR','RSG','SBM','PRU','CMR','RRL','OGC','SAR','SLR','CYL','BGL','MML','RMS','PNV','RHC','SHL','EBO','MVF','HLS','QBE','SUN','IAG','AMP','NCM','PDN','BOE','LOT','PEN','YAL','SMR','GCY','KAR','RED','SVL','ALK','CMW','VEA','IPL','PPT','PMV','DMP','RMD','WEB','IEL','NEA','ALU','MFG','CTD','FLT','CPU','APA','JHX','TCL','AMC','LLC'].map(function(x){return{ticker:x,name:x};});}
 var crtScanned=0;
-async function startCrtScan(){if(crtScanning)return;crtScanning=true;crtAbort=false;crtSignals=[];crtScanned=0;document.getElementById('crt-scan-btn').style.display='none';document.getElementById('crt-stop-btn').style.display='flex';document.getElementById('crt-progress-bar').style.display='block';var st=document.getElementById('crt-stats');if(st)st.style.display='grid';document.getElementById('crt-signals-grid').innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px;text-align:center;grid-column:1/-1">Fetching ASX stock list...</div>';var tickers=await getAsxTickers();var total=tickers.length;crtScanned=0;updateCrtStats(0,0,0,0,total);document.getElementById('crt-signals-grid').innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px;text-align:center;grid-column:1/-1">Scanning '+total+' ASX stocks...</div>';var BATCH=10;for(var i=0;i<total;i+=BATCH){if(crtAbort)break;var batch=tickers.slice(i,i+BATCH);await Promise.all(batch.map(function(s){return scanTicker(s.ticker);}));crtScanned+=batch.length;var pct=Math.round(crtScanned/total*100);document.getElementById('crt-progress-fill').style.width=pct+'%';document.getElementById('crt-progress-pct').textContent=pct+'%';document.getElementById('crt-progress-text').textContent='Scanning '+crtScanned+'/'+total+' · '+crtSignals.length+' signals found';updateCrtStats(crtScanned,crtSignals.length,crtSignals.filter(function(s){return s.direction==='LONG';}).length,crtSignals.filter(function(s){return s.direction==='SHORT';}).length,total);await new Promise(function(r){setTimeout(r,50);});}crtScanning=false;document.getElementById('crt-scan-btn').style.display='flex';document.getElementById('crt-stop-btn').style.display='none';document.getElementById('crt-progress-text').textContent='Complete · '+crtScanned+' stocks scanned · '+crtSignals.length+' signals';var sbBadge=document.querySelector('#sb-scanner .sbadge');if(sbBadge){sbBadge.style.display='flex';sbBadge.textContent=crtSignals.length;}var statSum=document.getElementById('crt-stat-summary');if(statSum)statSum.style.display='block';if(crtSignals.length>0){showToast('CRT Scanner',crtScanned+' stocks scanned · '+crtSignals.length+' setups found','success',5000);saveSignalHistory(crtSignals);updateDashScanSummary(crtScanned,crtSignals);generateScanSummary(crtScanned,crtSignals);}else document.getElementById('crt-signals-grid').innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;grid-column:1/-1">No setups found across '+crtScanned+' stocks.</div>';}
-async function scanTicker(ticker){try{var r=await fetch(PROXY+'/scan?ticker='+ticker);if(!r.ok)return;var data=await r.json();if(!data.signals||!data.signals.length)return;for(var i=0;i<data.signals.length;i++){var sig=data.signals[i];var ml=mlScreener.find(function(s){return s.ticker===ticker;})||mlData[ticker];var mlScore=ml?getCrtMlScore(ml,sig.direction):0;var final=Math.min(Math.round(sig.baseConfidence+mlScore),99);
+async function startCrtScan(){if(crtScanning)return;crtScanning=true;crtAbort=false;crtSignals=[];crtScanned=0;document.getElementById('crt-scan-btn').style.display='none';document.getElementById('crt-stop-btn').style.display='flex';document.getElementById('crt-progress-bar').style.display='block';var st=document.getElementById('crt-stats');if(st)st.style.display='grid';document.getElementById('crt-signals-grid').innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px;text-align:center;grid-column:1/-1">Fetching ASX stock list...</div>';var tickers=await getAsxTickers();var total=tickers.length;crtScanned=0;updateCrtStats(0,0,0,0,total);document.getElementById('crt-signals-grid').innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px;text-align:center;grid-column:1/-1">Scanning '+total+' ASX stocks...</div>';var BATCH=10,CONC=3;for(var i=0;i<total;i+=BATCH*CONC){if(crtAbort)break;var crtPromises=[];for(var ci=0;ci<CONC;ci++){var cStart=i+ci*BATCH;if(cStart>=total)break;(function(bt){crtPromises.push(fetch(PROXY+'/scan?tickers='+bt.map(function(s){return s.ticker;}).join(','),{signal:AbortSignal.timeout(15000)}).then(function(r){return r.json();}).then(function(d){if(d.results)d.results.forEach(function(r){processScanResult(r.ticker,r);});}).catch(function(){}));})(tickers.slice(cStart,Math.min(cStart+BATCH,total)));}await Promise.all(crtPromises);crtScanned=Math.min(i+BATCH*CONC,total);var pct=Math.round(crtScanned/total*100);document.getElementById('crt-progress-fill').style.width=pct+'%';document.getElementById('crt-progress-pct').textContent=pct+'%';document.getElementById('crt-progress-text').textContent='Scanning '+crtScanned+'/'+total+' · '+crtSignals.length+' signals found';updateCrtStats(crtScanned,crtSignals.length,crtSignals.filter(function(s){return s.direction==='LONG';}).length,crtSignals.filter(function(s){return s.direction==='SHORT';}).length,total);await new Promise(function(r){setTimeout(r,50);});}crtScanning=false;document.getElementById('crt-scan-btn').style.display='flex';document.getElementById('crt-stop-btn').style.display='none';document.getElementById('crt-progress-text').textContent='Complete · '+crtScanned+' stocks scanned · '+crtSignals.length+' signals';var sbBadge=document.querySelector('#sb-scanner .sbadge');if(sbBadge){sbBadge.style.display='flex';sbBadge.textContent=crtSignals.length;}var statSum=document.getElementById('crt-stat-summary');if(statSum)statSum.style.display='block';if(crtSignals.length>0){showToast('CRT Scanner',crtScanned+' stocks scanned · '+crtSignals.length+' setups found','success',5000);saveSignalHistory(crtSignals);updateDashScanSummary(crtScanned,crtSignals);generateScanSummary(crtScanned,crtSignals);}else document.getElementById('crt-signals-grid').innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;grid-column:1/-1">No setups found across '+crtScanned+' stocks.</div>';}
+function processScanResult(ticker,data){if(!data||!data.signals||!data.signals.length)return;for(var i=0;i<data.signals.length;i++){var sig=data.signals[i];var ml=mlScreener.find(function(s){return s.ticker===ticker;})||mlData[ticker];var mlScore=ml?getCrtMlScore(ml,sig.direction):0;var final=Math.min(Math.round(sig.baseConfidence+mlScore),99);
 // Regime adjustment
 var regime=window._marketRegime;
 if(regime){if(regime.bullish&&sig.direction==='LONG')final=Math.min(final+5,99);else if(regime.bullish&&sig.direction==='SHORT')final=Math.max(final-8,20);else if(!regime.bullish&&sig.direction==='SHORT')final=Math.min(final+5,99);else if(!regime.bullish&&sig.direction==='LONG')final=Math.max(final-8,20);}
@@ -4818,7 +4818,8 @@ if(sig.emaStatus==='ALIGNED'&&sig.direction==='LONG')final=Math.min(final+5,99);
 if(sig.structure==='LH/LL'&&sig.direction==='LONG')final=Math.max(final-5,20);
 if(sig.structure==='HH/HL'&&sig.direction==='SHORT')final=Math.max(final-5,20);
 if(sig.rvol>=2)final=Math.min(final+3,99);
-var signal=Object.assign({},sig,{ticker:ticker,price:data.meta&&data.meta.price,mlScore:mlScore,mlNetVal:ml?(ml.netVal||ml.summary&&ml.summary.totalNet||null):null,finalConfidence:final});crtSignals.push(signal);crtSignals.sort(function(a,b){return b.finalConfidence-a.finalConfidence;});renderCrtSignal(signal);}}catch(e){}}
+var signal=Object.assign({},sig,{ticker:ticker,price:data.meta&&data.meta.price,mlScore:mlScore,mlNetVal:ml?(ml.netVal||ml.summary&&ml.summary.totalNet||null):null,finalConfidence:final});crtSignals.push(signal);crtSignals.sort(function(a,b){return b.finalConfidence-a.finalConfidence;});renderCrtSignal(signal);}}
+async function scanTicker(ticker){try{var r=await fetch(PROXY+'/scan?ticker='+ticker);if(!r.ok)return;processScanResult(ticker,await r.json());}catch(e){}}
 function getCrtMlScore(ml,dir){var net=ml.netVal||(ml.summary&&ml.summary.totalNet)||0;var bull=ml.sentiment==='accumulation'||(ml.summary&&ml.summary.smartMoneyBull);var bear=ml.sentiment==='distribution'||(ml.summary&&ml.summary.smartMoneyBear);var s=0;if(net>50000000)s+=10;else if(net>10000000)s+=7;else if(net>2000000)s+=4;else if(net<-10000000)s-=7;else if(net<-2000000)s-=4;if(dir==='LONG'){if(bull)s+=5;if(bear)s-=8;}if(dir==='SHORT'){if(bear)s+=5;if(bull)s-=8;}return Math.max(-15,Math.min(15,s));}
 function renderCrtSignal(sig){var tfF=document.getElementById('crt-tf-filter')?document.getElementById('crt-tf-filter').value:'all';var dirF=document.getElementById('crt-dir-filter')?document.getElementById('crt-dir-filter').value:'all';if(tfF!=='all'&&sig.model!==tfF)return;if(dirF!=='all'&&sig.direction!==dirF)return;var grid=document.getElementById('crt-signals-grid');var ph=grid.querySelector('[style*="Scanning"]');if(ph)ph.remove();var dirCol=sig.direction==='LONG'?'var(--green)':'var(--red)';var confCol=sig.finalConfidence>=80?'var(--green)':sig.finalConfidence>=65?'var(--amber)':'var(--text3)';function fmtM(v){if(!v)return '-';var a=Math.abs(v),s=v>=0?'+':'-';return a>=1000000000?s+'$'+(a/1000000000).toFixed(1)+'B':a>=1000000?s+'$'+(a/1000000).toFixed(0)+'M':s+'$'+(a/1000).toFixed(0)+'K';}var mlBadge=sig.mlNetVal?'<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:'+(sig.mlScore>0?'rgba(0,212,168,.15)':'rgba(255,68,102,.1)')+';color:'+(sig.mlScore>0?'var(--green)':'var(--red)')+';font-weight:700;margin-left:6px">ML '+fmtM(sig.mlNetVal)+'</span>':'<span style="font-size:9px;padding:2px 5px;border-radius:3px;background:var(--bg5);color:var(--text4);margin-left:6px">No ML</span>';var card=document.createElement('div');card.className='panel';card.style.cssText='padding:0;overflow:hidden;cursor:pointer;border-color:'+(sig.finalConfidence>=80?'rgba(0,212,168,.25)':sig.finalConfidence>=65?'rgba(255,176,32,.2)':'var(--border2)');var favKey=sig.ticker+'_'+sig.model+'_'+sig.direction;var isFav=crtFavourites.includes(favKey);var grade=sig.finalConfidence>=85?'A+':sig.finalConfidence>=75?'A':sig.finalConfidence>=60?'B':sig.finalConfidence>=45?'C':'D';var gradeCol=sig.finalConfidence>=75?'var(--green)':sig.finalConfidence>=60?'var(--amber)':'var(--text3)';var prioCol=sig.finalConfidence>=80?'var(--red)':sig.finalConfidence>=65?'var(--amber)':'var(--accent)';var prioGlow=sig.finalConfidence>=80?'box-shadow:inset 3px 0 0 var(--green),0 0 12px rgba(0,212,168,.12)':sig.finalConfidence>=65?'box-shadow:inset 3px 0 0 var(--amber),0 0 8px rgba(255,176,32,.08)':'box-shadow:inset 3px 0 0 var(--accent)';
 // ── Warning tags ──
@@ -7585,7 +7586,7 @@ const SMT_WEAK_PAIRS = [
 ];
 
 // Combined universe for scanning
-const SMT_ALL_PAIRS = [...SMT_STRONG_PAIRS, ...SMT_WEAK_PAIRS];
+const SMT_ALL_PAIRS = [...SMT_STRONG_PAIRS, ...SMT_WEAK_PAIRS].filter(function(p){return p && p.t1 && p.t2;});
 
 
 const SMT_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions/smt';
@@ -7671,6 +7672,8 @@ async function startSmtScan() {
   smtScanning = true;
   smtAbort = false;
   smtResults = [];
+  smtCandleCache = {};
+  try {
 
   document.getElementById('smt-scan-btn').style.display = 'none';
   document.getElementById('smt-stop-btn').style.display = 'flex';
@@ -7686,19 +7689,25 @@ async function startSmtScan() {
 
   document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div id="smt-scan-counter" style="font-size:13px;color:var(--text2)">Fetching data for ' + tickers.length + ' tickers...</div></div>';
 
-  // Phase 1: Bulk-fetch candle data — 10 tickers per call (~48 calls vs 2231)
-  var batchSz = 10;
-  for (var i = 0; i < tickers.length; i += batchSz) {
+  // Phase 1: Bulk-fetch candle data — 15 tickers/call, 3 concurrent requests
+  var batchSz = 15, concurrency = 3, fetched = 0;
+  for (var i = 0; i < tickers.length; i += batchSz * concurrency) {
     if (smtAbort) break;
-    var batch = tickers.slice(i, i + batchSz);
-    try {
-      var r = await fetch(SMT_PROXY + '?action=candles&tickers=' + batch.join(','));
-      var data = await r.json();
-      if (data && typeof data === 'object') {
-        Object.keys(data).forEach(function(k) { smtCandleCache[k] = data[k]; });
-      }
-    } catch(e) { /* skip failed batch */ }
-    var fetched = Math.min(i + batchSz, tickers.length);
+    var promises = [];
+    for (var ci = 0; ci < concurrency; ci++) {
+      var start = i + ci * batchSz;
+      if (start >= tickers.length) break;
+      (function(batch) {
+        promises.push(
+          fetch(SMT_PROXY + '?action=candles&tickers=' + batch.map(function(t){return t}).join(','), { signal: AbortSignal.timeout(12000) })
+            .then(function(r) { return r.json(); })
+            .then(function(data) { if (data && !data.error) Object.keys(data).forEach(function(k) { smtCandleCache[k] = data[k]; }); })
+            .catch(function() {})
+        );
+      })(tickers.slice(start, Math.min(start + batchSz, tickers.length)));
+    }
+    await Promise.all(promises);
+    fetched = Math.min(i + batchSz * concurrency, tickers.length);
     var pct = Math.round(fetched / tickers.length * 30);
     document.getElementById('smt-progress-fill').style.width = pct + '%';
     document.getElementById('smt-progress-text').textContent = 'Fetching ' + fetched + ' / ' + tickers.length + ' tickers...';
@@ -7744,6 +7753,7 @@ async function startSmtScan() {
   }
 
   smtFinish(scanned, valid, divs, bull, bear);
+  } catch(scanErr) { console.error('SMT scan error:', scanErr); smtFinish(0,0,0,0,0); }
 }
 
 function smtFinish(scanned, valid, divs, bull, bear) {
