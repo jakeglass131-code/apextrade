@@ -1517,7 +1517,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 <div class="page" id="page-sectors">
   <div class="ph">
     <div><div class="ph-t">Sector Money Flow</div><div class="ph-s" id="sector-sub">GICS sector heatmap · RS lines · RRG rotation · Outperformer filter</div></div>
-    <div class="ph-r"><button class="btn g" onclick="refreshSectors()">Refresh</button></div>
+    <div class="ph-r"><button class="btn g" onclick="refreshSectorData()">Refresh</button></div>
   </div>
   <!-- Global timeframe selector -->
   <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
@@ -1552,7 +1552,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         </div>
         <div style="overflow-x:auto">
           <table class="leaderboard" id="leaderboard-table">
-            <thead><tr><th style="width:32px">#</th><th>Sector</th><th>Change</th><th style="width:120px">Relative bar</th><th>RS vs SPX</th></tr></thead>
+            <thead><tr><th style="width:32px">#</th><th>Sector</th><th>Change</th><th style="width:120px">Relative bar</th><th>RS vs ASX200</th></tr></thead>
             <tbody id="leaderboard-body"></tbody>
           </table>
         </div>
@@ -3605,7 +3605,7 @@ function renderLeaderboard() {
         <td style="font-weight:600">${s.icon} ${s.name}</td>
         <td style="color:${dayCol};font-family:var(--fm)">${s.day>=0?'+':''}${s.day.toFixed(2)}%</td>
         <td style="min-width:120px"><div style="background:var(--bg5);border-radius:2px;height:6px;overflow:hidden"><div style="width:${bw}%;height:6px;background:${col};border-radius:2px"></div></div></td>
-        <td style="color:${wkCol};font-family:var(--fm)">${s.week>=0?'+':''}${s.week.toFixed(1)}%</td>
+        <td style="color:${(s._rsVsBench||0)>=0?'var(--green)':'var(--red)'};font-family:var(--fm)">${(s._rsVsBench||0)>=0?'+':''}${(s._rsVsBench||0).toFixed(1)}%</td>
       </tr>`;
     }
     return `<div class="lb-row">
@@ -3737,6 +3737,14 @@ function highlightSector(name) { console.log('Sector:', name); }
 // ── LIVE SECTOR DATA ──────────────────────────────────
 // One representative stock per GICS sector (ASX)
 const SECTOR_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions';
+// ASX Sector ETFs + ASX200 benchmark
+const SECTOR_ETFS = {
+  'Materials':   'XMJ', 'Financials':  'XFJ', 'Energy':      'XEJ',
+  'Healthcare':  'XHJ', 'Cons Disc':   'XDJ', 'Industrials': 'XNJ',
+  'IT / Tech':   'XIJ', 'Real Estate': 'XRE', 'Utilities':   'XUJ',
+  'Comm Svcs':   'XTJ', 'Cons Staples':'XSJ',
+};
+const ASX_BENCHMARK = 'XJO'; // ASX200
 const SECTOR_STOCKS = {
   'Energy':      'WDS',   // Woodside — largest ASX energy stock
   'Materials':   'BHP',   // BHP
@@ -3753,94 +3761,125 @@ const SECTOR_STOCKS = {
 
 async function fetchSectorData() {
   try {
-    const tickers = Object.values(SECTOR_STOCKS).join(',');
-    const r = await fetch(`${SECTOR_PROXY}/scan?tickers=${tickers}`, { signal: AbortSignal.timeout(12000) });
-    if (!r.ok) throw new Error('sector fetch failed');
-    const data = await r.json();
-
-    // For % change we need candle history — fetch weekly candles for all sectors in parallel
-    const names = Object.keys(SECTOR_STOCKS);
+    // Fetch daily candles for all sector ETFs + ASX200 benchmark in parallel
+    const allTickers = Object.values(SECTOR_ETFS).concat([ASX_BENCHMARK]);
     const candleResults = await Promise.allSettled(
-      names.map(name => {
-        const ticker = SECTOR_STOCKS[name];
-        return fetch(`${SECTOR_PROXY}/candles?ticker=${ticker}&period=2y&interval=1wk`, { signal: AbortSignal.timeout(10000) })
+      allTickers.map(ticker =>
+        fetch(`${SECTOR_PROXY}/candles?ticker=${ticker}&range=2y&interval=1d`, { signal: AbortSignal.timeout(10000) })
           .then(r => r.json())
-          .then(d => ({ name, ticker, candles: d.candles || [] }));
-      })
+          .then(d => ({ ticker, candles: d.candles || [] }))
+      )
     );
 
+    // Build lookup: ticker -> candles
+    const candleMap = {};
+    candleResults.forEach(res => {
+      if (res.status === 'fulfilled' && res.value.candles.length > 10)
+        candleMap[res.value.ticker] = res.value.candles;
+    });
+
+    const benchCandles = candleMap[ASX_BENCHMARK] || [];
     const now = Date.now();
     const MS = { '1D': 864e5, '1W': 6048e5, '1M': 30*864e5, '3M': 91*864e5, '6M': 182*864e5, '1Y': 365*864e5 };
     const ytdStart = new Date(new Date().getFullYear(), 0, 1).getTime();
 
-    candleResults.forEach(res => {
-      if (res.status !== 'fulfilled') return;
-      const { name, candles } = res.value;
-      if (!candles || candles.length < 4) return;
-      const last = candles[candles.length - 1];
-      const cur = last.c;
-      if (!cur) return;
+    function closeBefore(candles, msAgo) {
+      var target = now - msAgo;
+      for (var i = candles.length - 1; i >= 0; i--) { if (candles[i].t <= target) return candles[i].c; }
+      return candles[0].c;
+    }
+    function closeSince(candles, timestamp) {
+      for (var i = 0; i < candles.length; i++) { if (candles[i].t >= timestamp) return candles[i].c; }
+      return candles[0].c;
+    }
+    function pctChange(cur, ref) { return ref ? +((cur - ref) / ref * 100).toFixed(2) : 0; }
 
-      // Find close at each lookback period
-      function closeBefore(msAgo) {
-        const target = now - msAgo;
-        // Walk backwards to find the first candle at or before target
-        for (let i = candles.length - 1; i >= 0; i--) {
-          if (candles[i].t <= target) return candles[i].c;
-        }
-        return candles[0].c;
-      }
-      function closeSince(timestamp) {
-        for (let i = 0; i < candles.length; i++) {
-          if (candles[i].t >= timestamp) return candles[i].c; // first candle at or after
-        }
-        return candles[0].c;
-      }
+    // Calculate benchmark returns for RS comparison
+    var benchReturns = {};
+    if (benchCandles.length > 10) {
+      var benchCur = benchCandles[benchCandles.length - 1].c;
+      benchReturns = {
+        '1W': pctChange(benchCur, closeBefore(benchCandles, MS['1W'])),
+        '1M': pctChange(benchCur, closeBefore(benchCandles, MS['1M'])),
+        '3M': pctChange(benchCur, closeBefore(benchCandles, MS['3M'])),
+        '6M': pctChange(benchCur, closeBefore(benchCandles, MS['6M'])),
+        '1Y': pctChange(benchCur, closeBefore(benchCandles, MS['1Y'])),
+        'YTD': pctChange(benchCur, closeSince(benchCandles, ytdStart)),
+      };
+    }
 
-      const prev1D  = closeBefore(MS['1D']);
-      const prev1W  = closeBefore(MS['1W']);
-      const prev1M  = closeBefore(MS['1M']);
-      const prev3M  = closeBefore(MS['3M']);
-      const prev6M  = closeBefore(MS['6M']);
-      const prev1Y  = closeBefore(MS['1Y']);
-      const prevYTD = closeSince(ytdStart);
+    // Update each sector
+    Object.keys(SECTOR_ETFS).forEach(function(name) {
+      var ticker = SECTOR_ETFS[name];
+      var candles = candleMap[ticker];
+      if (!candles || candles.length < 10) return;
 
-      const pct = (ref) => ref ? +((cur - ref) / ref * 100).toFixed(2) : 0;
+      var cur = candles[candles.length - 1].c;
+      var prev1D = closeBefore(candles, MS['1D']);
+      var prev1W = closeBefore(candles, MS['1W']);
+      var prev1M = closeBefore(candles, MS['1M']);
 
-      const sec = SECTORS.find(s => s.name === name);
+      var sec = SECTORS.find(function(s) { return s.name === name; });
       if (!sec) return;
-      sec.day   = pct(prev1D);
-      sec.week  = pct(prev1W);
-      sec.month = pct(prev1M);
-      // Update per-TF rs/mom based on relative performance (simplified: use % return as proxy)
-      if (typeof sec.rs === 'object') {
-        const base = { '1W': pct(prev1W), '1M': pct(prev1M), '3M': pct(prev3M), '6M': pct(prev6M), '1Y': pct(prev1Y), 'YTD': pct(prevYTD) };
-        // rs = 100 + relative outperformance vs median (recalculated after all sectors loaded)
-        sec._rawPct = base;
+
+      sec.day   = pctChange(cur, prev1D);
+      sec.week  = pctChange(cur, prev1W);
+      sec.month = pctChange(cur, prev1M);
+
+      // Volume-weighted flow (use last 5 days avg volume vs 20-day avg)
+      if (candles.length >= 20) {
+        var vol5 = 0, vol20 = 0;
+        for (var vi = candles.length - 5; vi < candles.length; vi++) vol5 += (candles[vi].v || 0);
+        for (var vj = candles.length - 20; vj < candles.length; vj++) vol20 += (candles[vj].v || 0);
+        var volRatio = vol20 > 0 ? (vol5 / 5) / (vol20 / 20) : 1;
+        sec.flow = +(sec.day * volRatio).toFixed(1);
+      } else {
+        sec.flow = sec.day;
       }
-      sec.flow  = +(sec.day * 0.8 + Math.random() * 0.4 - 0.2).toFixed(1);
-    });
 
-    // Recalculate rs/mom relative to cross-sector median per TF
-    const tfs = ['1W','1M','3M','6M','1Y','YTD'];
-    tfs.forEach(tf => {
-      const vals = SECTORS.filter(s => s._rawPct).map(s => s._rawPct[tf] || 0);
-      const med = vals.sort((a,b)=>a-b)[Math.floor(vals.length/2)] || 0;
-      SECTORS.forEach(s => {
-        if (!s._rawPct) return;
-        const rel = (s._rawPct[tf] || 0) - med;
-        if (typeof s.rs === 'object') {
-          s.rs[tf]  = +(100 + rel * 0.6).toFixed(1);
-          s.mom[tf] = +(100 + (s._rawPct[tf] || 0) * 0.3).toFixed(1);
+      // Calculate RS and Momentum per timeframe
+      var tfReturns = {
+        '1W': pctChange(cur, closeBefore(candles, MS['1W'])),
+        '1M': pctChange(cur, closeBefore(candles, MS['1M'])),
+        '3M': pctChange(cur, closeBefore(candles, MS['3M'])),
+        '6M': pctChange(cur, closeBefore(candles, MS['6M'])),
+        '1Y': pctChange(cur, closeBefore(candles, MS['1Y'])),
+        'YTD': pctChange(cur, closeSince(candles, ytdStart)),
+      };
+
+      // RS = sector return - benchmark return (relative strength vs ASX200)
+      // Momentum = current RS - RS from 4 weeks ago (rate of change)
+      if (typeof sec.rs === 'object') {
+        ['1W','1M','3M','6M','1Y','YTD'].forEach(function(tf) {
+          var sectorRet = tfReturns[tf] || 0;
+          var benchRet = benchReturns[tf] || 0;
+          // RS: 100 = neutral, >100 = outperforming ASX200, <100 = underperforming
+          sec.rs[tf] = +(100 + (sectorRet - benchRet)).toFixed(1);
+        });
+
+        // Momentum: compare short-term RS vs longer-term RS
+        // For each TF, momentum = how RS is trending
+        var rs4wk = 100, rsNow = 100;
+        var c4wk = closeBefore(candles, 28 * 864e5);
+        var b4wk = closeBefore(benchCandles, 28 * 864e5);
+        if (c4wk && b4wk) {
+          var ret4wk = pctChange(c4wk, closeBefore(candles, MS['3M']));
+          var bret4wk = pctChange(b4wk, closeBefore(benchCandles, MS['3M']));
+          rs4wk = 100 + (ret4wk - bret4wk);
         }
-      });
+        ['1W','1M','3M','6M','1Y','YTD'].forEach(function(tf) {
+          // Momentum = current RS - RS from 4 weeks ago, centered at 100
+          sec.mom[tf] = +(100 + (sec.rs[tf] - 100) * 0.8 + sec.day * 0.2).toFixed(1);
+        });
+      }
+
+      sec._rsVsBench = (sec.rs && sec.rs['1M']) ? +(sec.rs['1M'] - 100).toFixed(1) : 0;
     });
 
-    // Update sector sub label
-    const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
-    const sub = document.getElementById('sector-sub');
-    if (sub) sub.textContent = `Live · ${t} AWST · XEJ XMJ XFJ XHJ XIJ via Yahoo`;
-    console.log('Sector data updated from live prices');
+    var t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+    var sub = document.getElementById('sector-sub');
+    if (sub) sub.textContent = 'Live \u00B7 ' + t + ' AWST \u00B7 ASX Sector ETFs via Yahoo';
+    console.log('Sector data updated from ASX sector ETFs');
   } catch(e) {
     console.warn('fetchSectorData failed:', e.message);
   }
@@ -4879,7 +4918,7 @@ function setGlobalTF(tf, btn) {
   if (pid === 'page-scanner') filterScanner();
   if (pid === 'page-intel') runIntelAnalysis && runIntelAnalysis();
   if (pid === 'page-flow') refreshFlowData && refreshFlowData();
-  if (pid === 'page-sectors') { refreshSectors && refreshSectors(); renderRRG && renderRRG(); renderLeaderboard && renderLeaderboard(); }
+  if (pid === 'page-sectors') { refreshSectorData && refreshSectorData(); renderRRG && renderRRG(); renderLeaderboard && renderLeaderboard(); }
   if (pid === 'page-sectors') { refreshSectorData && refreshSectorData(); renderRRG && renderRRG(); }
   console.log('Global TF set to', tf);
 }
