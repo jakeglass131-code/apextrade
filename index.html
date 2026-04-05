@@ -4451,13 +4451,8 @@ function fireAlert(sig) {
 
   addInAppAlert(sig, `${sig.sym} ${sig.dir.toUpperCase()} — ${sig.confidence}%`);
 
-  if (CFG.pushEnabled && Notification.permission === 'granted') {
-    new Notification(`ApexTrade: ${sig.sym} ${sig.dir.toUpperCase()}`, {
-      body: `${sig.confidence}% confidence · ${sig.signals.map(s=>s.label).join(' · ')}`,
-      tag: key,
-      requireInteraction: sig.confidence >= 80,
-    });
-  }
+  // Push notifications muted — re-enable in Settings if needed
+  // if (CFG.pushEnabled && Notification.permission === 'granted') { ... }
 }
 
 // ── ALERT LOG ──
@@ -5970,14 +5965,8 @@ document.addEventListener('keydown', function(e) {
 });
 
 // SOUND ALERTS — disabled
-function playAlertSound(type) { /* sounds off */ }
-
-// Patch fireAlert to include sound
-const _origFireAlert = fireAlert;
-fireAlert = function(sig) {
-  _origFireAlert(sig);
-  playAlertSound('signal');
-};
+// Sound and push notifications disabled
+function playAlertSound(type) {}
 
 // ═══════════════════════════════════════════════════════
 // ADVANCED PERFORMANCE METRICS
