@@ -1043,7 +1043,39 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <!-- INTEL panel -->
   <div id="asx-panel-intel" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
     <div class="scroll">
-      <div style="display:grid;grid-template-columns:300px 1fr;min-height:300px">
+
+      <!-- Value Rankings (fundamentals agent) -->
+      <div class="panel" style="margin:16px 20px 0">
+        <div class="phead">
+          <div>
+            <div class="ptitle">📊 ASX Value Rankings <span style="font-size:9px;padding:2px 8px;border-radius:99px;background:rgba(0,212,168,.12);color:#00d4a8;border:1px solid rgba(0,212,168,.2);margin-left:8px;font-weight:600">LIVE AGENT</span></div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">Fundamental value scoring · P/E · P/B · ROE · Dividends · Updates every 6h · 200 ASX stocks</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <div id="fund-status" style="font-size:10px;color:var(--text3)">Not loaded</div>
+            <button class="btn g" onclick="runFundamentalsAgent()" style="font-size:11px">🚀 Scan now</button>
+          </div>
+        </div>
+        <div style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap">
+          <button class="filter-pill best active" onclick="filterFundamentals('all')">All</button>
+          <button class="filter-pill" onclick="filterFundamentals('ap')">A+ Only</button>
+          <button class="filter-pill" onclick="filterFundamentals('value')">Deep Value</button>
+          <button class="filter-pill" onclick="filterFundamentals('dividend')">High Div</button>
+          <button class="filter-pill" onclick="filterFundamentals('growth')">Growth</button>
+          <div style="flex:1"></div>
+          <span style="font-size:10px;color:var(--text3);align-self:center" id="fund-count"></span>
+        </div>
+        <div id="fund-rankings" style="max-height:400px;overflow-y:auto">
+          <div style="padding:32px;text-align:center;color:var(--text3)">
+            <div style="font-size:28px;margin-bottom:10px">🤖</div>
+            <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:6px">ASX Fundamentals Agent</div>
+            <div style="font-size:11px;margin-bottom:16px;max-width:400px;margin-left:auto;margin-right:auto">Scores 200 ASX stocks on P/E, P/B, dividend yield, EPS growth, 52-week position and more. Runs every 6 hours automatically.</div>
+            <button class="btn g" onclick="runFundamentalsAgent()" style="font-size:12px;padding:8px 20px">🚀 Start Value Scan</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:300px 1fr;min-height:300px;margin-top:16px">
         <div style="border-right:1px solid var(--border2);padding:20px;overflow-y:auto">
           <div id="asx-intel-score">
             <div style="text-align:center;padding:32px 16px;color:var(--text3)">
@@ -3282,9 +3314,16 @@ function checkAlerts(results) {
 async function fetchNews() {
   // News fetch chain — proxy-first for reliable CORS, fallback to direct RSS
   const sources = [
+    // AFR — Australian Financial Review (priority for ASX traders)
+    () => fetchRSSviaProxy('https://www.afr.com/rss', 'AFR'),
+    () => fetchRSSviaProxy('https://www.afr.com/rss/markets', 'AFR Markets'),
+    // BBC Business
     () => fetchRSSviaProxy('https://feeds.bbci.co.uk/news/business/rss.xml', 'BBC Business'),
+    // Yahoo Finance AU
+    () => fetchRSSviaProxy('https://au.finance.yahoo.com/rss/topstories', 'Yahoo Finance AU'),
+    // ABC Business AU
     () => fetchRSSviaProxy('https://www.abc.net.au/news/feed/2811686/rss.xml', 'ABC Business'),
-    () => fetchRSSviaProxy('https://feeds.finance.yahoo.com/rss/2.0/headline?s=AUD%3DX%2CGC%3DF%2CCL%3DF%2CBHP.AX&region=AU&lang=en-AU&count=20', 'Yahoo Finance'),
+    // NY Times Business (fallback)
     () => fetchRSSviaProxy('https://rss.nytimes.com/services/xml/rss/nyt/Business.xml', 'NY Times'),
   ];
 
@@ -6018,6 +6057,154 @@ function startAsxCrtScan() {
     }
   }, 350);
 }
+
+
+// ══════════════════════════════════════════════════════
+// FUNDAMENTALS AGENT — 24/7 ASX value scanner
+// ══════════════════════════════════════════════════════
+const FUND_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions/fundamentals';
+let fundData = [];
+let fundFilter = 'all';
+
+async function runFundamentalsAgent() {
+  const status = document.getElementById('fund-status');
+  const grid   = document.getElementById('fund-rankings');
+  if (status) status.textContent = 'Scanning 200 ASX stocks...';
+  if (grid) grid.innerHTML = `<div style="padding:32px;text-align:center;color:var(--text3)">
+    <div class="lpulse" style="background:var(--accent);margin:0 auto 12px;display:block"></div>
+    <div style="font-size:13px;color:var(--text2);font-weight:600">Scoring fundamentals across 200 ASX stocks...</div>
+    <div style="font-size:11px;margin-top:6px;color:var(--text3)">Fetching P/E, P/B, ROE, dividends, EPS growth</div>
+  </div>`;
+
+  try {
+    await fetch(FUND_PROXY + '?action=scan');
+    let attempts = 0;
+    const poll = setInterval(async () => {
+      attempts++;
+      try {
+        const r = await fetch(FUND_PROXY + '?action=get&limit=100');
+        const d = await r.json();
+        if (d.results && d.results.length > 0) {
+          fundData = d.results;
+          renderFundamentals();
+          const age = d.lastRun ? fundTimeSince(new Date(d.lastRun)) : 'fresh';
+          if (status) status.innerHTML = `<span style="color:var(--green)">✓</span> ${d.count} stocks scored · ${age}`;
+        }
+        if (!d.running || attempts > 40) {
+          clearInterval(poll);
+          if (!fundData.length) {
+            if (grid) grid.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px">Could not load fundamentals. Yahoo Finance may be rate-limiting. Try again in a moment.</div>';
+            if (status) status.textContent = 'Try again';
+          }
+        }
+      } catch(e) { console.warn('Fund poll:', e); }
+    }, 3000);
+  } catch(e) {
+    if (status) status.textContent = 'Error — check proxy';
+  }
+}
+
+function fundTimeSince(date) {
+  const m = Math.floor((Date.now() - date) / 60000);
+  if (m < 2) return 'just now';
+  if (m < 60) return m + 'm ago';
+  return Math.floor(m/60) + 'h ago';
+}
+
+function filterFundamentals(f) {
+  fundFilter = f;
+  // Update pill styles
+  document.querySelectorAll('#asx-panel-intel .filter-pill').forEach(b => {
+    b.classList.remove('active');
+    if (b.getAttribute('onclick') && b.getAttribute('onclick').includes("'"+f+"'")) b.classList.add('active');
+  });
+  renderFundamentals();
+}
+
+function renderFundamentals() {
+  const grid = document.getElementById('fund-rankings');
+  if (!grid || !fundData.length) return;
+
+  let data = [...fundData];
+  if (fundFilter === 'ap')       data = data.filter(d => d.grade === 'A+');
+  else if (fundFilter === 'value')    data = data.filter(d => d.pe && d.pe < 15 && d.pb && d.pb < 2);
+  else if (fundFilter === 'dividend') { data = data.filter(d => d.divYield && d.divYield > 0.03); data.sort((a,b) => (b.divYield||0)-(a.divYield||0)); }
+  else if (fundFilter === 'growth')   { data = data.filter(d => d.epsGrowth && d.epsGrowth > 0.08); data.sort((a,b) => (b.epsGrowth||0)-(a.epsGrowth||0)); }
+
+  const cEl = document.getElementById('fund-count');
+  if (cEl) cEl.textContent = data.length + ' stocks';
+
+  if (!data.length) {
+    grid.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">No stocks match this filter.</div>';
+    return;
+  }
+
+  const gCol = { 'A+':'#00d4a8','A':'#2d8eff','B':'#ffb020','C':'#888','D':'#ff4466' };
+  const gBg  = { 'A+':'rgba(0,212,168,.12)','A':'rgba(45,142,255,.12)','B':'rgba(255,176,32,.1)','C':'var(--bg5)','D':'rgba(255,68,102,.1)' };
+
+  grid.innerHTML = `
+    <div style="display:grid;grid-template-columns:30px 1fr 62px 52px 52px 58px 64px 54px 58px;padding:5px 16px;background:var(--bg5);border-bottom:1px solid var(--border);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;position:sticky;top:0">
+      <div>#</div><div>Company</div><div style="text-align:right">Price</div><div style="text-align:right">P/E</div><div style="text-align:right">P/B</div><div style="text-align:right">Div%</div><div style="text-align:right">Score</div><div style="text-align:right">Grade</div><div style="text-align:right">Chg%</div>
+    </div>
+    ${data.slice(0,50).map((d,i) => {
+      const pe  = d.pe  ? d.pe.toFixed(1)  : '—';
+      const pb  = d.pb  ? d.pb.toFixed(2)  : '—';
+      const div = d.divYield ? (d.divYield*100).toFixed(1)+'%' : '—';
+      const chg = d.change !== undefined ? (d.change>=0?'+':'')+d.change.toFixed(2)+'%' : '—';
+      const chgCol = (d.change||0)>=0 ? 'var(--green)' : 'var(--red)';
+      const gc = gCol[d.grade]||'#888'; const gb = gBg[d.grade]||'var(--bg5)';
+      const sigs = (d.signals||[]).slice(0,2).join(' · ');
+      const warns = (d.warnings||[]).slice(0,1).join(' · ');
+      const ticker = (d.ticker||'').replace('.AX','');
+      return `<div onclick="window.open('https://finance.yahoo.com/quote/${d.ticker}','_blank')"
+                style="display:grid;grid-template-columns:30px 1fr 62px 52px 52px 58px 64px 54px 58px;padding:8px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s"
+                onmouseover="this.style.background='var(--bg3)'" onmouseout="this.style.background=''">
+        <div style="color:var(--text3);font-size:10px;padding-top:2px">${i+1}</div>
+        <div>
+          <div style="font-weight:700;color:var(--text);font-family:var(--fd);font-size:12px">${ticker}</div>
+          <div style="font-size:10px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px">${d.name||''}</div>
+          ${sigs?`<div style="font-size:9px;color:var(--green);margin-top:1px">${sigs}</div>`:''}
+          ${warns?`<div style="font-size:9px;color:var(--amber)">⚠ ${warns}</div>`:''}
+        </div>
+        <div style="text-align:right;font-family:var(--fm);font-weight:600;color:var(--text);font-size:12px">$${(d.price||0).toFixed(2)}</div>
+        <div style="text-align:right;font-size:11px;color:${pe==='—'?'var(--text4)':'var(--text2)'}">${pe}</div>
+        <div style="text-align:right;font-size:11px;color:${pb==='—'?'var(--text4)':'var(--text2)'}">${pb}</div>
+        <div style="text-align:right;font-size:11px;color:${div==='—'?'var(--text4)':'var(--green)'}">${div}</div>
+        <div style="text-align:right">
+          <div style="background:var(--bg4);border-radius:2px;height:3px;width:48px;overflow:hidden;display:inline-block;vertical-align:middle">
+            <div style="height:3px;background:${gc};width:${Math.min(d.score,100)}%;opacity:.85"></div>
+          </div>
+          <div style="font-size:10px;color:${gc};font-weight:700;margin-top:2px">${d.score}</div>
+        </div>
+        <div style="text-align:right"><span style="padding:2px 6px;border-radius:4px;font-size:10px;font-weight:800;background:${gb};color:${gc}">${d.grade}</span></div>
+        <div style="text-align:right;font-size:11px;font-weight:700;color:${chgCol}">${chg}</div>
+      </div>`;
+    }).join('')}`;
+}
+
+// Auto-load when ASX intel tab opens
+const _origSetAsxTab = typeof setAsxTab === 'function' ? setAsxTab : null;
+function setAsxTab(tab) {
+  if (_origSetAsxTab) _origSetAsxTab(tab);
+  if (tab === 'intel' && fundData.length === 0) {
+    fetch(FUND_PROXY + '?action=get&limit=100').then(r => r.json()).then(d => {
+      if (d.results?.length > 0) {
+        fundData = d.results; renderFundamentals();
+        const s = document.getElementById('fund-status');
+        if (s) s.innerHTML = `<span style="color:var(--green)">✓</span> ${d.count} stocks · ${fundTimeSince(new Date(d.lastRun))}`;
+      } else { setTimeout(runFundamentalsAgent, 800); }
+    }).catch(() => {});
+  }
+}
+
+// Refresh every 6h while app is open
+setInterval(() => {
+  if (fundData.length > 0) {
+    fetch(FUND_PROXY + '?action=get&limit=100').then(r=>r.json()).then(d => {
+      if (d.results?.length > 0) { fundData = d.results; renderFundamentals(); }
+    }).catch(()=>{});
+  }
+}, 6 * 3600 * 1000);
 
 </script>
 
