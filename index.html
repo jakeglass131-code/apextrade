@@ -5969,40 +5969,8 @@ document.addEventListener('keydown', function(e) {
   }
 });
 
-// ═══════════════════════════════════════════════════════
-// SOUND ALERTS — Subtle audio feedback
-// ═══════════════════════════════════════════════════════
-let audioCtx = null;
-function playAlertSound(type) {
-  try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    gain.gain.value = 0.08;
-
-    if (type === 'signal') {
-      osc.frequency.value = 880; osc.type = 'sine';
-      gain.gain.setTargetAtTime(0, audioCtx.currentTime + 0.15, 0.05);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.25);
-      // Second tone
-      setTimeout(() => {
-        const o2 = audioCtx.createOscillator();
-        const g2 = audioCtx.createGain();
-        o2.connect(g2); g2.connect(audioCtx.destination);
-        g2.gain.value = 0.08;
-        o2.frequency.value = 1100; o2.type = 'sine';
-        g2.gain.setTargetAtTime(0, audioCtx.currentTime + 0.15, 0.05);
-        o2.start(); o2.stop(audioCtx.currentTime + 0.2);
-      }, 150);
-    } else {
-      osc.frequency.value = 660; osc.type = 'sine';
-      gain.gain.setTargetAtTime(0, audioCtx.currentTime + 0.1, 0.03);
-      osc.start(); osc.stop(audioCtx.currentTime + 0.15);
-    }
-  } catch(e) { /* audio not available */ }
-}
+// SOUND ALERTS — disabled
+function playAlertSound(type) { /* sounds off */ }
 
 // Patch fireAlert to include sound
 const _origFireAlert = fireAlert;
