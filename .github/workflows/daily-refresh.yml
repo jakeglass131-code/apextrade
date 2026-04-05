@@ -1,0 +1,56 @@
+name: Daily ASX Data Refresh
+
+# Runs at 4:15 PM AEST (06:15 UTC) on weekdays after ASX market close
+on:
+  schedule:
+    - cron: '15 6 * * 1-5'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Refresh all ASX tickers in batches
+        run: |
+          BASE_URL="https://apextrade-proxy.netlify.app/.netlify/functions/daily-refresh"
+          BATCH=0
+          TOTAL=0
+          OK=0
+          FAIL=0
+
+          while true; do
+            echo "Processing batch $BATCH..."
+            RESPONSE=$(curl -s --max-time 30 "$BASE_URL?batch=$BATCH")
+            echo "$RESPONSE"
+
+            # Check if done
+            DONE=$(echo "$RESPONSE" | jq -r '.done // empty')
+            if [ "$DONE" = "true" ]; then
+              echo "All batches complete!"
+              break
+            fi
+
+            # Extract stats
+            BATCH_OK=$(echo "$RESPONSE" | jq -r '.ok // 0')
+            BATCH_FAIL=$(echo "$RESPONSE" | jq -r '.fail // 0')
+            NEXT=$(echo "$RESPONSE" | jq -r '.nextBatch // empty')
+
+            OK=$((OK + BATCH_OK))
+            FAIL=$((FAIL + BATCH_FAIL))
+            TOTAL=$((TOTAL + BATCH_OK + BATCH_FAIL))
+
+            if [ -z "$NEXT" ] || [ "$NEXT" = "null" ]; then
+              echo "No more batches."
+              break
+            fi
+
+            BATCH=$NEXT
+            # Small delay between batches
+            sleep 5
+          done
+
+          echo ""
+          echo "=== REFRESH COMPLETE ==="
+          echo "Total: $TOTAL tickers"
+          echo "OK: $OK"
+          echo "Failed: $FAIL"
