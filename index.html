@@ -1261,13 +1261,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <!-- TF selector + Run All button -->
     <div style="display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
       <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em">TIMEFRAME</span>
-      <button class="tf-btn active" id="fut-tf-D"  onclick="setFutTF('D',this)">Daily</button>
-      <button class="tf-btn"        id="fut-tf-4H" onclick="setFutTF('4H',this)">4H</button>
-      <button class="tf-btn"        id="fut-tf-1H" onclick="setFutTF('1H',this)">1H</button>
-      <button class="tf-btn"        id="fut-tf-W"  onclick="setFutTF('W',this)">Weekly</button>
+      <button class="tf-btn"        id="fut-tf-W"   onclick="setFutTF('W',this)">Weekly</button>
+      <button class="tf-btn active" id="fut-tf-D"   onclick="setFutTF('D',this)">Daily</button>
+      <button class="tf-btn"        id="fut-tf-4H"  onclick="setFutTF('4H',this)">4H</button>
+      <button class="tf-btn"        id="fut-tf-1H"  onclick="setFutTF('1H',this)">1H</button>
+      <button class="tf-btn"        id="fut-tf-15m" onclick="setFutTF('15m',this)">15m</button>
+      <button class="tf-btn"        id="fut-tf-5m"  onclick="setFutTF('5m',this)">5m</button>
       <div style="flex:1"></div>
+      <span id="fut-auto-badge" style="font-size:9px;padding:3px 8px;border-radius:3px;background:rgba(0,212,168,.15);color:var(--green);font-weight:700;letter-spacing:.05em">● LIVE</span>
       <span id="fut-intel-last" style="font-size:10px;color:var(--text3)"></span>
-      <button class="btn g" onclick="runFutIntelAll()" id="fut-run-all" style="font-size:11px;padding:5px 14px">▶ Run All</button>
+      <button class="btn" onclick="runFutIntelAll()" id="fut-run-all" style="font-size:10px;padding:4px 10px;opacity:.7" title="Manual refresh">↻</button>
     </div>
 
     <div class="scroll" style="padding:16px 20px">
@@ -1358,6 +1361,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <button class="btn smt-filter" data-filter="aplus" onclick="filterSmtResults('aplus',this)" style="font-size:10px;padding:4px 12px">A/A+ Grade</button>
     <button class="btn smt-filter" data-filter="strong" onclick="filterSmtResults('strong',this)" style="font-size:10px;padding:4px 12px;border-color:rgba(0,212,168,.4);color:var(--green)">Strong</button>
     <button class="btn smt-filter" data-filter="weak" onclick="filterSmtResults('weak',this)" style="font-size:10px;padding:4px 12px;border-color:rgba(255,179,71,.4);color:var(--amber)">Weak</button>
+    <div style="width:1px;height:18px;background:var(--border2);margin:0 4px"></div>
+    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em">TF</span>
+    <button class="btn smt-tf active" data-tf="all" onclick="filterSmtTF('all',this)" style="font-size:10px;padding:4px 10px">All</button>
+    <button class="btn smt-tf" data-tf="monthly" onclick="filterSmtTF('monthly',this)" style="font-size:10px;padding:4px 10px">Monthly</button>
+    <button class="btn smt-tf" data-tf="weekly" onclick="filterSmtTF('weekly',this)" style="font-size:10px;padding:4px 10px">Weekly</button>
+    <button class="btn smt-tf" data-tf="daily" onclick="filterSmtTF('daily',this)" style="font-size:10px;padding:4px 10px">Daily</button>
     <div style="flex:1"></div>
     <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em">SORT</span>
     <button class="btn smt-sort active" onclick="sortSmtResults('correlation',this)" style="font-size:10px;padding:4px 10px">Correlation</button>
@@ -2608,6 +2617,8 @@ console.log('Strategy Engine loaded');
 
 // ── NAV ──
 function nav(p) {
+  // Stop futures auto-refresh when leaving futures page
+  if (p !== 'futures' && typeof futIntelTimer !== 'undefined' && futIntelTimer) { clearInterval(futIntelTimer); futIntelTimer = null; }
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('.sbb').forEach(x => x.classList.remove('active'));
   const pg = document.getElementById('page-' + p);
@@ -2618,7 +2629,20 @@ function nav(p) {
     updateAsxMomBar(); fetchAsxNews();
     if (typeof fundData !== 'undefined' && fundData.length === 0) setTimeout(runFundamentalsAgent, 800);
   }
-  if (p === 'futures') { updateFutMomBar();   fetchFutNews();  }
+  if (p === 'futures') {
+    updateFutMomBar(); fetchFutNews();
+    // Auto-start intel scoring + refresh timer
+    setTimeout(() => {
+      const panel = document.getElementById('fut-panel-intel');
+      if (panel && panel.style.display !== 'none' && !futIntelRunning) runFutIntelAll();
+      if (!futIntelTimer) {
+        futIntelTimer = setInterval(() => {
+          const pg = document.getElementById('page-futures');
+          if (pg && pg.classList.contains('active') && !futIntelRunning) runFutIntelAll();
+        }, 30000);
+      }
+    }, 200);
+  }
   if (p === 'dash') { if (typeof fetchOvernightData === 'function' && !Object.keys(overnightData||{}).length) fetchOvernightData(); }
   if (p === 'sector' || p === 'sectors') refreshSectorData();
   if (p === 'flow') refreshFlowData();
@@ -6102,9 +6126,17 @@ function setFutTab(tab) {
   if (tab === 'intel') {
     setTimeout(() => {
       if (typeof renderFutIntelCards === 'function') renderFutIntelCards(null);
-      // Auto-run scoring if we have no data yet
-      if (Object.keys(futIntelData).length === 0 && !futIntelRunning) runFutIntelAll();
+      // Auto-run immediately
+      if (!futIntelRunning) runFutIntelAll();
+      // Start 30s auto-refresh
+      if (futIntelTimer) clearInterval(futIntelTimer);
+      futIntelTimer = setInterval(() => {
+        const page = document.getElementById('page-futures');
+        if (page && page.classList.contains('active') && !futIntelRunning) runFutIntelAll();
+      }, 30000);
     }, 150);
+  } else {
+    if (futIntelTimer) { clearInterval(futIntelTimer); futIntelTimer = null; }
   }
 }
 
@@ -7646,25 +7678,72 @@ function smtAnalysePair(t1,d1,t2,d2){
   if(rSquared>=0.80)sc+=2;else if(rSquared>=0.65)sc+=1;
   if(ta)sc+=1;
   var grade=sc>=9?'A+':sc>=7?'A':sc>=5?'B':sc>=3?'C':'D';
-  // Divergence detection
-  var rd=dates.slice(-40);
-  var c1=rd.map(function(d){return m1[d];}).filter(Boolean),c2=rd.map(function(d){return m2[d];}).filter(Boolean);
-  function swH(c){var h=[];for(var i=3;i<c.length-3;i++){var ok=true;for(var j=1;j<=3;j++){if(c[i].h<=c[i-j].h||c[i].h<=c[i+j].h){ok=false;break;}}if(ok)h.push(c[i]);}return h;}
-  function swL(c){var h=[];for(var i=3;i<c.length-3;i++){var ok=true;for(var j=1;j<=3;j++){if(c[i].l>=c[i-j].l||c[i].l>=c[i+j].l){ok=false;break;}}if(ok)h.push(c[i]);}return h;}
-  var sh1=swH(c1),sl1=swL(c1),sh2=swH(c2),sl2=swL(c2);
+  // ── Multi-timeframe SMT divergence (ICT-style: significant swing levels only) ──
+  function aggWeekly(candles){
+    var w={},ord=[];
+    candles.forEach(function(c){
+      var dt=new Date(c.d),day=dt.getDay()||7;
+      var mon=new Date(dt);mon.setDate(dt.getDate()-(day-1));
+      var k=mon.toISOString().slice(0,10);
+      if(!w[k]){w[k]={d:c.d,h:c.h,l:c.l,c:c.c};ord.push(k);}
+      else{if(c.h>w[k].h)w[k].h=c.h;if(c.l<w[k].l)w[k].l=c.l;w[k].c=c.c;}
+    });
+    return ord.map(function(k){return w[k];});
+  }
+  function aggMonthly(candles){
+    var m={},ord=[];
+    candles.forEach(function(c){
+      var k=c.d.substring(0,7);
+      if(!m[k]){m[k]={d:c.d,h:c.h,l:c.l,c:c.c};ord.push(k);}
+      else{if(c.h>m[k].h)m[k].h=c.h;if(c.l<m[k].l)m[k].l=c.l;m[k].c=c.c;}
+    });
+    return ord.map(function(k){return m[k];});
+  }
+  function findSwH(c,pv){var h=[];for(var i=pv;i<c.length-pv;i++){var ok=true;for(var j=1;j<=pv;j++){if(c[i].h<=c[i-j].h||c[i].h<=c[i+j].h){ok=false;break;}}if(ok)h.push({d:c[i].d,h:c[i].h,l:c[i].l,c:c[i].c,idx:i});}return h;}
+  function findSwL(c,pv){var h=[];for(var i=pv;i<c.length-pv;i++){var ok=true;for(var j=1;j<=pv;j++){if(c[i].l>=c[i-j].l||c[i].l>=c[i+j].l){ok=false;break;}}if(ok)h.push({d:c[i].d,h:c[i].h,l:c[i].l,c:c[i].c,idx:i});}return h;}
+  function checkSMT(sh1,sl1,sh2,sl2,c1,c2,tf,t1n,t2n,minSpacing,maxAge){
+    var found=[];
+    if(sh1.length>=2&&sh2.length>=2){
+      var a=sh1[sh1.length-1],b=sh1[sh1.length-2],e=sh2[sh2.length-1],f=sh2[sh2.length-2];
+      if(Math.abs(a.idx-b.idx)>=minSpacing&&Math.abs(e.idx-f.idx)>=minSpacing){
+        var age1=c1.length-1-a.idx,age2=c2.length-1-e.idx;
+        if(a.h>b.h&&e.h<f.h&&age1<=maxAge)found.push({type:'BEARISH',tf:tf,description:t1n+' higher high, '+t2n+' lower high',date:a.d,age:age1});
+        if(e.h>f.h&&a.h<b.h&&age2<=maxAge)found.push({type:'BEARISH',tf:tf,description:t2n+' higher high, '+t1n+' lower high',date:e.d,age:age2});
+      }
+    }
+    if(sl1.length>=2&&sl2.length>=2){
+      var a=sl1[sl1.length-1],b=sl1[sl1.length-2],e=sl2[sl2.length-1],f=sl2[sl2.length-2];
+      if(Math.abs(a.idx-b.idx)>=minSpacing&&Math.abs(e.idx-f.idx)>=minSpacing){
+        var age1=c1.length-1-a.idx,age2=c2.length-1-e.idx;
+        if(a.l<b.l&&e.l>f.l&&age1<=maxAge)found.push({type:'BULLISH',tf:tf,description:t1n+' lower low, '+t2n+' higher low',date:a.d,age:age1});
+        if(e.l<f.l&&a.l>b.l&&age2<=maxAge)found.push({type:'BULLISH',tf:tf,description:t2n+' lower low, '+t1n+' higher low',date:e.d,age:age2});
+      }
+    }
+    return found;
+  }
+
   var divs=[];
-  if(sh1.length>=2&&sh2.length>=2){
-    var la=sh1[sh1.length-1],lb=sh1[sh1.length-2],le=sh2[sh2.length-1],lf=sh2[sh2.length-2];
-    if(la.h>lb.h&&le.h<lf.h)divs.push({type:'BEARISH',description:t1+' higher high, '+t2+' lower high',date:la.d,age:rd.length-rd.indexOf(la.d)-1});
-    if(le.h>lf.h&&la.h<lb.h)divs.push({type:'BEARISH',description:t2+' higher high, '+t1+' lower high',date:le.d,age:rd.length-rd.indexOf(le.d)-1});
+  if(pearson>=0.70){
+    var allDates=dates;
+    var ac1=allDates.map(function(d){return m1[d];}).filter(Boolean);
+    var ac2=allDates.map(function(d){return m2[d];}).filter(Boolean);
+    var wk1=aggWeekly(ac1),wk2=aggWeekly(ac2);
+    var mo1=aggMonthly(ac1),mo2=aggMonthly(ac2);
+    // Monthly: 2-bar pivot → yearly/9m/6m swing levels, min 3 months apart, active within 3 bars
+    if(mo1.length>=7&&mo2.length>=7){
+      divs=divs.concat(checkSMT(findSwH(mo1,2),findSwL(mo1,2),findSwH(mo2,2),findSwL(mo2,2),mo1,mo2,'monthly',t1,t2,3,3));
+    }
+    // Weekly: 3-bar pivot → 3m/1m swing levels, min 6 weeks apart, active within 6 bars
+    if(wk1.length>=12&&wk2.length>=12){
+      divs=divs.concat(checkSMT(findSwH(wk1,3),findSwL(wk1,3),findSwH(wk2,3),findSwL(wk2,3),wk1,wk2,'weekly',t1,t2,6,6));
+    }
+    // Daily: 10-bar pivot (2 weeks each side), min 25 days apart, active within 15 bars
+    if(ac1.length>=40&&ac2.length>=40){
+      divs=divs.concat(checkSMT(findSwH(ac1,10),findSwL(ac1,10),findSwH(ac2,10),findSwL(ac2,10),ac1,ac2,'daily',t1,t2,25,15));
+    }
   }
-  if(sl1.length>=2&&sl2.length>=2){
-    var la=sl1[sl1.length-1],lb=sl1[sl1.length-2],le=sl2[sl2.length-1],lf=sl2[sl2.length-2];
-    if(la.l<lb.l&&le.l>lf.l)divs.push({type:'BULLISH',description:t1+' lower low, '+t2+' higher low',date:la.d,age:rd.length-rd.indexOf(la.d)-1});
-    if(le.l<lf.l&&la.l>lb.l)divs.push({type:'BULLISH',description:t2+' lower low, '+t1+' higher low',date:le.d,age:rd.length-rd.indexOf(le.d)-1});
-  }
-  var actDiv=divs.filter(function(d){return d.age<=5;});
-  return {t1:t1,t2:t2,pearson:+pearson.toFixed(4),spearman:+spearman.toFixed(4),rollingAvg:+rollingAvg.toFixed(4),rSquared:+rSquared.toFixed(4),atrRatio:+atrR.toFixed(2),trendAligned:ta,isValid:isValid,grade:grade,score:sc,dataPoints:ud.length,lastPrice1:p1[p1.length-1],lastPrice2:p2[p2.length-1],divergences:divs,activeDivergence:actDiv.length>0?actDiv[0]:null};
+  var actDiv=divs.length>0?divs[0]:null;
+  return {t1:t1,t2:t2,pearson:+pearson.toFixed(4),spearman:+spearman.toFixed(4),rollingAvg:+rollingAvg.toFixed(4),rSquared:+rSquared.toFixed(4),atrRatio:+atrR.toFixed(2),trendAligned:ta,isValid:isValid,grade:grade,score:sc,dataPoints:ud.length,lastPrice1:p1[p1.length-1],lastPrice2:p2[p2.length-1],divergences:divs,activeDivergence:actDiv};
 }
 
 async function startSmtScan() {
@@ -7731,7 +7810,7 @@ async function startSmtScan() {
           result.strength = pair.strength || 'strong';
           smtResults.push(result);
           if (result.isValid) valid++;
-          if (result.activeDivergence && result.pearson >= 0.50) {
+          if (result.activeDivergence && result.pearson >= 0.70) {
             divs++;
             if (result.activeDivergence.type === 'BULLISH') bull++;
             else bear++;
@@ -7808,9 +7887,10 @@ function renderSmtResults() {
   const sortBy = activeSort ? activeSort.textContent.trim().toLowerCase() : 'correlation';
 
   // Filter — only show divergences from meaningfully correlated pairs (Pearson ≥ 0.50)
-  const MIN_DIV_CORR = 0.50;
+  const MIN_DIV_CORR = 0.70;
   let filtered = smtResults.filter(r => {
-    const meaningfulDiv = r.activeDivergence && (r.pearson || 0) >= MIN_DIV_CORR;
+    var tfMatch = smtTfFilter === 'all' || (r.activeDivergence && r.activeDivergence.tf === smtTfFilter);
+    const meaningfulDiv = r.activeDivergence && (r.pearson || 0) >= MIN_DIV_CORR && tfMatch;
     if (filter === 'all') return r.isValid || meaningfulDiv;
     if (filter === 'divergence') return meaningfulDiv;
     if (filter === 'bullish') return meaningfulDiv && r.activeDivergence.type === 'BULLISH';
@@ -7847,8 +7927,9 @@ function renderSmtResults() {
               <span style="color:var(--text4);font-size:12px">vs</span>
               <span style="font-size:16px;font-weight:800;color:#fff">${r.t2}</span>
               <span style="font-size:9px;padding:2px 8px;border-radius:3px;background:${bg};color:${col};font-weight:700">${d.type} SMT</span>
+              ${d.tf ? '<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:var(--bg5);color:var(--text2);font-weight:600;text-transform:uppercase">' + d.tf + '</span>' : ''}
             </div>
-            <span style="font-size:10px;color:var(--text4)">${d.age}d ago · ${r.sector}</span>
+            <span style="font-size:10px;color:var(--text4)">${d.tf === 'monthly' ? d.age + 'mo' : d.tf === 'weekly' ? d.age + 'w' : d.age + 'd'} ago · ${r.sector}</span>
           </div>
           <div style="font-size:11px;color:var(--text2);margin-bottom:6px">${d.description}</div>
           <div style="display:flex;gap:12px;font-size:10px;color:var(--text3)">
@@ -7928,6 +8009,14 @@ function renderSmtResults() {
   }
 
   document.getElementById('smt-pairs-header').textContent = 'SMT Pair Universe · ' + filtered.length + ' pairs';
+}
+
+var smtTfFilter = 'all';
+function filterSmtTF(tf, el) {
+  smtTfFilter = tf;
+  document.querySelectorAll('.smt-tf').forEach(function(b) { b.classList.remove('active'); });
+  if (el) el.classList.add('active');
+  renderSmtResults();
 }
 
 function filterSmtResults(filter, btn) {
@@ -8045,6 +8134,15 @@ const FUT_INSTRUMENTS = [
 let futIntelTF   = 'D';
 let futIntelData = {}; // cache: sym -> { bull, bear, conf, dir, signals, lastFetch }
 let futIntelRunning = false;
+let futIntelTimer = null;
+const FUT_TF_MAP = {
+  'W':   { interval:'1wk', range:'2y' },
+  'D':   { interval:'1d',  range:'1y' },
+  '4H':  { interval:'1h',  range:'60d', agg:4 },
+  '1H':  { interval:'1h',  range:'30d' },
+  '15m': { interval:'15m', range:'10d' },
+  '5m':  { interval:'5m',  range:'5d'  },
+};
 
 // ── Indicator math ────────────────────────────────────────────────
 function calcRSI(closes, period=14) {
@@ -8151,21 +8249,34 @@ function scoreFutInstrument(closes, highs, lows, price) {
 }
 
 // ── Fetch chart data via allorigins (browser IP, no proxy) ────────
-async function fetchFutChart(yahoo) {
-  const yf  = `https://query1.finance.yahoo.com/v8/finance/chart/${yahoo}?interval=1mo&range=2y`;
+async function fetchFutChart(yahoo, tf) {
+  const cfg = FUT_TF_MAP[tf || futIntelTF] || FUT_TF_MAP['D'];
+  const yf  = `https://query1.finance.yahoo.com/v8/finance/chart/${yahoo}?interval=${cfg.interval}&range=${cfg.range}`;
   const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(yf)}`;
-  const r   = await fetch(url);
+  const r   = await fetch(url, { signal: AbortSignal.timeout(12000) });
   if (!r.ok) throw new Error(r.status);
   const d   = await r.json();
   const res = d?.chart?.result?.[0];
   if (!res) throw new Error('no data');
   const q = res.indicators?.quote?.[0] || {};
+  let closes = (q.close || []).filter(v => v != null);
+  let highs  = (q.high  || []).filter(v => v != null);
+  let lows   = (q.low   || []).filter(v => v != null);
+  // Aggregate for 4H: group every 4 hourly candles
+  if (cfg.agg && cfg.agg > 1) {
+    const n = cfg.agg, ac = [], ah = [], al = [];
+    for (let i = 0; i < closes.length; i += n) {
+      const sc = closes.slice(i, i + n), sh = highs.slice(i, i + n), sl = lows.slice(i, i + n);
+      ac.push(sc[sc.length - 1]);
+      ah.push(Math.max(...sh));
+      al.push(Math.min(...sl.filter(v => v > 0)));
+    }
+    closes = ac; highs = ah; lows = al;
+  }
   return {
-    closes: (q.close  || []).filter(v => v != null),
-    highs:  (q.high   || []).filter(v => v != null),
-    lows:   (q.low    || []).filter(v => v != null),
-    price:  res.meta?.regularMarketPrice || 0,
-    pct:    res.meta?.regularMarketChangePercent || 0,
+    closes, highs, lows,
+    price: res.meta?.regularMarketPrice || 0,
+    pct:   res.meta?.regularMarketChangePercent || 0,
   };
 }
 
@@ -8262,49 +8373,57 @@ function renderFutIntelCards(overrideMap) {
   }).join('');
 }
 
-// ── Run all instruments ───────────────────────────────────────────
+// ── Run all instruments (concurrent, auto-refresh ready) ──────────
 async function runFutIntelAll() {
   if (futIntelRunning) return;
   futIntelRunning = true;
-  const btn  = document.getElementById('fut-run-all');
-  const last = document.getElementById('fut-intel-last');
-  if (btn) { btn.disabled = true; btn.textContent = '⏳ Scoring...'; }
+  const btn   = document.getElementById('fut-run-all');
+  const last  = document.getElementById('fut-intel-last');
+  const badge = document.getElementById('fut-auto-badge');
+  if (btn) btn.style.opacity = '.3';
+  if (badge) { badge.textContent = '⏳ UPDATING'; badge.style.background = 'rgba(255,179,71,.15)'; badge.style.color = 'var(--amber)'; }
 
-  // Show loading state
-  renderFutIntelCards(null);
+  try {
+    // First load: show loading cards
+    if (Object.keys(futIntelData).length === 0) renderFutIntelCards(null);
 
-  for (const inst of FUT_INSTRUMENTS) {
-    try {
-      const { closes, highs, lows, price, pct } = await fetchFutChart(inst.yahoo);
-      const scored = scoreFutInstrument(closes, highs, lows, price);
-      futIntelData[inst.sym] = { ...scored, price, pct };
-      renderFutIntelCards(null); // progressive update
-    } catch(e) {
-      console.warn('Fut intel:', inst.sym, e.message);
-      futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['Data unavailable'], price:0, pct:0 };
-      renderFutIntelCards(null);
+    // Concurrent: 3 at a time (fast, avoids rate limits)
+    const CONC = 3;
+    for (let i = 0; i < FUT_INSTRUMENTS.length; i += CONC) {
+      const batch = FUT_INSTRUMENTS.slice(i, i + CONC);
+      await Promise.all(batch.map(async inst => {
+        try {
+          const { closes, highs, lows, price, pct } = await fetchFutChart(inst.yahoo);
+          futIntelData[inst.sym] = { ...scoreFutInstrument(closes, highs, lows, price), price, pct };
+        } catch(e) {
+          console.warn('Fut intel:', inst.sym, e.message);
+          if (!futIntelData[inst.sym]) futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['Data unavailable'], price:0, pct:0 };
+        }
+      }));
+      try { renderFutIntelCards(null); } catch(e) {}
     }
-    await new Promise(r => setTimeout(r, 400)); // pace requests
+  } finally {
+    futIntelRunning = false;
+    if (btn) btn.style.opacity = '.7';
+    if (badge) { badge.textContent = '● LIVE'; badge.style.background = 'rgba(0,212,168,.15)'; badge.style.color = 'var(--green)'; }
+    const t = new Date().toLocaleTimeString('en-AU', {hour:'2-digit', minute:'2-digit', second:'2-digit', timeZone:'Australia/Perth'});
+    if (last) last.textContent = t + ' AWST';
   }
-
-  futIntelRunning = false;
-  if (btn) { btn.disabled = false; btn.textContent = '▶ Refresh'; }
-  const t = new Date().toLocaleTimeString('en-AU', {hour:'2-digit', minute:'2-digit', timeZone:'Australia/Perth'});
-  if (last) last.textContent = 'Updated ' + t + ' AWST';
 }
 
 function setFutTF(tf, btn) {
   futIntelTF = tf;
+  futIntelData = {}; // clear cache — new TF needs fresh data
   document.querySelectorAll('[id^="fut-tf-"]').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   renderFutIntelCards(null);
+  runFutIntelAll();
 }
 
 
-// setFutTab intel init handled in main setFutTab
-
-// Also init when Futures page first loads
-const _origNavFut = null; // wired via nav() below
+// Auto-refresh: also start timer when Futures page becomes active via nav()
+// The setFutTab('intel') call handles it; this ensures the timer also starts
+// if the page is already on intel tab when navigating back to Futures
 
 </script>
 

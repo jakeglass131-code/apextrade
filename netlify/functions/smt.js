@@ -65,7 +65,7 @@ exports.handler = async function(event) {
       }));
       fetches.forEach(function(f) {
         if (f.d && f.d.length >= 60) {
-          results[f.t] = f.d.slice(-260).map(function(c){ return {d:c.date,h:c.h,l:c.l,c:c.c}; });
+          results[f.t] = f.d.map(function(c){ return {d:c.date,h:c.h,l:c.l,c:c.c}; });
         }
       });
       return { statusCode: 200, headers: H, body: JSON.stringify(results) };
