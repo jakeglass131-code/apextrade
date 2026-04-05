@@ -60,12 +60,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 
 /* LAYOUT */
 .layout{display:flex;flex:1;overflow:hidden}
-.sidebar{width:52px;background:var(--bg2);border-right:1px solid rgba(45,142,255,0.15);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:2px;flex-shrink:0}
-.sbb{width:40px;height:40px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:var(--text4);gap:3px;transition:all .15s;position:relative}
+.sidebar{width:72px;background:var(--bg2);border-right:1px solid rgba(45,142,255,0.15);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:2px;flex-shrink:0}
+.sbb{width:62px;height:48px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:var(--text4);gap:3px;transition:all .15s;position:relative}
 .sbb:hover{background:var(--bg4);color:var(--text2)}
 .sbb.active{background:var(--accent3);color:var(--accent);border:1px solid rgba(45,142,255,0.25)}
 .sbb svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-.sbb span{font-size:8px;letter-spacing:.06em;font-family:var(--fd);font-weight:700}
+.sbb span{font-size:9px;letter-spacing:.02em;font-family:var(--fd);font-weight:600;text-align:center;line-height:1.1}
 .sbadge{position:absolute;top:3px;right:3px;min-width:14px;height:14px;border-radius:7px;background:var(--accent);color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;font-weight:700}
 .sdiv{width:26px;height:1px;background:var(--border);margin:4px 0}
 
@@ -868,48 +868,41 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 <div class="sidebar">
   <button class="sbb active" id="sb-dash" onclick="nav('dash')">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-    <span>DASH</span>
+    <span>Today</span>
   </button>
-  <button class="sbb" id="sb-scanner" onclick="nav('scanner')">
-    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    <span>SCAN</span>
-    <div class="sbadge">9</div>
+  <button class="sbb" id="sb-asx" onclick="nav('asx')">
+    <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><polyline points="7 10 10 7 13 10 17 6"/></svg>
+    <span>ASX</span>
+    <div class="sbadge" id="asx-badge" style="display:none">0</div>
   </button>
-  <button class="sbb" id="sb-intel" onclick="nav('intel')">
-    <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    <span>INTEL</span>
-  </button>
-  <button class="sbb" id="sb-journal" onclick="nav('journal')">
-    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
-    <span>LOG</span>
+  <button class="sbb" id="sb-futures" onclick="nav('futures')">
+    <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+    <span>Futures</span>
+    <div class="sbadge" id="futures-badge" style="display:none">0</div>
   </button>
   <div class="sdiv"></div>
   <button class="sbb" id="sb-sectors" onclick="nav('sectors')">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10H12z"/><path d="M12 12L2 12a10 10 0 0 0 10 10z"/></svg>
-    <span>FLOW</span>
+    <span>Sectors</span>
   </button>
   <button class="sbb" id="sb-log" onclick="nav('log')">
     <svg viewBox="0 0 24 24"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
-    <span>ALERTS</span>
+    <span>Alerts</span>
     <div class="sbadge" id="alert-badge" style="display:none">0</div>
-  </button>
-  <button class="sbb" id="sb-flow" onclick="nav('flow')">
-    <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-    <span>FLOW</span>
   </button>
   <button class="sbb" id="sb-settings" onclick="nav('settings')">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    <span>SET</span>
+    <span>Settings</span>
   </button>
 </div>
 
 <!-- ═══════════════ PAGE: DASHBOARD ═══════════════ -->
 <div class="page active" id="page-dash">
   <div class="ph">
-    <div><div class="ph-t">Dashboard</div><div class="ph-s" id="dash-sub">Loading...</div></div>
+    <div><div class="ph-t">Today</div><div class="ph-s" id="dash-sub">Signal overview · Live market context</div></div>
     <div class="ph-r">
       <button class="btn" onclick="exportCSV()">Export CSV</button>
-      <button class="btn g" onclick="openModal()">+ New trade</button>
+      <button class="btn g" onclick="nav('asx')" style="font-size:11px">⚡ Open Scanner</button>
     </div>
   </div>
   <div class="scroll">
@@ -1066,206 +1059,210 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   </div>
 </div>
 
-<!-- ═══════════════ PAGE: SCANNER ═══════════════ -->
-<div class="page" id="page-scanner">
+<!-- ═══════════════ PAGE: ASX ═══════════════ -->
+<div class="page" id="page-asx">
   <div class="ph">
-    <div>
-      <div class="ph-t">Scanner</div>
-      <div class="ph-s" id="scan-sub">Live signals · ASX &amp; Futures</div>
-    </div>
-    <div class="ph-r">
-      <button class="btn" id="push-btn" onclick="requestPushPermission()">🔔 Alerts</button>
-      <button class="btn g" onclick="scanRefreshActive()">Refresh</button>
-    </div>
+    <div><div class="ph-t">ASX</div><div class="ph-s">Intel · CRT Scanner · Bullish Scanner</div></div>
+    <div class="ph-r"><button class="btn" onclick="requestPushPermission()">🔔 Alerts</button></div>
   </div>
-
-  <!-- Market tabs: ASX | Futures -->
-  <div style="display:flex;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0;padding:0 20px">
-    <button class="smkt" id="smkt-asx" onclick="setScanMarket('asx')"
-      style="font-size:12px;padding:10px 20px;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:700;letter-spacing:.04em">ASX</button>
-    <button class="smkt" id="smkt-future" onclick="setScanMarket('future')"
-      style="font-size:12px;padding:10px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600;letter-spacing:.04em">Futures</button>
+  <!-- Sub-tabs -->
+  <div style="display:flex;align-items:center;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0;padding:0 20px">
+    <button class="smkt active" id="asx-tab-intel"   onclick="setAsxTab('intel')"   style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:700">📊 Intel</button>
+    <button class="smkt"        id="asx-tab-crt"     onclick="setAsxTab('crt')"     style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600">⚡ CRT Scanner</button>
+    <button class="smkt"        id="asx-tab-bullish" onclick="setAsxTab('bullish')"  style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600">📈 Bullish</button>
     <div style="flex:1"></div>
-    <!-- Direction pill -->
-    <div style="display:flex;align-items:center;gap:6px;padding:0 4px">
-      <button class="dir-pill active" id="dir-all"   onclick="setScanDir('all')"   >Both</button>
-      <button class="dir-pill"        id="dir-long"  onclick="setScanDir('long')"  >Longs</button>
-      <button class="dir-pill"        id="dir-short" onclick="setScanDir('short')" >Shorts</button>
+    <div id="asx-ctrl-intel" style="display:flex;align-items:center;gap:8px;padding:6px 0">
+      <select id="asx-intel-sym" style="font-size:11px;padding:4px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
+        <option value="BHP.ASX">BHP.ASX</option><option value="CBA.ASX">CBA.ASX</option>
+        <option value="RIO.ASX">RIO.ASX</option><option value="CSL.ASX">CSL.ASX</option>
+        <option value="NAB.ASX">NAB.ASX</option><option value="WBC.ASX">WBC.ASX</option>
+        <option value="ANZ.ASX">ANZ.ASX</option><option value="FMG.ASX">FMG.ASX</option>
+        <option value="WDS.ASX">WDS.ASX</option><option value="MQG.ASX">MQG.ASX</option>
+        <option value="WOW.ASX">WOW.ASX</option><option value="XRO.ASX">XRO.ASX</option>
+      </select>
+      <button onclick="runAsxIntel()" class="btn g" style="font-size:11px">Analyse</button>
+      <button onclick="fetchAsxNews()" class="btn" style="font-size:11px">Refresh news</button>
+    </div>
+    <div id="asx-ctrl-crt" style="display:none;align-items:center;gap:8px;padding:6px 0">
+      <button class="btn" onclick="stopCrtScan()" id="asx-crt-stop" style="display:none;background:rgba(255,68,102,.15);color:var(--red);font-size:11px">Stop</button>
+      <button class="btn g" onclick="startAsxCrtScan()" id="asx-crt-start" style="font-size:11px">⚡ Scan ASX</button>
+    </div>
+    <div id="asx-ctrl-bullish" style="display:none;align-items:center;gap:8px;padding:6px 0">
+      <select id="asx-bull-conf" style="font-size:11px;padding:4px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
+        <option value="50">50%+</option><option value="60" selected>60%+</option>
+        <option value="70">70%+</option><option value="80">80%+</option>
+      </select>
+      <button class="btn g" onclick="runAsxBullishScan()" style="font-size:11px">📈 Scan</button>
     </div>
   </div>
-
-  <!-- View mode pills: CRT | Bullish -->
-  <div style="display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
-    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em">VIEW</span>
-    <button class="view-pill active" id="view-crt"     onclick="setScanView('crt')"    >⚡ CRT Setups</button>
-    <button class="view-pill"        id="view-bullish" onclick="setScanView('bullish')" >📈 Bullish Signals</button>
-    <div style="flex:1"></div>
-    <!-- CRT-specific controls (only shown in CRT view) -->
-    <div id="crt-controls" style="display:flex;align-items:center;gap:8px">
-      <select id="crt-tf-filter" style="font-size:11px;padding:5px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
-        <option value="all">All TFs</option>
-        <option value="1M CRT">1M</option>
-        <option value="3M CRT">3M</option>
-        <option value="6M CRT">6M</option>
-        <option value="9M CRT">9M</option>
-        <option value="12M CRT">12M</option>
-      </select>
-      <button class="btn" onclick="stopCrtScan()" id="crt-stop-btn" style="display:none;background:rgba(255,68,102,.15);color:var(--red);font-size:11px">Stop</button>
-      <button class="btn g" onclick="startCrtScan()" id="crt-scan-btn" style="font-size:11px">Scan</button>
-    </div>
-    <!-- Bullish-specific controls -->
-    <div id="bullish-controls" style="display:none;align-items:center;gap:8px">
-      <span style="font-size:11px;color:var(--text3)">Min conf</span>
-      <select id="bull-conf-filter" onchange="filterBullish()" style="font-size:11px;padding:5px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
-        <option value="50">50%+</option>
-        <option value="60" selected>60%+</option>
-        <option value="70">70%+</option>
-        <option value="80">80%+</option>
-      </select>
-    </div>
-  </div>
-
-  <!-- CRT progress bar -->
-  <div id="crt-progress-bar" style="display:none;padding:6px 20px;flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border2)">
-    <div style="background:var(--bg4);border-radius:99px;height:3px;overflow:hidden;margin-bottom:3px">
-      <div id="crt-progress-fill" style="height:3px;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:99px;width:0%;transition:width .3s"></div>
+  <!-- CRT progress -->
+  <div id="asx-crt-progress" style="display:none;padding:5px 20px;background:var(--bg2);border-bottom:1px solid var(--border2);flex-shrink:0">
+    <div style="background:var(--bg4);border-radius:99px;height:3px;overflow:hidden;margin-bottom:2px">
+      <div id="asx-crt-fill" style="height:3px;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:99px;width:0%;transition:width .3s"></div>
     </div>
     <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
-      <span id="crt-progress-text">Scanning...</span>
-      <span id="crt-progress-pct">0%</span>
+      <span id="asx-crt-txt">Scanning...</span><span id="asx-crt-pct">0%</span>
     </div>
   </div>
-
   <!-- Stat strip -->
-  <div style="background:var(--bg4);border-bottom:1px solid var(--border2);padding:6px 20px;display:flex;gap:20px;align-items:center;flex-shrink:0">
-    <div style="font-size:11px;color:var(--text3)">Signals <span id="stat-total" style="color:var(--text);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)">Longs <span id="stat-long" style="color:var(--green);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)">Shorts <span id="stat-short" style="color:var(--red);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)" id="crt-stat-wrap" style="display:none">
-      Scanned <span id="crt-stat-scanned" style="color:var(--text);font-weight:700">—</span>
-      · Conf <span id="crt-stat-confidence" style="color:var(--amber);font-weight:700">—</span>
-    </div>
+  <div id="asx-stats" style="display:none;background:var(--bg4);border-bottom:1px solid var(--border2);padding:5px 20px;flex-shrink:0;gap:20px;align-items:center">
+    <div style="font-size:11px;color:var(--text3)">Signals <span id="asx-stat-total" style="color:var(--text);font-weight:700">0</span></div>
+    <div style="font-size:11px;color:var(--text3)">Longs <span id="asx-stat-long" style="color:var(--green);font-weight:700">0</span></div>
+    <div style="font-size:11px;color:var(--text3)">Shorts <span id="asx-stat-short" style="color:var(--red);font-weight:700">0</span></div>
     <div style="flex:1"></div>
-    <div style="font-size:11px;color:var(--text3)">Updated <span id="stat-time" style="color:var(--text2)">—</span></div>
+    <div style="font-size:11px;color:var(--text3)">Updated <span id="asx-stat-time" style="color:var(--text2)">—</span></div>
   </div>
-  <div id="momentum-bar" class="momentum-bar"></div>
-
-  <!-- CRT view -->
-  <div id="scan-crt-view" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
-    <div class="scroll" style="padding:20px" id="crt-scroll">
-      <div id="crt-signals-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px">
+  <!-- Momentum bar: ASX stocks -->
+  <div id="asx-momentum-bar" class="momentum-bar"></div>
+  <!-- INTEL panel -->
+  <div id="asx-panel-intel" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="scroll">
+      <div style="display:grid;grid-template-columns:300px 1fr;min-height:300px">
+        <div style="border-right:1px solid var(--border2);padding:20px;overflow-y:auto">
+          <div id="asx-intel-score">
+            <div style="text-align:center;padding:32px 16px;color:var(--text3)">
+              <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">Select a stock above</div>
+              <div style="font-size:11px;margin-bottom:14px">RSI · MACD · Bollinger · Volume · MTF · CRT</div>
+              <button onclick="runAsxIntel()" class="btn g" style="font-size:11px">Analyse BHP.ASX</button>
+            </div>
+          </div>
+        </div>
+        <div style="padding:20px;overflow-y:auto"><div id="asx-intel-detail"></div></div>
+      </div>
+      <div class="panel" style="margin:16px 20px">
+        <div class="phead"><div class="ptitle">ASX Intelligence feed</div><div class="pmeta" id="asx-feed-time">Live</div></div>
+        <div id="asx-news-feed">
+          <div class="iitem"><div class="idot" style="background:var(--amber)"></div><div><div class="itext"><strong>RBA minutes:</strong> Board discussed further hike but voted to hold. AUD muted — market had priced hold.</div><div class="imeta"><span class="itime">3h ago</span><span class="itag im2">Medium · AUD</span></div></div></div>
+          <div class="iitem"><div class="idot" style="background:var(--text4)"></div><div><div class="itext"><strong>BHP Q2 production</strong> in line with expectations. Iron ore +3% QoQ. Minor positive, largely priced in.</div><div class="imeta"><span class="itime">5h ago</span><span class="itag il">Low · BHP</span></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- CRT SCANNER panel -->
+  <div id="asx-panel-crt" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div class="scroll" style="padding:20px">
+      <div id="asx-crt-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px">
         <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text3)">
-          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">⚡ CRT Scanner</div>
-          <div style="font-size:12px;margin-bottom:16px">Scans ASX stocks for Jake's CRT model setups</div>
-          <button class="btn g" onclick="startCrtScan()" style="font-size:12px;padding:8px 20px">Start Scan</button>
+          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:8px">⚡ ASX CRT Scanner</div>
+          <div style="font-size:12px;margin-bottom:20px">Scans all ASX stocks for CRT model setups via the proxy</div>
+          <button class="btn g" onclick="startAsxCrtScan()" style="font-size:12px;padding:9px 24px">Start Scanning ASX</button>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Bullish signals view (hidden by default) -->
-  <div id="scan-bullish-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+  <!-- BULLISH SCANNER panel -->
+  <div id="asx-panel-bullish" style="display:none;flex-direction:column;flex:1;overflow:hidden">
     <div style="display:grid;grid-template-columns:110px 80px 80px 1fr 90px;gap:8px;padding:7px 20px;background:var(--bg5);border-bottom:1px solid var(--border2);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;flex-shrink:0">
-      <div>Instrument</div><div>Price</div><div>Change</div><div>Signals</div><div style="text-align:right">Confidence</div>
+      <div>Symbol</div><div>Price</div><div>Change</div><div>Signals</div><div style="text-align:right">Conf</div>
     </div>
-    <div class="scroll" style="padding:0" id="scanner-scroll">
-      <div id="strategy-signals-body">
-        <div style="padding:40px;text-align:center;color:var(--text3)">
-          <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">Loading signals...</div>
+    <div class="scroll" style="padding:0">
+      <div id="asx-bull-body">
+        <div style="padding:48px 24px;text-align:center;color:var(--text3)">
+          <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">📈 ASX Bullish Scanner</div>
+          <div style="font-size:11px;margin-bottom:18px">Finds ASX stocks with bullish indicator confluence</div>
+          <button class="btn g" onclick="runAsxBullishScan()" style="font-size:12px;padding:9px 24px">Scan ASX for Bullish Setups</button>
         </div>
       </div>
     </div>
   </div>
-
-  <!-- Hidden selects kept for JS compatibility -->
-  <select id="scan-market-filter" style="display:none"><option value="asx">ASX</option><option value="future">Futures</option></select>
-  <select id="scan-type-filter" style="display:none"><option value="all">All</option></select>
-  <select id="scan-dir-filter" style="display:none"><option value="all">All</option><option value="long">Long</option><option value="short">Short</option></select>
-  <select id="crt-dir-filter" style="display:none"><option value="all">Both</option><option value="LONG">Long</option><option value="SHORT">Short</option></select>
 </div>
 
-<!-- ═══════════════ PAGE: INTELLIGENCE ═══════════════ -->
-<div class="page" id="page-intel">
+<!-- ═══════════════ PAGE: FUTURES ═══════════════ -->
+<div class="page" id="page-futures">
   <div class="ph">
-    <div><div class="ph-t">Intelligence</div><div class="ph-s" id="intel-sub">AI analysis · News · Sentiment · Live prices</div></div>
-    <div class="ph-r"><button class="btn g" onclick="fetchNews()">Refresh news</button><button class="btn" id="add-news-key-btn" onclick="openModal()" style="display:none">Add NewsAPI key</button></div>
+    <div><div class="ph-t">Futures</div><div class="ph-s">Intel · CRT Scanner · Bullish Scanner</div></div>
+    <div class="ph-r"><button class="btn" onclick="requestPushPermission()">🔔 Alerts</button></div>
   </div>
-  <!-- Global timeframe selector -->
-  <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
-    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
-    <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
-    <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
-    <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
-    <button class="tf-btn"        data-tf="6M"  onclick="setGlobalTF('6M',this)">6M</button>
-    <button class="tf-btn"        data-tf="1Y"  onclick="setGlobalTF('1Y',this)">1Y</button>
-    <button class="tf-btn"        data-tf="YTD" onclick="setGlobalTF('YTD',this)">YTD</button>
-  </div>
-  <div class="scroll">
-    <!-- Timeframe selector -->
-    <div style="padding:12px 20px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:12px;flex-shrink:0">
-      <span style="font-size:11px;color:var(--text3);font-weight:600">Analyse:</span>
-      <select id="intel-symbol-select" onchange="runIntelAnalysis()" style="background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px;padding:5px 10px;font-size:12px;font-family:var(--fm)">
-        <option value="EUR/USD">EUR/USD</option>
-        <option value="GBP/USD">GBP/USD</option>
-        <option value="AUD/USD">AUD/USD</option>
-        <option value="NZD/USD">NZD/USD</option>
-        <option value="USD/JPY">USD/JPY</option>
-        <option value="USD/CAD">USD/CAD</option>
-        <option value="USD/CHF">USD/CHF</option>
-        <option value="EUR/GBP">EUR/GBP</option>
-        <option value="GBP/JPY">GBP/JPY</option>
-        <option value="EUR/JPY">EUR/JPY</option>
-        <option value="XAU/USD">XAU/USD</option>
-        <option value="XAG/USD">XAG/USD</option>
-        <option value="XAU/EUR">XAU/EUR</option>
-        <option value="XAU/GBP">XAU/GBP</option>
+  <!-- Sub-tabs -->
+  <div style="display:flex;align-items:center;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0;padding:0 20px">
+    <button class="smkt active" id="fut-tab-intel"   onclick="setFutTab('intel')"   style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:700">📊 Intel</button>
+    <button class="smkt"        id="fut-tab-crt"     onclick="setFutTab('crt')"     style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600">⚡ CRT Scanner</button>
+    <button class="smkt"        id="fut-tab-bullish" onclick="setFutTab('bullish')"  style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600">📈 Bullish</button>
+    <div style="flex:1"></div>
+    <div id="fut-ctrl-intel" style="display:flex;align-items:center;gap:8px;padding:6px 0">
+      <select id="fut-intel-sym" style="font-size:11px;padding:4px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
+        <option value="NAS100">NAS100</option><option value="SPX500">SPX500</option>
+        <option value="US30">US30</option><option value="RUSSELL">RUSSELL</option>
+        <option value="XAU/USD">XAU/USD (Gold)</option><option value="XAG/USD">XAG/USD (Silver)</option>
+        <option value="AUD/USD">AUD/USD</option><option value="EUR/USD">EUR/USD</option>
+        <option value="GBP/USD">GBP/USD</option><option value="USD/JPY">USD/JPY</option>
       </select>
-      <span style="font-size:11px;color:var(--text3);font-weight:600">Timeframe:</span>
-      <div style="display:flex;gap:4px" id="intel-tf-btns">
-        <button onclick="setIntelTF('1H')" id="itf-1H" class="btn" style="padding:4px 10px;font-size:11px">1H</button>
-        <button onclick="setIntelTF('4H')" id="itf-4H" class="btn" style="padding:4px 10px;font-size:11px">4H</button>
-        <button onclick="setIntelTF('D')"  id="itf-D"  class="btn g" style="padding:4px 10px;font-size:11px">Daily</button>
-        <button onclick="setIntelTF('W')"  id="itf-W"  class="btn" style="padding:4px 10px;font-size:11px">Weekly</button>
-        <button onclick="setIntelTF('M')"  id="itf-M"  class="btn" style="padding:4px 10px;font-size:11px">Monthly</button>
-      </div>
-      <button onclick="runIntelAnalysis()" class="btn g" style="margin-left:auto">Run Analysis</button>
+      <button onclick="runFutIntel()" class="btn g" style="font-size:11px">Analyse</button>
+      <button onclick="fetchFutNews()" class="btn" style="font-size:11px">Refresh news</button>
     </div>
-
-    <!-- Analysis output -->
-    <div id="intel-analysis-panel" style="display:grid;grid-template-columns:320px 1fr;gap:0;flex:1;min-height:0;overflow:hidden">
-
-      <!-- Left: Score + signals list -->
-      <div style="border-right:1px solid var(--border2);overflow-y:auto;padding:20px">
-        <div id="intel-score-panel">
-          <div style="text-align:center;color:var(--text3);padding:40px 20px">
-            <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">Select instrument and click Run Analysis</div>
-            <div style="font-size:12px">Analysing RSI, Stoch RSI, MACD, Bollinger Bands,<br>Golden/Death Cross, Candlestick Patterns, Volume, SMT</div>
+    <div id="fut-ctrl-crt" style="display:none;align-items:center;gap:8px;padding:6px 0">
+      <button class="btn g" onclick="runFutCrtScan()" style="font-size:11px">⚡ Scan Futures</button>
+    </div>
+    <div id="fut-ctrl-bullish" style="display:none;align-items:center;gap:8px;padding:6px 0">
+      <select id="fut-bull-conf" style="font-size:11px;padding:4px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
+        <option value="50">50%+</option><option value="60" selected>60%+</option>
+        <option value="70">70%+</option><option value="80">80%+</option>
+      </select>
+      <button class="btn g" onclick="runFutBullishScan()" style="font-size:11px">📈 Scan</button>
+    </div>
+  </div>
+  <!-- Stat strip -->
+  <div id="fut-stats" style="display:none;background:var(--bg4);border-bottom:1px solid var(--border2);padding:5px 20px;flex-shrink:0;gap:20px;align-items:center">
+    <div style="font-size:11px;color:var(--text3)">Signals <span id="fut-stat-total" style="color:var(--text);font-weight:700">0</span></div>
+    <div style="font-size:11px;color:var(--text3)">Longs <span id="fut-stat-long" style="color:var(--green);font-weight:700">0</span></div>
+    <div style="font-size:11px;color:var(--text3)">Shorts <span id="fut-stat-short" style="color:var(--red);font-weight:700">0</span></div>
+    <div style="flex:1"></div>
+    <div style="font-size:11px;color:var(--text3)">Updated <span id="fut-stat-time" style="color:var(--text2)">—</span></div>
+  </div>
+  <!-- Momentum bar: futures/indices -->
+  <div id="fut-momentum-bar" class="momentum-bar"></div>
+  <!-- INTEL panel -->
+  <div id="fut-panel-intel" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="scroll">
+      <div style="display:grid;grid-template-columns:300px 1fr;min-height:300px">
+        <div style="border-right:1px solid var(--border2);padding:20px;overflow-y:auto">
+          <div id="fut-intel-score">
+            <div style="text-align:center;padding:32px 16px;color:var(--text3)">
+              <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">Select instrument above</div>
+              <div style="font-size:11px;margin-bottom:14px">NQ · ES · Gold · Crude · FX</div>
+              <button onclick="runFutIntel()" class="btn g" style="font-size:11px">Analyse NAS100</button>
+            </div>
           </div>
         </div>
+        <div style="padding:20px;overflow-y:auto"><div id="fut-intel-detail"></div></div>
       </div>
-
-      <!-- Right: Detailed breakdown + live pair cards -->
-      <div style="overflow-y:auto;padding:20px">
-        <div id="intel-detail-panel">
-          <div class="pair-grid" id="intel-pair-grid">
-            <!-- Populated dynamically by updateIntelCards() -->
-          </div>
+      <div class="panel" style="margin:16px 20px">
+        <div class="phead"><div class="ptitle">Global macro feed</div><div class="pmeta" id="fut-feed-time">Live</div></div>
+        <div id="fut-news-feed">
+          <div class="iitem"><div class="idot" style="background:var(--red)"></div><div><div class="itext"><strong>US jobs surge unexpectedly</strong> in March — 178k vs 128k expected. Dollar strengthening across majors.</div><div class="imeta"><span class="itime">4h ago</span><span class="itag ih">High · USD</span></div></div></div>
+          <div class="iitem"><div class="idot" style="background:var(--amber)"></div><div><div class="itext"><strong>Oil prices jump</strong> after Trump threatens more Iran strikes — WTI above $102.</div><div class="imeta"><span class="itime">5h ago</span><span class="itag im2">Medium · WTI</span></div></div></div>
         </div>
       </div>
-
     </div>
-    <div class="panel">
-      <div class="phead"><div class="ptitle">Intelligence feed</div><div class="pmeta" id="intel-feed-time">Loading...</div></div>
-      <div id="news-feed">
-        <div class="iitem"><div class="idot" style="background:var(--red)"></div><div><div class="itext"><strong>RBA minutes:</strong> board discussed further hike but voted to hold. AUD reaction muted — market had priced hold.</div><div class="imeta"><span class="itime">14 min ago · Reuters</span><span class="itag ih">High · AUD</span></div></div></div>
-        <div class="iitem"><div class="idot" style="background:var(--amber)"></div><div><div class="itext"><strong>US jobless claims</strong> beat forecast at 242k vs 228k expected. Dollar weakening across majors on miss.</div><div class="imeta"><span class="itime">41 min ago · Bloomberg</span><span class="itag im2">Medium · USD</span></div></div></div>
-        <div class="iitem"><div class="idot" style="background:var(--amber)"></div><div><div class="itext"><strong>ECB Lagarde</strong> signals rates could stay elevated longer than market pricing. EUR volatile on comment.</div><div class="imeta"><span class="itime">1 hr ago · FT</span><span class="itag im2">Medium · EUR</span></div></div></div>
-        <div class="iitem"><div class="idot" style="background:var(--text4)"></div><div><div class="itext"><strong>BHP Q2 production</strong> in line with expectations. Iron ore +3% QoQ. Minor positive, largely priced in.</div><div class="imeta"><span class="itime">2 hr ago · ASX</span><span class="itag il">Low · BHP</span></div></div></div>
+  </div>
+  <!-- CRT SCANNER panel -->
+  <div id="fut-panel-crt" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div class="scroll" style="padding:20px">
+      <div id="fut-crt-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
+        <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text3)">
+          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:8px">⚡ Futures CRT Scanner</div>
+          <div style="font-size:12px;margin-bottom:20px">Scans NQ, ES, Gold, Crude and major FX pairs</div>
+          <button class="btn g" onclick="runFutCrtScan()" style="font-size:12px;padding:9px 24px">Scan Futures &amp; FX</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- BULLISH SCANNER panel -->
+  <div id="fut-panel-bullish" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div style="display:grid;grid-template-columns:110px 80px 80px 1fr 90px;gap:8px;padding:7px 20px;background:var(--bg5);border-bottom:1px solid var(--border2);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;flex-shrink:0">
+      <div>Instrument</div><div>Price</div><div>Change</div><div>Signals</div><div style="text-align:right">Conf</div>
+    </div>
+    <div class="scroll" style="padding:0">
+      <div id="fut-bull-body">
+        <div style="padding:48px 24px;text-align:center;color:var(--text3)">
+          <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">📈 Futures Bullish Scanner</div>
+          <div style="font-size:11px;margin-bottom:18px">Finds bullish setups across NQ, ES, Gold, Crude, FX</div>
+          <button class="btn g" onclick="runFutBullishScan()" style="font-size:12px;padding:9px 24px">Scan Futures for Bullish Setups</button>
+        </div>
       </div>
     </div>
   </div>
 </div>
-
 
 <!-- ═══════════════ PAGE: JOURNAL ═══════════════ -->
 <div class="page" id="page-journal">
@@ -2513,6 +2510,8 @@ function nav(p) {
   const sb = document.getElementById('sb-' + p);
   if (pg) pg.classList.add('active');
   if (sb) sb.classList.add('active');
+  if (p === 'asx')     { updateAsxMomBar();  fetchAsxNews();  }
+  if (p === 'futures') { updateFutMomBar();   fetchFutNews();  }
   if (p === 'dash') { if (typeof fetchOvernightData === 'function' && !Object.keys(overnightData||{}).length) fetchOvernightData(); }
   if (p === 'sector' || p === 'sectors') refreshSectorData();
   if (p === 'flow') refreshFlowData();
@@ -5209,6 +5208,253 @@ Respond with only the HTML sections above. Be specific, data-driven, and opinion
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(fetchOvernightData, 800);
 });
+
+
+// ══════════════════════════════════════════
+// ASX PAGE
+// ══════════════════════════════════════════
+function setAsxTab(tab) {
+  ['intel','crt','bullish'].forEach(t => {
+    const btn   = document.getElementById('asx-tab-' + t);
+    const panel = document.getElementById('asx-panel-' + t);
+    const ctrl  = document.getElementById('asx-ctrl-' + t);
+    if (btn)   { btn.style.color = t===tab?'var(--accent)':'var(--text3)'; btn.style.borderBottomColor = t===tab?'var(--accent)':'transparent'; }
+    if (panel) panel.style.display = t===tab ? 'flex' : 'none';
+    if (ctrl)  ctrl.style.display  = t===tab ? 'flex' : 'none';
+  });
+  const stats = document.getElementById('asx-stats');
+  if (stats) stats.style.display = tab !== 'intel' ? 'flex' : 'none';
+  updateAsxMomBar();
+}
+
+function updateAsxMomBar() {
+  const bar = document.getElementById('asx-momentum-bar'); if (!bar) return;
+  const syms = typeof WATCHLIST !== 'undefined'
+    ? WATCHLIST.filter(s => s.market && s.market.includes('ASX')).slice(0,14)
+    : [{sym:'BHP.ASX'},{sym:'CBA.ASX'},{sym:'RIO.ASX'},{sym:'FMG.ASX'},{sym:'WDS.ASX'},{sym:'NAB.ASX'},{sym:'WBC.ASX'},{sym:'ANZ.ASX'}];
+  bar.innerHTML = syms.map(s => {
+    const pct = typeof pctChange === 'function' ? pctChange(s.sym) : 0;
+    const up = pct >= 0; const h = Math.min(Math.abs(pct)*8,36); const col = up?'#00d4a8':'#ff4466';
+    return `<div class="mom-item" onclick="openChart('${s.sym}')" title="${s.sym}: ${pct>=0?'+':''}${pct.toFixed(2)}%">
+      <div class="mom-sym">${s.sym.replace('.ASX','')}</div>
+      <div class="mom-bar-wrap" style="background:var(--bg5);border-radius:3px;height:36px;width:40px;overflow:hidden"><div style="height:${h}px;background:${col};opacity:.7;border-radius:2px 2px 0 0"></div></div>
+      <div class="mom-pct ${up?'up':'dn'}" style="font-size:9px;font-weight:700">${up?'+':''}${pct.toFixed(1)}%</div>
+    </div>`;
+  }).join('');
+}
+
+function runAsxIntel() {
+  const sym = document.getElementById('asx-intel-sym')?.value || 'BHP.ASX';
+  const sel = document.getElementById('intel-symbol-select');
+  if (sel) sel.value = sym;
+  if (typeof runIntelAnalysis === 'function') {
+    runIntelAnalysis();
+    setTimeout(() => {
+      const s = document.getElementById('intel-score-panel');
+      const d = document.getElementById('intel-detail-panel');
+      const as = document.getElementById('asx-intel-score');
+      const ad = document.getElementById('asx-intel-detail');
+      if (s && as) as.innerHTML = s.innerHTML;
+      if (d && ad) ad.innerHTML = d.innerHTML;
+    }, 2000);
+  }
+}
+
+function startAsxCrtScan() {
+  const prog = document.getElementById('asx-crt-progress');
+  const grid = document.getElementById('asx-crt-grid');
+  if (prog) prog.style.display = 'block';
+  if (grid) grid.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);grid-column:1/-1"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div style="font-size:13px;color:var(--text2)">Scanning ASX...</div></div>';
+  if (typeof startCrtScan === 'function') startCrtScan();
+  const poll = setInterval(() => {
+    const origGrid = document.getElementById('crt-signals-grid');
+    const asxGrid  = document.getElementById('asx-crt-grid');
+    if (origGrid && asxGrid) asxGrid.innerHTML = origGrid.innerHTML;
+    const f = document.getElementById('crt-progress-fill');
+    const af = document.getElementById('asx-crt-fill');
+    if (f && af) af.style.width = f.style.width;
+    const t = document.getElementById('crt-progress-text');
+    const at = document.getElementById('asx-crt-txt');
+    if (t && at) at.textContent = t.textContent;
+    const pp = document.getElementById('crt-progress-pct');
+    const ap = document.getElementById('asx-crt-pct');
+    if (pp && ap) ap.textContent = pp.textContent;
+    if (typeof crtScanning !== 'undefined' && !crtScanning) {
+      clearInterval(poll);
+      if (prog) prog.style.display = 'none';
+      const sigs = typeof crtSignals !== 'undefined' ? crtSignals : [];
+      const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+      set('asx-stat-total', sigs.length);
+      set('asx-stat-long',  sigs.filter(s=>s.direction==='LONG').length);
+      set('asx-stat-short', sigs.filter(s=>s.direction==='SHORT').length);
+      const t2 = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+      set('asx-stat-time', t2 + ' AWST');
+      const stats = document.getElementById('asx-stats'); if(stats) stats.style.display='flex';
+    }
+  }, 400);
+}
+
+async function runAsxBullishScan() {
+  const body = document.getElementById('asx-bull-body');
+  const btn  = document.querySelector('#asx-ctrl-bullish .btn.g');
+  if (btn)  { btn.disabled=true; btn.textContent='⏳ Scanning...'; }
+  if (body) body.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div style="font-size:13px;color:var(--text2)">Scanning ASX stocks...</div></div>';
+  fetchBusy = false; await fetchPrices();
+  setTimeout(() => {
+    const rows = document.querySelectorAll('#strategy-signals-body > *');
+    const minConf = parseInt(document.getElementById('asx-bull-conf')?.value || '60');
+    let out='', shown=0, longs=0, shorts=0;
+    rows.forEach(row => {
+      const mkt = (row.dataset?.market||'').toLowerCase();
+      const conf = parseInt(row.dataset?.conf||'0');
+      const dir  = (row.dataset?.dir||'').toLowerCase();
+      if (!mkt.includes('asx') && !mkt.includes('au')) return;
+      if (conf < minConf) return;
+      out += row.outerHTML; shown++;
+      if (dir==='long') longs++; if (dir==='short') shorts++;
+    });
+    if (body) body.innerHTML = out || '<div style="padding:32px;text-align:center;color:var(--text3);font-size:12px">No ASX bullish signals at this threshold. Try lowering the confidence filter.</div>';
+    const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+    set('asx-stat-total',shown); set('asx-stat-long',longs); set('asx-stat-short',shorts);
+    const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+    set('asx-stat-time', t+' AWST');
+    const stats = document.getElementById('asx-stats'); if(stats) stats.style.display='flex';
+    if (btn) { btn.disabled=false; btn.textContent='📈 Scan'; }
+  }, 2200);
+}
+
+function fetchAsxNews() {
+  fetchNews && fetchNews().then(() => {
+    const src = document.getElementById('news-feed');
+    const dst = document.getElementById('asx-news-feed');
+    if (src && dst) { dst.innerHTML = src.innerHTML; }
+    const t = document.getElementById('intel-feed-time');
+    const at = document.getElementById('asx-feed-time');
+    if (t && at) at.innerHTML = t.innerHTML;
+  }).catch(()=>{});
+}
+
+// ══════════════════════════════════════════
+// FUTURES PAGE
+// ══════════════════════════════════════════
+function setFutTab(tab) {
+  ['intel','crt','bullish'].forEach(t => {
+    const btn   = document.getElementById('fut-tab-' + t);
+    const panel = document.getElementById('fut-panel-' + t);
+    const ctrl  = document.getElementById('fut-ctrl-' + t);
+    if (btn)   { btn.style.color = t===tab?'var(--accent)':'var(--text3)'; btn.style.borderBottomColor = t===tab?'var(--accent)':'transparent'; }
+    if (panel) panel.style.display = t===tab ? 'flex' : 'none';
+    if (ctrl)  ctrl.style.display  = t===tab ? 'flex' : 'none';
+  });
+  const stats = document.getElementById('fut-stats');
+  if (stats) stats.style.display = tab !== 'intel' ? 'flex' : 'none';
+  updateFutMomBar();
+}
+
+function updateFutMomBar() {
+  const bar = document.getElementById('fut-momentum-bar'); if (!bar) return;
+  const futureSectors = ['index','commodity'];
+  const syms = typeof INSTRUMENTS !== 'undefined'
+    ? Object.keys(INSTRUMENTS).filter(k => futureSectors.includes(INSTRUMENTS[k].type))
+    : ['NAS100','SPX500','US30','XAU/USD','XAG/USD','DXY'];
+  bar.innerHTML = syms.map(sym => {
+    const pct = typeof pctChange === 'function' ? pctChange(sym) : 0;
+    const up = pct >= 0; const h = Math.min(Math.abs(pct)*8,36); const col = up?'#00d4a8':'#ff4466';
+    const label = sym.replace('/USD','').replace('1!','');
+    return `<div class="mom-item" onclick="openChart('${sym}')" title="${sym}: ${pct>=0?'+':''}${pct.toFixed(2)}%">
+      <div class="mom-sym">${label}</div>
+      <div class="mom-bar-wrap" style="background:var(--bg5);border-radius:3px;height:36px;width:40px;overflow:hidden"><div style="height:${h}px;background:${col};opacity:.7;border-radius:2px 2px 0 0"></div></div>
+      <div class="mom-pct ${up?'up':'dn'}" style="font-size:9px;font-weight:700">${up?'+':''}${pct.toFixed(1)}%</div>
+    </div>`;
+  }).join('');
+}
+
+function runFutIntel() {
+  const sym = document.getElementById('fut-intel-sym')?.value || 'NAS100';
+  const sel = document.getElementById('intel-symbol-select');
+  if (sel) sel.value = sym;
+  if (typeof runIntelAnalysis === 'function') {
+    runIntelAnalysis();
+    setTimeout(() => {
+      const s = document.getElementById('intel-score-panel');
+      const d = document.getElementById('intel-detail-panel');
+      const fs = document.getElementById('fut-intel-score');
+      const fd = document.getElementById('fut-intel-detail');
+      if (s && fs) fs.innerHTML = s.innerHTML;
+      if (d && fd) fd.innerHTML = d.innerHTML;
+    }, 2000);
+  }
+}
+
+async function runFutCrtScan() {
+  const grid = document.getElementById('fut-crt-grid');
+  if (grid) grid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);grid-column:1/-1"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div style="font-size:13px;color:var(--text2)">Scanning futures instruments...</div></div>';
+  fetchBusy = false; await fetchPrices();
+  setTimeout(() => {
+    const futureTypes = ['index','commodity','forex'];
+    const items = typeof INSTRUMENTS !== 'undefined'
+      ? Object.entries(INSTRUMENTS).filter(([k,v]) => futureTypes.includes(v.type))
+      : [];
+    if (grid && items.length) {
+      grid.innerHTML = items.map(([sym,inst]) => {
+        const p = (typeof prices!=='undefined'&&prices[sym]) ? prices[sym] : inst.base;
+        const pct = typeof pctChange==='function' ? pctChange(sym) : 0;
+        const up = pct>=0;
+        return `<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:14px 16px;cursor:pointer" onclick="openChart('${sym}')">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><div style="font-weight:700;font-size:13px;color:var(--text)">${sym}</div><div style="font-size:10px;color:var(--text3);text-transform:capitalize">${inst.type}</div></div>
+            <div style="text-align:right"><div style="font-size:13px;font-weight:700;font-family:var(--fm)">${typeof fmtPrice==='function'?fmtPrice(sym,p):p.toLocaleString()}</div><div style="font-size:11px;color:${up?'var(--green)':'var(--red)'};font-weight:700">${up?'+':''}${pct.toFixed(2)}%</div></div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+    const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+    set('fut-stat-total', items.length);
+    const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+    set('fut-stat-time', t+' AWST');
+    const stats = document.getElementById('fut-stats'); if(stats) stats.style.display='flex';
+  }, 1500);
+}
+
+async function runFutBullishScan() {
+  const body = document.getElementById('fut-bull-body');
+  const btn  = document.querySelector('#fut-ctrl-bullish .btn.g');
+  if (btn)  { btn.disabled=true; btn.textContent='⏳ Scanning...'; }
+  if (body) body.innerHTML = '<div style="padding:32px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div style="font-size:13px;color:var(--text2)">Scanning futures...</div></div>';
+  fetchBusy = false; await fetchPrices();
+  setTimeout(() => {
+    const rows = document.querySelectorAll('#strategy-signals-body > *');
+    const minConf = parseInt(document.getElementById('fut-bull-conf')?.value || '60');
+    let out='', shown=0, longs=0, shorts=0;
+    rows.forEach(row => {
+      const mkt = (row.dataset?.market||'').toLowerCase();
+      const conf = parseInt(row.dataset?.conf||'0');
+      const dir  = (row.dataset?.dir||'').toLowerCase();
+      if (mkt.includes('asx') || mkt.includes('au')) return; // exclude ASX
+      if (conf < minConf) return;
+      out += row.outerHTML; shown++;
+      if (dir==='long') longs++; if (dir==='short') shorts++;
+    });
+    if (body) body.innerHTML = out || '<div style="padding:32px;text-align:center;color:var(--text3);font-size:12px">No futures bullish signals at this threshold.</div>';
+    const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+    set('fut-stat-total',shown); set('fut-stat-long',longs); set('fut-stat-short',shorts);
+    const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+    set('fut-stat-time', t+' AWST');
+    const stats = document.getElementById('fut-stats'); if(stats) stats.style.display='flex';
+    if (btn) { btn.disabled=false; btn.textContent='📈 Scan'; }
+  }, 2000);
+}
+
+function fetchFutNews() {
+  fetchNews && fetchNews().then(() => {
+    const src = document.getElementById('news-feed');
+    const dst = document.getElementById('fut-news-feed');
+    if (src && dst) dst.innerHTML = src.innerHTML;
+    const t = document.getElementById('intel-feed-time');
+    const ft = document.getElementById('fut-feed-time');
+    if (t && ft) ft.innerHTML = t.innerHTML;
+  }).catch(()=>{});
+}
 
 </script>
 
