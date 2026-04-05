@@ -773,6 +773,29 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   .journal-stats-grid { grid-template-columns:repeat(3,1fr); }
 }
 
+
+/* Global timeframe selector */
+.global-tf-bar { }
+.tf-btn {
+  font-family: var(--fm);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  transition: all .12s;
+  font-weight: 600;
+}
+.tf-btn:hover { background: var(--bg4); color: var(--text); border-color: var(--border3); }
+.tf-btn.active { background: var(--accent2); color: var(--accent); border-color: rgba(45,142,255,.35); }
+
+/* Market tab pills for scanner */
+.scan-mkt-tab { transition: all .12s; }
+.scan-mkt-tab:hover { color: var(--text2) !important; }
+.scan-mkt-tab.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
+
 </style>
 </head>
 <body>
@@ -801,7 +824,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     <span>DASH</span>
   </button>
-  <button class="sbb" id="sb-crt" onclick="nav('crt')"><svg viewBox="0 0 24 24"><path d="M2 12h4l3-9 4 18 3-9 4 0"/></svg><span>CRT</span><div class="sbadge" id="crt-badge" style="display:none">0</div></button>  <button class="sbb" id="sb-scanner" onclick="nav('scanner')">
+  <button class="sbb" id="sb-scanner" onclick="nav('scanner')">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
     <span>SCAN</span>
     <div class="sbadge">9</div>
@@ -970,23 +993,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   </div>
 </div>
 
-<!-- ═══════════════ PAGE: SCANNER ═══════════════ -->
-<div class="page" id="page-crt"><div class="ph"><div><div class="ph-t">CRT Scanner</div><div class="ph-s">All 4 models - 5 timeframes - Full ASX - MarketLens</div></div><div class="ph-r" style="gap:10px"><select id="crt-tf-filter" class="sel" style="font-size:11px;padding:6px 10px"><option value="all">All TFs</option><option value="1M CRT">1M CRT</option><option value="3M CRT">3M CRT</option><option value="6M CRT">6M CRT</option><option value="9M CRT">9M CRT</option><option value="12M CRT">12M CRT</option></select><select id="crt-dir-filter" class="sel" style="font-size:11px;padding:6px 10px"><option value="all">Both</option><option value="LONG">Long</option><option value="SHORT">Short</option></select><button class="btn" onclick="stopCrtScan()" id="crt-stop-btn" style="display:none;background:rgba(255,68,102,.15);color:var(--red)">Stop</button><button class="btn g" onclick="startCrtScan()" id="crt-scan-btn">Scan ASX</button></div></div><div id="crt-progress-bar" style="display:none;padding:0 20px 8px"><div style="background:var(--bg4);border-radius:99px;height:4px;overflow:hidden;margin-bottom:4px"><div id="crt-progress-fill" style="height:4px;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:99px;width:0%;transition:width .3s"></div></div><div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)"><span id="crt-progress-text">Scanning...</span><span id="crt-progress-pct">0%</span></div></div><div class="scroll" style="padding:20px"><div id="crt-stats" style="display:none;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px"><div class="panel" style="padding:12px 16px;text-align:center"><div style="font-size:22px;font-weight:800;color:#fff" id="crt-stat-scanned">0</div><div style="font-size:10px;color:var(--text3)">Scanned</div></div><div class="panel" style="padding:12px 16px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--green)" id="crt-stat-signals">0</div><div style="font-size:10px;color:var(--text3)">Signals</div></div><div class="panel" style="padding:12px 16px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--green)" id="crt-stat-longs">0</div><div style="font-size:10px;color:var(--text3)">Longs</div></div><div class="panel" style="padding:12px 16px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--red)" id="crt-stat-shorts">0</div><div style="font-size:10px;color:var(--text3)">Shorts</div></div><div class="panel" style="padding:12px 16px;text-align:center"><div style="font-size:22px;font-weight:800;color:var(--amber)" id="crt-stat-confidence">-</div><div style="font-size:10px;color:var(--text3)">Avg Conf</div></div></div><div id="crt-signals-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:12px"><div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text3)"><div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">CRT Scanner Ready</div><div style="font-size:12px">Click Scan ASX to scan all ASX stocks for CRT setups</div></div></div></div></div><div class="page" id="page-scanner">
+<!-- ═══════════════ PAGE: SCANNER (merged with CRT) ═══════════════ -->
+<div class="page" id="page-scanner">
   <div class="ph">
     <div>
-      <div class="ph-t">Scanner <span style="font-size:13px;font-weight:500;color:var(--accent)">— Better than Spark</span></div>
+      <div class="ph-t">Scanner</div>
       <div class="ph-s" id="scan-sub">Live every 5s · CRT · MTF · BOS · RVOL · Auction · Gap · VWAP · Sector</div>
     </div>
     <div class="ph-r">
       <button class="btn" id="push-btn" onclick="requestPushPermission()">Enable alerts</button>
-      <select id="scan-market-filter" class="btn" onchange="filterScanner()" style="padding:6px 10px">
-        <option value="all">All markets</option>
-        <option value="asx">ASX only</option>
-        <option value="forex">Forex only</option>
-        <option value="commodity">Commodities</option>
-        <option value="future">Futures</option>
-        <option value="crypto">Crypto</option>
-      </select>
       <select id="scan-type-filter" class="btn" onchange="filterScanner()" style="padding:6px 10px">
         <option value="all">All signals</option>
         <option value="crt">CRT only</option>
@@ -997,7 +1012,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         <option value="vwap">VWAP only</option>
       </select>
       <select id="scan-dir-filter" class="btn" onchange="filterScanner()" style="padding:6px 10px">
-        <option value="all">Long & Short</option>
+        <option value="all">Long &amp; Short</option>
         <option value="long">Longs only</option>
         <option value="short">Shorts only</option>
       </select>
@@ -1005,11 +1020,31 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     </div>
   </div>
 
-  <!-- Scanner stats bar -->
-  <div id="momentum-bar" class="momentum-bar">
-    <!-- Populated by JS -->
+  <!-- Market filter tabs -->
+  <div style="display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0;padding:0 20px">
+    <button class="scan-mkt-tab active" id="smkt-all"   onclick="setScanMarket('all')"    style="font-size:11px;padding:9px 16px;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:700;letter-spacing:.04em">All</button>
+    <button class="scan-mkt-tab"        id="smkt-asx"   onclick="setScanMarket('asx')"    style="font-size:11px;padding:9px 16px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600;letter-spacing:.04em">ASX</button>
+    <button class="scan-mkt-tab"        id="smkt-future" onclick="setScanMarket('future')" style="font-size:11px;padding:9px 16px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600;letter-spacing:.04em">Futures</button>
+    <button class="scan-mkt-tab"        id="smkt-forex" onclick="setScanMarket('forex')"   style="font-size:11px;padding:9px 16px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600;letter-spacing:.04em">Forex</button>
+    <button class="scan-mkt-tab"        id="smkt-crypto" onclick="setScanMarket('crypto')" style="font-size:11px;padding:9px 16px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600;letter-spacing:.04em">Crypto</button>
+    <div style="flex:1"></div>
+    <!-- CRT sub-tab toggle -->
+    <button class="btn" id="crt-mode-btn" onclick="toggleCrtMode()" style="font-size:10px;padding:5px 12px;margin:6px 0">⚡ CRT Scan</button>
   </div>
-  <div style="background:var(--bg4);border-bottom:1px solid var(--border2);padding:8px 20px;display:flex;gap:24px;align-items:center;flex-shrink:0">
+
+  <!-- Global timeframe selector -->
+  <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
+    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
+    <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
+    <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
+    <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
+    <button class="tf-btn"        data-tf="6M"  onclick="setGlobalTF('6M',this)">6M</button>
+    <button class="tf-btn"        data-tf="1Y"  onclick="setGlobalTF('1Y',this)">1Y</button>
+    <button class="tf-btn"        data-tf="YTD" onclick="setGlobalTF('YTD',this)">YTD</button>
+  </div>
+  <!-- Scanner stats bar -->
+  <div id="momentum-bar" class="momentum-bar"></div>
+  <div style="background:var(--bg4);border-bottom:1px solid var(--border2);padding:8px 20px;display:flex;gap:24px;align-items:center;flex-shrink:0" id="scan-stats-bar">
     <div style="font-size:11px;color:var(--text3)">SIGNALS <span id="stat-total" style="color:var(--text);font-weight:700">—</span></div>
     <div style="font-size:11px;color:var(--text3)">HIGH <span id="stat-high" style="color:var(--red);font-weight:700">—</span></div>
     <div style="font-size:11px;color:var(--text3)">MEDIUM <span id="stat-med" style="color:var(--amber);font-weight:700">—</span></div>
@@ -1020,23 +1055,63 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <div style="font-size:11px;color:var(--text3)">Updated <span id="stat-time" style="color:var(--text2)">—</span></div>
   </div>
 
-  <!-- Scanner columns header -->
-  <div style="display:grid;grid-template-columns:110px 80px 80px 60px 1fr 120px 90px;gap:8px;padding:7px 20px;background:var(--bg5);border-bottom:1px solid var(--border2);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;flex-shrink:0">
-    <div>Instrument</div>
-    <div>Price</div>
-    <div>Change</div>
-    <div>RVOL</div>
-    <div>Signals & analysis</div>
-    <div style="text-align:center">Timeframes</div>
-    <div style="text-align:right">Confidence</div>
+  <!-- Normal scanner view -->
+  <div id="scan-normal-view" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div style="display:grid;grid-template-columns:110px 80px 80px 60px 1fr 120px 90px;gap:8px;padding:7px 20px;background:var(--bg5);border-bottom:1px solid var(--border2);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;flex-shrink:0">
+      <div>Instrument</div><div>Price</div><div>Change</div><div>RVOL</div><div>Signals &amp; analysis</div><div style="text-align:center">Timeframes</div><div style="text-align:right">Confidence</div>
+    </div>
+    <div class="scroll" style="padding:0" id="scanner-scroll">
+      <div id="strategy-signals-body">
+        <div style="padding:40px;text-align:center;color:var(--text3)">
+          <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">Running strategy engine...</div>
+          <div style="font-size:12px">Scanning 38 instruments across all markets</div>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <div class="scroll" style="padding:0" id="scanner-scroll">
-    <!-- Strategy signals (live) -->
-    <div id="strategy-signals-body">
-      <div style="padding:40px;text-align:center;color:var(--text3)">
-        <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">Running strategy engine...</div>
-        <div style="font-size:12px">Scanning 38 instruments across all markets</div>
+  <!-- CRT scanner view (hidden by default) -->
+  <div id="scan-crt-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div style="padding:10px 20px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--bg2)">
+      <select id="crt-tf-filter" class="sel" style="font-size:11px;padding:6px 10px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
+        <option value="all">All TFs</option>
+        <option value="1M CRT">1M CRT</option>
+        <option value="3M CRT">3M CRT</option>
+        <option value="6M CRT">6M CRT</option>
+        <option value="9M CRT">9M CRT</option>
+        <option value="12M CRT">12M CRT</option>
+      </select>
+      <select id="crt-dir-filter" class="sel" style="font-size:11px;padding:6px 10px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
+        <option value="all">Both</option>
+        <option value="LONG">Long</option>
+        <option value="SHORT">Short</option>
+      </select>
+      <button class="btn" onclick="stopCrtScan()" id="crt-stop-btn" style="display:none;background:rgba(255,68,102,.15);color:var(--red)">Stop</button>
+      <button class="btn g" onclick="startCrtScan()" id="crt-scan-btn">⚡ Scan ASX</button>
+      <div style="flex:1"></div>
+      <div id="crt-stat-summary" style="display:none;font-size:11px;color:var(--text3)">
+        <span style="color:var(--text);font-weight:700" id="crt-stat-scanned">0</span> scanned ·
+        <span style="color:var(--green);font-weight:700" id="crt-stat-signals">0</span> signals ·
+        <span style="color:var(--green)" id="crt-stat-longs">0</span>L /
+        <span style="color:var(--red)" id="crt-stat-shorts">0</span>S ·
+        Conf <span style="color:var(--amber)" id="crt-stat-confidence">—</span>
+      </div>
+    </div>
+    <div id="crt-progress-bar" style="display:none;padding:6px 20px;flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border2)">
+      <div style="background:var(--bg4);border-radius:99px;height:4px;overflow:hidden;margin-bottom:4px">
+        <div id="crt-progress-fill" style="height:4px;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:99px;width:0%;transition:width .3s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
+        <span id="crt-progress-text">Scanning...</span>
+        <span id="crt-progress-pct">0%</span>
+      </div>
+    </div>
+    <div class="scroll" style="padding:20px" id="crt-scroll">
+      <div id="crt-signals-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:12px">
+        <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text3)">
+          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">CRT Scanner</div>
+          <div style="font-size:12px">Click ⚡ Scan ASX to scan all ASX stocks for CRT setups via the proxy</div>
+        </div>
       </div>
     </div>
   </div>
@@ -1047,6 +1122,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <div class="ph">
     <div><div class="ph-t">Intelligence</div><div class="ph-s" id="intel-sub">AI analysis · News · Sentiment · Live prices</div></div>
     <div class="ph-r"><button class="btn g" onclick="fetchNews()">Refresh news</button><button class="btn" id="add-news-key-btn" onclick="openModal()" style="display:none">Add NewsAPI key</button></div>
+  </div>
+  <!-- Global timeframe selector -->
+  <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
+    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
+    <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
+    <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
+    <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
+    <button class="tf-btn"        data-tf="6M"  onclick="setGlobalTF('6M',this)">6M</button>
+    <button class="tf-btn"        data-tf="1Y"  onclick="setGlobalTF('1Y',this)">1Y</button>
+    <button class="tf-btn"        data-tf="YTD" onclick="setGlobalTF('YTD',this)">YTD</button>
   </div>
   <div class="scroll">
     <!-- Timeframe selector -->
@@ -1295,6 +1380,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <div><div class="ph-t">Market Flow</div><div class="ph-s">Currency strength · Correlations · Sector rotation</div></div>
     <div class="ph-r"><button class="btn g" onclick="refreshFlowData()">Refresh</button></div>
   </div>
+  <!-- Global timeframe selector -->
+  <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
+    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
+    <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
+    <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
+    <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
+    <button class="tf-btn"        data-tf="6M"  onclick="setGlobalTF('6M',this)">6M</button>
+    <button class="tf-btn"        data-tf="1Y"  onclick="setGlobalTF('1Y',this)">1Y</button>
+    <button class="tf-btn"        data-tf="YTD" onclick="setGlobalTF('YTD',this)">YTD</button>
+  </div>
   <div class="scroll" style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
     <div class="panel">
       <div class="phead"><div class="ptitle">Currency Strength</div><div class="pmeta">Live from prices</div></div>
@@ -1382,6 +1477,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <div class="ph">
     <div><div class="ph-t">Sector Money Flow</div><div class="ph-s" id="sector-sub">GICS sector heatmap · RS lines · RRG rotation · Outperformer filter</div></div>
     <div class="ph-r"><button class="btn g" onclick="refreshSectors()">Refresh</button></div>
+  </div>
+  <!-- Global timeframe selector -->
+  <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
+    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
+    <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
+    <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
+    <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
+    <button class="tf-btn"        data-tf="6M"  onclick="setGlobalTF('6M',this)">6M</button>
+    <button class="tf-btn"        data-tf="1Y"  onclick="setGlobalTF('1Y',this)">1Y</button>
+    <button class="tf-btn"        data-tf="YTD" onclick="setGlobalTF('YTD',this)">YTD</button>
   </div>
   <div class="scroll">
 
@@ -1478,8 +1583,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 </div><!-- end layout -->
 
 
-<!-- ═══════════════ PAGE: SECTOR INTELLIGENCE ═══════════════ -->
-<div class="page" id="page-sectors">
+<!-- ═══════════════ PAGE: SECTOR INTELLIGENCE (secondary) ═══════════════ -->
+<div class="page" id="page-sectorintel" style="display:none">
   <div class="ph">
     <div><div class="ph-t">Sector Intelligence</div><div class="ph-s">GICS sector heatmap · RS lines · Relative Rotation Graph · Money flow</div></div>
     <div class="ph-r">
@@ -1489,6 +1594,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       </select>
       <button class="btn g" onclick="refreshSectorData()">Refresh</button>
     </div>
+  </div>
+  <!-- Global timeframe selector -->
+  <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
+    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
+    <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
+    <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
+    <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
+    <button class="tf-btn"        data-tf="6M"  onclick="setGlobalTF('6M',this)">6M</button>
+    <button class="tf-btn"        data-tf="1Y"  onclick="setGlobalTF('1Y',this)">1Y</button>
+    <button class="tf-btn"        data-tf="YTD" onclick="setGlobalTF('YTD',this)">YTD</button>
   </div>
   <div class="scroll">
 
@@ -2331,8 +2446,7 @@ function nav(p) {
   const sb = document.getElementById('sb-' + p);
   if (pg) pg.classList.add('active');
   if (sb) sb.classList.add('active');
-  if (p === 'sector') refreshSectorData();
-  if (p === 'crt') {}
+  if (p === 'sector' || p === 'sectors') refreshSectorData();
   if (p === 'flow') refreshFlowData();
   if (p === 'log') { if (typeof alertHistory !== 'undefined') renderAlertLog(); }
   if (p === 'intel') {
@@ -3116,20 +3230,13 @@ function checkAlerts(results) {
 // NEWS ENGINE — Multi-source RSS
 // ═══════════════════════════════════════════════════════
 async function fetchNews() {
-  // Sources confirmed to work from hosted sites (no auth, proper CORS)
-  // Using cache-busting timestamp to always get fresh content
-  const ts = Date.now();
-
+  // News fetch chain — proxy-first for reliable CORS, fallback to direct RSS
   const sources = [
-    // Currents API — free, no key needed, financial news
-    () => fetchCurrents(),
-    // MediaStack free tier
-    () => fetchMediaStack(),
-    // Direct RSS via rss2json with proper formatting
-    () => fetchRSSv2('https://feeds.finance.yahoo.com/rss/2.0/headline?s=AUD%3DX%2CGC%3DF%2CCL%3DF%2CBHP.AX&region=AU&lang=en-AU&count=20', 'Yahoo Finance'),
-    () => fetchRSSv2('https://www.abc.net.au/news/feed/2811686/rss.xml', 'ABC Business'),
-    () => fetchRSSv2('https://rss.nytimes.com/services/xml/rss/nyt/Business.xml', 'NY Times'),
-    () => fetchRSSv2('https://feeds.bbci.co.uk/news/business/rss.xml', 'BBC Business'),
+    () => fetchNewsViaProxy(),
+    () => fetchRSSviaProxy('https://feeds.finance.yahoo.com/rss/2.0/headline?s=AUD%3DX%2CGC%3DF%2CCL%3DF%2CBHP.AX&region=AU&lang=en-AU&count=20', 'Yahoo Finance'),
+    () => fetchRSSviaProxy('https://www.abc.net.au/news/feed/2811686/rss.xml', 'ABC Business'),
+    () => fetchRSSviaProxy('https://feeds.bbci.co.uk/news/business/rss.xml', 'BBC Business'),
+    () => fetchRSSviaProxy('https://rss.nytimes.com/services/xml/rss/nyt/Business.xml', 'NY Times'),
   ];
 
   for (const src of sources) {
@@ -3139,50 +3246,33 @@ async function fetchNews() {
         renderNewsItems(items);
         return;
       }
-    } catch(e) { continue; }
+    } catch(e) { console.warn('News source failed:', e.message); continue; }
   }
   renderNewsPlaceholder();
 }
 
-async function fetchCurrents() {
-  // Currents API — genuinely free, no key for basic, CORS enabled
-  const r = await fetch('https://api.currentsapi.services/v1/latest-news?language=en&country=AU,US&category=business,finance', {
-    signal: AbortSignal.timeout(6000)
-  });
-  if (!r.ok) throw new Error('currents ' + r.status);
+async function fetchNewsViaProxy() {
+  // Use our proxy to fetch financial RSS — avoids all CORS issues
+  const PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions';
+  const r = await fetch(`${PROXY}/news`, { signal: AbortSignal.timeout(8000) });
+  if (!r.ok) throw new Error('proxy news ' + r.status);
   const d = await r.json();
-  if (!d.news?.length) throw new Error('no currents news');
-  return d.news.slice(0, 8).map(a => ({
-    title: a.title,
-    source: a.author || 'Currents',
-    pubDate: new Date(a.published),
-    link: a.url,
+  if (!Array.isArray(d) || d.length < 3) throw new Error('proxy news empty');
+  return d.map(a => ({
+    title: (a.title || '').replace(/<[^>]+>/g, ''),
+    source: a.source || 'News',
+    pubDate: new Date(a.pubDate || a.published_at || Date.now()),
+    link: a.link || a.url || '#',
   }));
 }
 
-async function fetchMediaStack() {
-  // MediaStack free — 500 req/month, no key needed for basic
-  const r = await fetch('https://api.mediastack.com/v1/news?access_key=free&categories=business,finance&countries=au,us&limit=8', {
-    signal: AbortSignal.timeout(6000)
-  });
-  if (!r.ok) throw new Error('mediastack ' + r.status);
-  const d = await r.json();
-  if (!d.data?.length) throw new Error('no mediastack');
-  return d.data.map(a => ({
-    title: a.title,
-    source: a.source || 'MediaStack',
-    pubDate: new Date(a.published_at),
-    link: a.url,
-  }));
-}
-
-async function fetchRSSv2(rssUrl, sourceName) {
-  // rss2json with cache busting
-  const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&count=10`;
+async function fetchRSSviaProxy(rssUrl, sourceName) {
+  // Fallback: fetch RSS through rss2json (still works for some feeds)
+  const url = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}&count=10&api_key=`;
   const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
-  if (!r.ok) throw new Error('rss2json ' + r.status);
+  if (!r.ok) throw new Error('rss2json http ' + r.status);
   const d = await r.json();
-  if (d.status !== 'ok' || !d.items?.length) throw new Error('rss2json no items: ' + d.message);
+  if (d.status !== 'ok' || !d.items?.length) throw new Error('rss2json: ' + (d.message || 'no items'));
   return d.items.slice(0, 8).map(item => ({
     title: (item.title || '').replace(/<[^>]+>/g, ''),
     source: sourceName,
@@ -3191,9 +3281,9 @@ async function fetchRSSv2(rssUrl, sourceName) {
   }));
 }
 
-async function fetchGNews() {
-  throw new Error('GNews key invalid');
-}
+async function fetchCurrents() { throw new Error('deprecated'); }
+async function fetchMediaStack() { throw new Error('deprecated'); }
+async function fetchGNews() { throw new Error('GNews key invalid'); }
 
 function renderNewsItems(items) {
   const feed = document.getElementById('news-feed');
@@ -3415,28 +3505,55 @@ function renderHeatmap() {
   }).join('');
 }
 
-function setLbPeriod(p) {
-  lbPeriod = p;
-  ['d','w','m'].forEach(x => {
-    const el = document.getElementById('lb-tab-'+x); if (!el) return;
-    if (x===p) { el.style.background='var(--accent2)';el.style.color='var(--accent)';el.style.borderColor='rgba(45,142,255,.35)'; }
-    else { el.style.background='transparent';el.style.color='var(--text2)';el.style.borderColor='var(--border2)'; }
+function setLbPeriod(p, btn) {
+  // p can be 'day'|'week'|'month' (from HTML) or 'd'|'w'|'m' (legacy)
+  const map = {day:'d', week:'w', month:'m', d:'d', w:'w', m:'m'};
+  lbPeriod = map[p] || p;
+  // Highlight the clicked tab
+  ['lb-day','lb-week','lb-month','lb-tab-d','lb-tab-w','lb-tab-m'].forEach(id => {
+    const el = document.getElementById(id); if (!el) return;
+    el.classList.remove('on');
+    el.style.background = 'transparent';
+    el.style.color = 'var(--text2)';
+    el.style.borderColor = 'var(--border2)';
   });
+  if (btn) {
+    btn.classList.add('on');
+    btn.style.background = 'var(--accent2)';
+    btn.style.color = 'var(--accent)';
+    btn.style.borderColor = 'rgba(45,142,255,.35)';
+  }
   renderLeaderboard();
 }
 
 function renderLeaderboard() {
-  const el = document.getElementById('sector-leaderboard'); if (!el) return;
-  const sorted = [...SECTORS].sort((a,b) => b[lbPeriod] - a[lbPeriod]);
+  // Try both possible element IDs (sectors page has leaderboard-body, flow page had sector-leaderboard)
+  const el = document.getElementById('leaderboard-body') || document.getElementById('sector-leaderboard');
+  if (!el) return;
+  const key = lbPeriod === 'd' ? 'day' : lbPeriod === 'w' ? 'week' : 'month';
+  const sorted = [...SECTORS].sort((a,b) => b[key] - a[key]);
+  const isTable = el.tagName === 'TBODY';
   el.innerHTML = sorted.map((s,i) => {
-    const v = s[lbPeriod]; const col = v>=0?'var(--green)':'var(--red)';
+    const v = s[key]; const col = v>=0?'var(--green)':'var(--red)';
     const bw = Math.min(Math.abs(v)/10*100,100);
+    const dayCol = s.day>=0?'var(--green)':'var(--red)';
+    const wkCol  = s.week>=0?'var(--green)':'var(--red)';
+    const moCol  = s.month>=0?'var(--green)':'var(--red)';
+    if (isTable) {
+      return `<tr>
+        <td style="color:${i<3?'var(--accent)':'var(--text4)'};font-weight:700;text-align:center">${i+1}</td>
+        <td style="font-weight:600">${s.icon} ${s.name}</td>
+        <td style="color:${dayCol};font-family:var(--fm)">${s.day>=0?'+':''}${s.day.toFixed(2)}%</td>
+        <td style="min-width:120px"><div style="background:var(--bg5);border-radius:2px;height:6px;overflow:hidden"><div style="width:${bw}%;height:6px;background:${col};border-radius:2px"></div></div></td>
+        <td style="color:${wkCol};font-family:var(--fm)">${s.week>=0?'+':''}${s.week.toFixed(1)}%</td>
+      </tr>`;
+    }
     return `<div class="lb-row">
       <div class="lb-rank" style="color:${i<3?'var(--accent)':'var(--text4)'}">${i+1}</div>
       <div><div class="lb-name">${s.icon} ${s.name}</div></div>
-      <div class="lb-val" style="color:${s.day>=0?'var(--green)':'var(--red)'}">${s.day>=0?'+':''}${s.day.toFixed(2)}%</div>
-      <div class="lb-val" style="color:${s.week>=0?'var(--green)':'var(--red)'}">${s.week>=0?'+':''}${s.week.toFixed(1)}%</div>
-      <div class="lb-val" style="color:${s.month>=0?'var(--green)':'var(--red)'}">${s.month>=0?'+':''}${s.month.toFixed(1)}%</div>
+      <div class="lb-val" style="color:${dayCol}">${s.day>=0?'+':''}${s.day.toFixed(2)}%</div>
+      <div class="lb-val" style="color:${wkCol}">${s.week>=0?'+':''}${s.week.toFixed(1)}%</div>
+      <div class="lb-val" style="color:${moCol}">${s.month>=0?'+':''}${s.month.toFixed(1)}%</div>
       <div class="lb-bar-wrap"><div class="lb-bar-bg"><div class="lb-bar-fill" style="width:${bw}%;background:${col}"></div></div></div>
     </div>`;
   }).join('');
@@ -3489,7 +3606,13 @@ function renderRS() {
 
 function renderRRG() {
   const svg = document.getElementById('rrg-svg'); if (!svg) return;
+  // Resize SVG to fill its container properly
   const W=680,H=420,cx=W/2,cy=H/2,sc=120;
+  svg.setAttribute('width', W);
+  svg.setAttribute('height', H);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.style.width = '100%';
+  svg.style.height = 'auto';
   const quads = [
     {x:cx,y:0,w:cx,h:cy,fill:'rgba(0,212,168,0.07)',label:'LEADING',lx:cx+10,ly:18,col:'rgba(0,212,168,.6)'},
     {x:0,y:0,w:cx,h:cy,fill:'rgba(45,142,255,0.07)',label:'IMPROVING',lx:10,ly:18,col:'rgba(45,142,255,.6)'},
@@ -4161,7 +4284,7 @@ journalTrades.forEach(t => addJournalRow(t));
 var PROXY='https://apextrade-proxy.netlify.app/.netlify/functions';
 var crtSignals=[],crtScanning=false,crtAbort=false;
 async function getAsxTickers(){try{var r=await fetch(PROXY+'/asx-list');if(r.ok){var d=await r.json();if(d.stocks&&d.stocks.length>100)return d.stocks;}}catch(e){}return['BHP','CBA','CSL','NAB','WBC','ANZ','WES','MQG','RIO','FMG','WOW','GMG','REA','TLS','XRO','ALL','STO','WDS','QAN','COH','MIN','LYC','PLS','EVN','NST','WHC','IGO','S32','ORA','NHC','SFR','AWC','ILU','NXT','CQR','BWP','ARF','SGP','GPT','MGR','SCG','DXS','CHC','BAP','APE','GNC','CIA','CHN','DEG','WAF','DRR','GOR','RSG','SBM','PRU','CMR','RRL','OGC','SAR','SLR','CYL','BGL','MML','RMS','PNV','RHC','SHL','EBO','MVF','HLS','QBE','SUN','IAG','AMP','NCM','PDN','BOE','LOT','PEN','YAL','SMR','GCY','KAR','RED','SVL','ALK','CMW','VEA','IPL','PPT','PMV','DMP','RMD','WEB','IEL','NEA','ALU','MFG','CTD','FLT','CPU','APA','JHX','TCL','AMC','LLC'].map(function(x){return{ticker:x,name:x};});}
-async function startCrtScan(){if(crtScanning)return;crtScanning=true;crtAbort=false;crtSignals=[];document.getElementById('crt-scan-btn').style.display='none';document.getElementById('crt-stop-btn').style.display='flex';document.getElementById('crt-progress-bar').style.display='block';var st=document.getElementById('crt-stats');if(st)st.style.display='grid';document.getElementById('crt-signals-grid').innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px;text-align:center;grid-column:1/-1">Scanning...</div>';var tickers=await getAsxTickers();var total=tickers.length;var scanned=0;updateCrtStats(0,0,0,0,total);for(var i=0;i<total;i+=5){if(crtAbort)break;var batch=tickers.slice(i,i+5);await Promise.all(batch.map(function(s){return scanTicker(s.ticker);}));scanned+=batch.length;var pct=Math.round(scanned/total*100);document.getElementById('crt-progress-fill').style.width=pct+'%';document.getElementById('crt-progress-pct').textContent=pct+'%';document.getElementById('crt-progress-text').textContent='Scanning '+scanned+'/'+total+' - '+crtSignals.length+' signals';updateCrtStats(scanned,crtSignals.length,crtSignals.filter(function(s){return s.direction==='LONG';}).length,crtSignals.filter(function(s){return s.direction==='SHORT';}).length,total);await new Promise(function(r){setTimeout(r,80);});}crtScanning=false;document.getElementById('crt-scan-btn').style.display='flex';document.getElementById('crt-stop-btn').style.display='none';document.getElementById('crt-progress-text').textContent='Complete - '+crtSignals.length+' signals';var badge=document.getElementById('crt-badge');if(badge){badge.style.display='flex';badge.textContent=crtSignals.length;}if(crtSignals.length>0)showToast('CRT Scanner',crtSignals.length+' setups found','success',4000);else document.getElementById('crt-signals-grid').innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;grid-column:1/-1">No setups found.</div>';}
+async function startCrtScan(){if(crtScanning)return;crtScanning=true;crtAbort=false;crtSignals=[];document.getElementById('crt-scan-btn').style.display='none';document.getElementById('crt-stop-btn').style.display='flex';document.getElementById('crt-progress-bar').style.display='block';var st=document.getElementById('crt-stats');if(st)st.style.display='grid';document.getElementById('crt-signals-grid').innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px;text-align:center;grid-column:1/-1">Scanning...</div>';var tickers=await getAsxTickers();var total=tickers.length;var scanned=0;updateCrtStats(0,0,0,0,total);for(var i=0;i<total;i+=5){if(crtAbort)break;var batch=tickers.slice(i,i+5);await Promise.all(batch.map(function(s){return scanTicker(s.ticker);}));scanned+=batch.length;var pct=Math.round(scanned/total*100);document.getElementById('crt-progress-fill').style.width=pct+'%';document.getElementById('crt-progress-pct').textContent=pct+'%';document.getElementById('crt-progress-text').textContent='Scanning '+scanned+'/'+total+' - '+crtSignals.length+' signals';updateCrtStats(scanned,crtSignals.length,crtSignals.filter(function(s){return s.direction==='LONG';}).length,crtSignals.filter(function(s){return s.direction==='SHORT';}).length,total);await new Promise(function(r){setTimeout(r,80);});}crtScanning=false;document.getElementById('crt-scan-btn').style.display='flex';document.getElementById('crt-stop-btn').style.display='none';document.getElementById('crt-progress-text').textContent='Complete - '+crtSignals.length+' signals';var sbBadge=document.querySelector('#sb-scanner .sbadge');if(sbBadge){sbBadge.style.display='flex';sbBadge.textContent=crtSignals.length;}var statSum=document.getElementById('crt-stat-summary');if(statSum)statSum.style.display='block';if(crtSignals.length>0)showToast('CRT Scanner',crtSignals.length+' setups found','success',4000);else document.getElementById('crt-signals-grid').innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;grid-column:1/-1">No setups found.</div>';}
 async function scanTicker(ticker){try{var r=await fetch(PROXY+'/scan?ticker='+ticker);if(!r.ok)return;var data=await r.json();if(!data.signals||!data.signals.length)return;for(var i=0;i<data.signals.length;i++){var sig=data.signals[i];var ml=mlScreener.find(function(s){return s.ticker===ticker;})||mlData[ticker];var mlScore=ml?getCrtMlScore(ml,sig.direction):0;var final=Math.min(Math.round(sig.baseConfidence+mlScore),99);var signal=Object.assign({},sig,{ticker:ticker,price:data.meta&&data.meta.price,mlScore:mlScore,mlNetVal:ml?(ml.netVal||ml.summary&&ml.summary.totalNet||null):null,finalConfidence:final});crtSignals.push(signal);crtSignals.sort(function(a,b){return b.finalConfidence-a.finalConfidence;});renderCrtSignal(signal);}}catch(e){}}
 function getCrtMlScore(ml,dir){var net=ml.netVal||(ml.summary&&ml.summary.totalNet)||0;var bull=ml.sentiment==='accumulation'||(ml.summary&&ml.summary.smartMoneyBull);var bear=ml.sentiment==='distribution'||(ml.summary&&ml.summary.smartMoneyBear);var s=0;if(net>50000000)s+=10;else if(net>10000000)s+=7;else if(net>2000000)s+=4;else if(net<-10000000)s-=7;else if(net<-2000000)s-=4;if(dir==='LONG'){if(bull)s+=5;if(bear)s-=8;}if(dir==='SHORT'){if(bear)s+=5;if(bull)s-=8;}return Math.max(-15,Math.min(15,s));}
 function renderCrtSignal(sig){var tfF=document.getElementById('crt-tf-filter')?document.getElementById('crt-tf-filter').value:'all';var dirF=document.getElementById('crt-dir-filter')?document.getElementById('crt-dir-filter').value:'all';if(tfF!=='all'&&sig.model!==tfF)return;if(dirF!=='all'&&sig.direction!==dirF)return;var grid=document.getElementById('crt-signals-grid');var ph=grid.querySelector('[style*="Scanning"]');if(ph)ph.remove();var dirCol=sig.direction==='LONG'?'var(--green)':'var(--red)';var confCol=sig.finalConfidence>=80?'var(--green)':sig.finalConfidence>=65?'var(--amber)':'var(--text3)';function fmtM(v){if(!v)return '-';var a=Math.abs(v),s=v>=0?'+':'-';return a>=1000000000?s+'$'+(a/1000000000).toFixed(1)+'B':a>=1000000?s+'$'+(a/1000000).toFixed(0)+'M':s+'$'+(a/1000).toFixed(0)+'K';}var mlBadge=sig.mlNetVal?'<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:'+(sig.mlScore>0?'rgba(0,212,168,.15)':'rgba(255,68,102,.1)')+';color:'+(sig.mlScore>0?'var(--green)':'var(--red)')+';font-weight:700;margin-left:6px">ML '+fmtM(sig.mlNetVal)+'</span>':'<span style="font-size:9px;padding:2px 5px;border-radius:3px;background:var(--bg5);color:var(--text4);margin-left:6px">No ML</span>';var card=document.createElement('div');card.className='panel';card.style.cssText='padding:0;overflow:hidden;cursor:pointer;border-color:'+(sig.finalConfidence>=80?'rgba(0,212,168,.25)':sig.finalConfidence>=65?'rgba(255,176,32,.2)':'var(--border2)');card.innerHTML='<div style="padding:14px 16px;border-bottom:1px solid var(--border)"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px"><div><span style="font-size:18px;font-weight:800;color:#fff">'+sig.ticker+'</span>'+mlBadge+'<div style="font-size:10px;color:var(--text3);margin-top:2px">'+sig.type+' - '+sig.model+'</div></div><div style="text-align:right"><div style="font-size:22px;font-weight:800;color:'+confCol+'">'+sig.finalConfidence+'%</div><div style="font-size:11px;color:'+dirCol+';font-weight:700">'+sig.direction+'</div></div></div><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px"><div style="background:var(--bg4);border-radius:6px;padding:8px"><div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase">TBOS Level</div><div style="font-size:12px;font-weight:700;color:#fff;margin-top:2px">'+(sig.tbosLevel?sig.tbosLevel.toFixed(3):'-')+'</div></div><div style="background:var(--bg4);border-radius:6px;padding:8px"><div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase">TBOS Date</div><div style="font-size:12px;font-weight:700;color:#fff;margin-top:2px">'+(sig.tbosDate||'-')+'</div></div><div style="background:var(--bg4);border-radius:6px;padding:8px"><div style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase">Purges</div><div style="font-size:12px;font-weight:700;color:#fff;margin-top:2px">'+(sig.purgeCount||1)+'x '+(sig.purgeCount>=2?'(Double)':'(Single)')+'</div></div></div></div><div style="padding:10px 16px;display:flex;justify-content:space-between"><div style="font-size:10px;color:var(--text3)">Entry: <span style="color:#fff;font-weight:600">'+(sig.entryTFs?sig.entryTFs.join(' / '):'-')+'</span> - TBOS age: <span style="color:'+(sig.tbosAge<=1?'var(--green)':'#fff')+'">'+sig.tbosAge+' candles</span></div><div style="font-size:11px;color:var(--text3)">'+(sig.price?'$'+sig.price.toFixed(3):'')+'</div></div>';card.onclick=function(){window.open('https://www.tradingview.com/chart/?symbol=ASX:'+sig.ticker,'_blank');};grid.insertBefore(card,grid.firstChild);}
@@ -4554,5 +4677,80 @@ if (pb) pb.addEventListener('click', requestPushPermission);
 const pb2 = document.getElementById('push-btn-settings');
 if (pb2) pb2.addEventListener('click', requestPushPermission);
 </script>
+
+// ═══════════════════════════════════════════════════════
+// GLOBAL TIMEFRAME SELECTOR
+// ═══════════════════════════════════════════════════════
+let globalTF = '1W';
+function setGlobalTF(tf, btn) {
+  globalTF = tf;
+  document.querySelectorAll('.tf-btn').forEach(b => b.classList.remove('active'));
+  // Activate all tf buttons with this tf value (one per page)
+  document.querySelectorAll(`.tf-btn[data-tf="${tf}"]`).forEach(b => b.classList.add('active'));
+  // Refresh current active page data with new TF
+  const activePage = document.querySelector('.page.active');
+  if (!activePage) return;
+  const pid = activePage.id;
+  if (pid === 'page-scanner') filterScanner();
+  if (pid === 'page-intel') runIntelAnalysis && runIntelAnalysis();
+  if (pid === 'page-flow') refreshFlowData && refreshFlowData();
+  if (pid === 'page-sectors') refreshSectors && refreshSectors();
+  if (pid === 'page-sectors') refreshSectorData && refreshSectorData();
+  console.log('Global TF set to', tf);
+}
+
+// ═══════════════════════════════════════════════════════
+// SCAN PAGE: Market tab + CRT mode toggle
+// ═══════════════════════════════════════════════════════
+let activeScanMarket = 'all';
+let crtModeActive = false;
+
+function setScanMarket(market) {
+  activeScanMarket = market;
+  // Update tab styles
+  document.querySelectorAll('.scan-mkt-tab').forEach(b => {
+    b.classList.remove('active');
+    b.style.color = 'var(--text3)';
+    b.style.borderBottomColor = 'transparent';
+  });
+  const active = document.getElementById('smkt-' + market);
+  if (active) {
+    active.classList.add('active');
+    active.style.color = 'var(--accent)';
+    active.style.borderBottomColor = 'var(--accent)';
+  }
+  // Exit CRT mode when switching market tabs
+  if (crtModeActive) toggleCrtMode();
+  filterScanner();
+}
+
+function toggleCrtMode() {
+  crtModeActive = !crtModeActive;
+  const normalView = document.getElementById('scan-normal-view');
+  const crtView    = document.getElementById('scan-crt-view');
+  const crtBtn     = document.getElementById('crt-mode-btn');
+  if (crtModeActive) {
+    if (normalView) normalView.style.display = 'none';
+    if (crtView)    { crtView.style.display = 'flex'; }
+    if (crtBtn)     { crtBtn.style.background = 'var(--accent2)'; crtBtn.style.color = 'var(--accent)'; crtBtn.style.borderColor = 'rgba(45,142,255,.35)'; }
+    // Show stat summary if there are results
+    const statSum = document.getElementById('crt-stat-summary');
+    if (statSum && typeof crtSignals !== 'undefined' && crtSignals.length > 0) statSum.style.display = 'block';
+  } else {
+    if (normalView) normalView.style.display = 'flex';
+    if (crtView)    crtView.style.display = 'none';
+    if (crtBtn)     { crtBtn.style.background = ''; crtBtn.style.color = ''; crtBtn.style.borderColor = ''; }
+  }
+}
+
+// Override filterScanner to also respect activeScanMarket tab
+const _origFilterScanner = typeof filterScanner === 'function' ? filterScanner : null;
+function filterScanner() {
+  // Update the hidden scan-market-filter select to match tab state, then call original
+  const sel = document.getElementById('scan-market-filter');
+  if (sel && activeScanMarket) sel.value = activeScanMarket;
+  if (_origFilterScanner) _origFilterScanner();
+}
+
 </body>
 </html>
