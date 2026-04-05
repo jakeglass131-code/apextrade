@@ -5575,43 +5575,53 @@ async function fetchOvernightData() {
   const timeEl = document.getElementById('overnight-time');
   if (!grid) return;
 
-  // Fetch candles for each instrument via the proxy (1d range, daily interval)
-  // Use the corsproxy + Yahoo spark API for batch speed
+  // Fetch intraday hourly candles for each instrument
+  // First try spark API for 1-day 15min data, then fallback
   const syms = OVERNIGHT_INSTRUMENTS.map(i => i.sym).join(',');
-  
+
   try {
-    const url = `https://corsproxy.io/?url=${encodeURIComponent(
+    // Fetch daily change via spark (5d daily)
+    const dailyUrl = `https://corsproxy.io/?url=${encodeURIComponent(
       `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${syms}&range=5d&interval=1d`
     )}`;
-    const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
-    const d = await r.json();
-    const results = d?.spark?.result || [];
-
-    results.forEach(item => {
+    const dr = await fetch(dailyUrl, { signal: AbortSignal.timeout(10000) });
+    const dd = await dr.json();
+    (dd?.spark?.result || []).forEach(item => {
       const sym = item.symbol;
       const resp = item.response?.[0];
       const meta = resp?.meta || {};
-      const closes = resp?.indicators?.quote?.[0]?.close || [];
-      const timestamps = resp?.timestamp || [];
       overnightData[sym] = {
         price: meta.regularMarketPrice || meta.chartPreviousClose,
         prev:  meta.chartPreviousClose,
-        closes, timestamps,
+        closes: [], timestamps: [],
         chgPct: meta.regularMarketPrice && meta.chartPreviousClose
           ? (meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose * 100
           : 0
       };
     });
+
+    // Now fetch intraday hourly candles for sparklines
+    const intradayUrl = `https://corsproxy.io/?url=${encodeURIComponent(
+      `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${syms}&range=1d&interval=15m`
+    )}`;
+    const ir = await fetch(intradayUrl, { signal: AbortSignal.timeout(10000) });
+    const id = await ir.json();
+    (id?.spark?.result || []).forEach(item => {
+      const sym = item.symbol;
+      const resp = item.response?.[0];
+      const closes = resp?.indicators?.quote?.[0]?.close || [];
+      const timestamps = resp?.timestamp || [];
+      if (overnightData[sym]) {
+        overnightData[sym].closes = closes;
+        overnightData[sym].timestamps = timestamps;
+      }
+    });
   } catch(e) {
-    // Fallback: fetch individually via candles endpoint for key ones
     console.warn('Spark API failed, using fallback:', e.message);
     const fallback = [
-      {sym:'NQ=F',price:18420,chg:-1.2},{sym:'ES=F',price:5180,chg:-0.9},
-      {sym:'YM=F',price:38800,chg:-0.5},{sym:'GC=F',price:3185,chg:+0.4},
-      {sym:'CL=F',price:71.2,chg:-1.8},{sym:'BTC-USD',price:82400,chg:+2.1},
-      {sym:'ETH-USD',price:1780,chg:+1.4},{sym:'^AXJO',price:7820,chg:-0.3},
-      {sym:'EURUSD=X',price:1.0834,chg:-0.2},{sym:'DX-Y.NYB',price:104.2,chg:+0.3},
-      {sym:'^VIX',price:22.4,chg:+8.1},{sym:'RTY=F',price:1920,chg:-1.4},
+      {sym:'ES=F',price:5180,chg:-0.9},{sym:'YM=F',price:38800,chg:-0.5},
+      {sym:'GC=F',price:3185,chg:+0.4},{sym:'CL=F',price:71.2,chg:-1.8},
+      {sym:'BTC-USD',price:82400,chg:+2.1},{sym:'DX-Y.NYB',price:104.2,chg:+0.3},
     ];
     fallback.forEach(f => { overnightData[f.sym] = { price:f.price, prev: f.price/(1+f.chg/100), chgPct:f.chg, closes:[], timestamps:[] }; });
   }
@@ -5641,20 +5651,26 @@ function renderOvernightGrid() {
       : '—';
     const chgFmt = `${up?'+':''}${chg.toFixed(2)}%`;
 
-    // Mini sparkline from closes
+    // Intraday sparkline chart
     const closes = (d.closes || []).filter(c => c != null);
     let spark = '';
     if (closes.length >= 2) {
       const mn = Math.min(...closes), mx = Math.max(...closes);
       const range = mx - mn || 1;
-      const W = 100, H = 32;
+      const W = 120, H = 40;
       const pts = closes.map((c,i) =>
         `${(i/(closes.length-1)*W).toFixed(1)},${(H - (c-mn)/range*H).toFixed(1)}`
       ).join(' ');
+      // Fill area under line
+      const fillPts = pts + ` ${W},${H} 0,${H}`;
       const strokeCol = up ? '#00d4a8' : '#ff4466';
-      spark = `<svg class="ovn-spark" viewBox="0 0 100 32" preserveAspectRatio="none">
-        <polyline points="${pts}" fill="none" stroke="${strokeCol}" stroke-width="1.5" stroke-linejoin="round" opacity="0.9"/>
-        <polyline points="${pts}" fill="none" stroke="${strokeCol}" stroke-width="6" opacity="0.06" stroke-linejoin="round"/>
+      const fillCol = up ? 'rgba(0,212,168,0.12)' : 'rgba(255,68,102,0.12)';
+      // Open price reference line (first close)
+      const openY = (H - (closes[0]-mn)/range*H).toFixed(1);
+      spark = `<svg style="width:100%;height:44px;margin-top:6px;display:block" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <line x1="0" y1="${openY}" x2="${W}" y2="${openY}" stroke="${strokeCol}" stroke-width="0.4" stroke-dasharray="2,2" opacity="0.4"/>
+        <polygon points="${fillPts}" fill="${fillCol}"/>
+        <polyline points="${pts}" fill="none" stroke="${strokeCol}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
       </svg>`;
     }
 
@@ -5662,8 +5678,8 @@ function renderOvernightGrid() {
       <div class="ovn-sym">${inst.label}</div>
       <div class="ovn-name">${inst.name}</div>
       <div class="ovn-price">${priceFmt}</div>
-      <div class="ovn-chg" style="color:${col}">${chgFmt}</div>
       ${spark}
+      <div class="ovn-chg" style="color:${col};margin-top:4px">${chgFmt}</div>
     </div>`;
   }).join('');
 }
