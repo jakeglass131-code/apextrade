@@ -1230,27 +1230,20 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 <!-- ═══════════════ PAGE: FUTURES ═══════════════ -->
 <div class="page" id="page-futures">
   <div class="ph">
-    <div><div class="ph-t">Intelligence</div><div class="ph-s">Futures &amp; FX · Multi-indicator confidence · CRT &amp; Bullish Scanner</div></div>
+    <div><div class="ph-t">Intelligence</div><div class="ph-s">Futures &amp; FX · Multi-indicator confidence · Confidence scores &amp; CRT Scanner</div></div>
     <div class="ph-r"><button class="btn" onclick="requestPushPermission()">🔔 Alerts</button></div>
   </div>
   <!-- Sub-tabs -->
   <div style="display:flex;align-items:center;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0;padding:0 20px">
     <button class="smkt active" id="fut-tab-intel"   onclick="setFutTab('intel')"   style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:700">📊 Intelligence</button>
     <button class="smkt"        id="fut-tab-crt"     onclick="setFutTab('crt')"     style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600">⚡ CRT Scanner</button>
-    <button class="smkt"        id="fut-tab-bullish" onclick="setFutTab('bullish')"  style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600">📈 Bullish</button>
+    
     <div style="flex:1"></div>
     <div id="fut-ctrl-intel" style="display:none"></div>
     <div id="fut-ctrl-crt" style="display:none;align-items:center;gap:8px;padding:6px 0">
       <button class="btn g" onclick="runFutCrtScan()" style="font-size:11px">⚡ Scan Futures</button>
     </div>
-    <div id="fut-ctrl-bullish" style="display:none;align-items:center;gap:8px;padding:6px 0">
-      <select id="fut-bull-conf" style="font-size:11px;padding:4px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
-        <option value="50">50%+</option><option value="60" selected>60%+</option>
-        <option value="70">70%+</option><option value="80">80%+</option>
-      </select>
-      <button class="btn g" onclick="runFutBullishScan()" style="font-size:11px">📈 Scan</button>
-    </div>
-  </div>
+    
   <!-- Stat strip -->
   <div id="fut-stats" style="display:none;background:var(--bg4);border-bottom:1px solid var(--border2);padding:5px 20px;flex-shrink:0;gap:20px;align-items:center">
     <div style="font-size:11px;color:var(--text3)">Signals <span id="fut-stat-total" style="color:var(--text);font-weight:700">0</span></div>
@@ -1260,9 +1253,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <div style="font-size:11px;color:var(--text3)">Updated <span id="fut-stat-time" style="color:var(--text2)">—</span></div>
   </div>
   <!-- Momentum bar: futures/indices -->
-  <div id="fut-momentum-bar" class="momentum-bar"></div>
   <!-- Market regime banner -->
-  <div id="fut-regime-banner" style="display:none;padding:6px 20px;font-size:11px;font-family:var(--fm);letter-spacing:.03em;border-bottom:1px solid var(--border2)"></div>
   <!-- INTELLIGENCE panel — Dovvy hybrid trading style -->
   <div id="fut-panel-intel" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
 
@@ -1308,21 +1299,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
           <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:8px">⚡ Futures CRT Scanner</div>
           <div style="font-size:12px;margin-bottom:20px">Scans NQ, ES, Gold, Crude and major FX pairs</div>
           <button class="btn g" onclick="runFutCrtScan()" style="font-size:12px;padding:9px 24px">Scan Futures &amp; FX</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <!-- BULLISH SCANNER panel -->
-  <div id="fut-panel-bullish" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-    <div style="display:grid;grid-template-columns:110px 80px 80px 1fr 90px;gap:8px;padding:7px 20px;background:var(--bg5);border-bottom:1px solid var(--border2);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;flex-shrink:0">
-      <div>Instrument</div><div>Price</div><div>Change</div><div>Signals</div><div style="text-align:right">Conf</div>
-    </div>
-    <div class="scroll" style="padding:0">
-      <div id="fut-bull-body">
-        <div style="padding:48px 24px;text-align:center;color:var(--text3)">
-          <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">📈 Futures Bullish Scanner</div>
-          <div style="font-size:11px;margin-bottom:18px">Finds bullish setups across NQ, ES, Gold, Crude, FX</div>
-          <button class="btn g" onclick="runFutBullishScan()" style="font-size:12px;padding:9px 24px">Scan Futures for Bullish Setups</button>
         </div>
       </div>
     </div>
@@ -5896,7 +5872,7 @@ function renderBehavioralHeatmap() {
 // ASX PAGE
 // ══════════════════════════════════════════
 function setAsxTab(tab) {
-  ['intel','crt','bullish'].forEach(t => {
+  ['intel','crt'].forEach(t => {
     const btn   = document.getElementById('asx-tab-' + t);
     const panel = document.getElementById('asx-panel-' + t);
     const ctrl  = document.getElementById('asx-ctrl-' + t);
@@ -6551,6 +6527,14 @@ function startAsxCrtScan() {
 const FUND_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions/fundamentals';
 let fundData = [];
 let fundFilter = 'all';
+function filterFundamentals(f) {
+  fundFilter = f;
+  var wrap = document.getElementById('asx-panel-intel');
+  if (wrap) wrap.querySelectorAll('.filter-pill').forEach(function(b) {
+    b.classList.toggle('active', (b.getAttribute('onclick')||'').indexOf("'" + f + "'") > -1);
+  });
+  renderFundamentals();
+}
 
 // ── ASX 100 stock list for value scan ─────────────────────────────────────────
 const ASX_SCAN_LIST = [
@@ -7146,6 +7130,143 @@ const SMT_STRONG_PAIRS = [
   {t1:'SKC',t2:'JHX',sector:'Steel',strength:'strong'},{t1:'IEL',t2:'SEK',sector:'Education',strength:'strong'},{t1:'IEL',t2:'REA',sector:'Education',strength:'strong'},
   {t1:'SEK',t2:'REA',sector:'Education',strength:'strong'},{t1:'IEL',t2:'NAB',sector:'Education',strength:'strong'},{t1:'IDP',t2:'IEL',sector:'Education',strength:'strong'},
   {t1:'IDP',t2:'SEK',sector:'Education',strength:'strong'},{t1:'IDP',t2:'REA',sector:'Education',strength:'strong'},
+,
+  // ── Expansion Pairs (Strong) ──
+  {t1:'PDN',t2:'PEN',sector:'Uranium',strength:'strong'},{t1:'PDN',t2:'GTR',sector:'Uranium',strength:'strong'},{t1:'PDN',t2:'ERA',sector:'Uranium',strength:'strong'},{t1:'PDN',t2:'MEY',sector:'Uranium',strength:'strong'},
+  {t1:'PDN',t2:'VMY',sector:'Uranium',strength:'strong'},{t1:'PDN',t2:'DEV',sector:'Uranium',strength:'strong'},{t1:'PDN',t2:'EL8',sector:'Uranium',strength:'strong'},{t1:'PDN',t2:'ACB',sector:'Uranium',strength:'strong'},
+  {t1:'BOE',t2:'PEN',sector:'Uranium',strength:'strong'},{t1:'BOE',t2:'GTR',sector:'Uranium',strength:'strong'},{t1:'BOE',t2:'ERA',sector:'Uranium',strength:'strong'},{t1:'BOE',t2:'MEY',sector:'Uranium',strength:'strong'},
+  {t1:'BOE',t2:'VMY',sector:'Uranium',strength:'strong'},{t1:'BOE',t2:'DEV',sector:'Uranium',strength:'strong'},{t1:'BOE',t2:'EL8',sector:'Uranium',strength:'strong'},{t1:'BOE',t2:'ACB',sector:'Uranium',strength:'strong'},
+  {t1:'LOT',t2:'GTR',sector:'Uranium',strength:'strong'},{t1:'LOT',t2:'ERA',sector:'Uranium',strength:'strong'},{t1:'LOT',t2:'MEY',sector:'Uranium',strength:'strong'},{t1:'LOT',t2:'VMY',sector:'Uranium',strength:'strong'},
+  {t1:'LOT',t2:'DEV',sector:'Uranium',strength:'strong'},{t1:'LOT',t2:'EL8',sector:'Uranium',strength:'strong'},{t1:'LOT',t2:'TOE',sector:'Uranium',strength:'strong'},{t1:'LOT',t2:'ACB',sector:'Uranium',strength:'strong'},
+  {t1:'PEN',t2:'BMN',sector:'Uranium',strength:'strong'},{t1:'PEN',t2:'DYL',sector:'Uranium',strength:'strong'},{t1:'PEN',t2:'NXG',sector:'Uranium',strength:'strong'},{t1:'PEN',t2:'GTR',sector:'Uranium',strength:'strong'},
+  {t1:'PEN',t2:'ERA',sector:'Uranium',strength:'strong'},{t1:'PEN',t2:'MEY',sector:'Uranium',strength:'strong'},{t1:'PEN',t2:'VMY',sector:'Uranium',strength:'strong'},{t1:'PEN',t2:'DEV',sector:'Uranium',strength:'strong'},
+  {t1:'PEN',t2:'EL8',sector:'Uranium',strength:'strong'},{t1:'PEN',t2:'ACB',sector:'Uranium',strength:'strong'},{t1:'BMN',t2:'NXG',sector:'Uranium',strength:'strong'},{t1:'BMN',t2:'GTR',sector:'Uranium',strength:'strong'},
+  {t1:'BMN',t2:'ERA',sector:'Uranium',strength:'strong'},{t1:'BMN',t2:'MEY',sector:'Uranium',strength:'strong'},{t1:'BMN',t2:'VMY',sector:'Uranium',strength:'strong'},{t1:'BMN',t2:'EL8',sector:'Uranium',strength:'strong'},
+  {t1:'BMN',t2:'TOE',sector:'Uranium',strength:'strong'},{t1:'BMN',t2:'ACB',sector:'Uranium',strength:'strong'},{t1:'DYL',t2:'GTR',sector:'Uranium',strength:'strong'},{t1:'DYL',t2:'ERA',sector:'Uranium',strength:'strong'},
+  {t1:'DYL',t2:'MEY',sector:'Uranium',strength:'strong'},{t1:'DYL',t2:'VMY',sector:'Uranium',strength:'strong'},{t1:'DYL',t2:'DEV',sector:'Uranium',strength:'strong'},{t1:'DYL',t2:'EL8',sector:'Uranium',strength:'strong'},
+  {t1:'DYL',t2:'TOE',sector:'Uranium',strength:'strong'},{t1:'DYL',t2:'ACB',sector:'Uranium',strength:'strong'},{t1:'AGE',t2:'NXG',sector:'Uranium',strength:'strong'},{t1:'AGE',t2:'GTR',sector:'Uranium',strength:'strong'},
+  {t1:'AGE',t2:'ERA',sector:'Uranium',strength:'strong'},{t1:'AGE',t2:'MEY',sector:'Uranium',strength:'strong'},{t1:'AGE',t2:'VMY',sector:'Uranium',strength:'strong'},{t1:'AGE',t2:'DEV',sector:'Uranium',strength:'strong'},
+  {t1:'LYC',t2:'VML',sector:'RareEarth',strength:'strong'},{t1:'LYC',t2:'ASM',sector:'RareEarth',strength:'strong'},{t1:'LYC',t2:'HAS',sector:'RareEarth',strength:'strong'},{t1:'LYC',t2:'ARR',sector:'RareEarth',strength:'strong'},
+  {t1:'LYC',t2:'REE',sector:'RareEarth',strength:'strong'},{t1:'ARU',t2:'ILU',sector:'RareEarth',strength:'strong'},{t1:'ARU',t2:'VML',sector:'RareEarth',strength:'strong'},{t1:'ARU',t2:'ASM',sector:'RareEarth',strength:'strong'},
+  {t1:'ARU',t2:'HAS',sector:'RareEarth',strength:'strong'},{t1:'ARU',t2:'ABX',sector:'RareEarth',strength:'strong'},{t1:'ARU',t2:'ARR',sector:'RareEarth',strength:'strong'},{t1:'ARU',t2:'REE',sector:'RareEarth',strength:'strong'},
+  {t1:'ILU',t2:'VML',sector:'RareEarth',strength:'strong'},{t1:'ILU',t2:'ASM',sector:'RareEarth',strength:'strong'},{t1:'ILU',t2:'HAS',sector:'RareEarth',strength:'strong'},{t1:'ILU',t2:'ARR',sector:'RareEarth',strength:'strong'},
+  {t1:'ILU',t2:'REE',sector:'RareEarth',strength:'strong'},{t1:'VML',t2:'ASM',sector:'RareEarth',strength:'strong'},{t1:'VML',t2:'NTU',sector:'RareEarth',strength:'strong'},{t1:'VML',t2:'HAS',sector:'RareEarth',strength:'strong'},
+  {t1:'VML',t2:'ABX',sector:'RareEarth',strength:'strong'},{t1:'VML',t2:'ARR',sector:'RareEarth',strength:'strong'},{t1:'WDS',t2:'CVN',sector:'OilGas',strength:'strong'},{t1:'WDS',t2:'COE',sector:'OilGas',strength:'strong'},
+  {t1:'WDS',t2:'BRU',sector:'OilGas',strength:'strong'},{t1:'WDS',t2:'FAR',sector:'OilGas',strength:'strong'},{t1:'WDS',t2:'STX',sector:'OilGas',strength:'strong'},{t1:'WDS',t2:'EMR',sector:'OilGas',strength:'strong'},
+  {t1:'WDS',t2:'WGR',sector:'OilGas',strength:'strong'},{t1:'WDS',t2:'MAY',sector:'OilGas',strength:'strong'},{t1:'STO',t2:'CVN',sector:'OilGas',strength:'strong'},{t1:'STO',t2:'COE',sector:'OilGas',strength:'strong'},
+  {t1:'STO',t2:'BRU',sector:'OilGas',strength:'strong'},{t1:'STO',t2:'FAR',sector:'OilGas',strength:'strong'},{t1:'STO',t2:'STX',sector:'OilGas',strength:'strong'},{t1:'STO',t2:'EMR',sector:'OilGas',strength:'strong'},
+  {t1:'STO',t2:'WGR',sector:'OilGas',strength:'strong'},{t1:'STO',t2:'MAY',sector:'OilGas',strength:'strong'},{t1:'BPT',t2:'CVN',sector:'OilGas',strength:'strong'},{t1:'BPT',t2:'COE',sector:'OilGas',strength:'strong'},
+  {t1:'BPT',t2:'FAR',sector:'OilGas',strength:'strong'},{t1:'BPT',t2:'STX',sector:'OilGas',strength:'strong'},{t1:'BPT',t2:'EMR',sector:'OilGas',strength:'strong'},{t1:'BPT',t2:'WGR',sector:'OilGas',strength:'strong'},
+  {t1:'BPT',t2:'MAY',sector:'OilGas',strength:'strong'},{t1:'KAR',t2:'COE',sector:'OilGas',strength:'strong'},{t1:'KAR',t2:'FAR',sector:'OilGas',strength:'strong'},{t1:'KAR',t2:'STX',sector:'OilGas',strength:'strong'},
+  {t1:'KAR',t2:'EMR',sector:'OilGas',strength:'strong'},{t1:'KAR',t2:'WGR',sector:'OilGas',strength:'strong'},{t1:'KAR',t2:'MAY',sector:'OilGas',strength:'strong'},{t1:'CVN',t2:'COE',sector:'OilGas',strength:'strong'},
+  {t1:'CVN',t2:'BRU',sector:'OilGas',strength:'strong'},{t1:'CVN',t2:'STX',sector:'OilGas',strength:'strong'},{t1:'CVN',t2:'EMR',sector:'OilGas',strength:'strong'},{t1:'XRO',t2:'APX',sector:'TechCloud',strength:'strong'},
+  {t1:'XRO',t2:'AD8',sector:'TechCloud',strength:'strong'},{t1:'XRO',t2:'NXT',sector:'TechCloud',strength:'strong'},{t1:'XRO',t2:'MP1',sector:'TechCloud',strength:'strong'},{t1:'XRO',t2:'BRN',sector:'TechCloud',strength:'strong'},
+  {t1:'XRO',t2:'NVX',sector:'TechCloud',strength:'strong'},{t1:'XRO',t2:'TLX',sector:'TechCloud',strength:'strong'},{t1:'XRO',t2:'NEA',sector:'TechCloud',strength:'strong'},{t1:'XRO',t2:'PME',sector:'TechCloud',strength:'strong'},
+  {t1:'WTC',t2:'APX',sector:'TechCloud',strength:'strong'},{t1:'WTC',t2:'AD8',sector:'TechCloud',strength:'strong'},{t1:'WTC',t2:'MP1',sector:'TechCloud',strength:'strong'},{t1:'WTC',t2:'BRN',sector:'TechCloud',strength:'strong'},
+  {t1:'WTC',t2:'NVX',sector:'TechCloud',strength:'strong'},{t1:'WTC',t2:'SDR',sector:'TechCloud',strength:'strong'},{t1:'WTC',t2:'TLX',sector:'TechCloud',strength:'strong'},{t1:'WTC',t2:'NEA',sector:'TechCloud',strength:'strong'},
+  {t1:'WTC',t2:'PME',sector:'TechCloud',strength:'strong'},{t1:'TNE',t2:'ALU',sector:'TechCloud',strength:'strong'},{t1:'TNE',t2:'APX',sector:'TechCloud',strength:'strong'},{t1:'TNE',t2:'AD8',sector:'TechCloud',strength:'strong'},
+  {t1:'TNE',t2:'NXT',sector:'TechCloud',strength:'strong'},{t1:'TNE',t2:'MP1',sector:'TechCloud',strength:'strong'},{t1:'TNE',t2:'BRN',sector:'TechCloud',strength:'strong'},{t1:'TNE',t2:'NVX',sector:'TechCloud',strength:'strong'},
+  {t1:'TNE',t2:'SDR',sector:'TechCloud',strength:'strong'},{t1:'TNE',t2:'TLX',sector:'TechCloud',strength:'strong'},{t1:'TNE',t2:'NEA',sector:'TechCloud',strength:'strong'},{t1:'ALU',t2:'APX',sector:'TechCloud',strength:'strong'},
+  {t1:'ALU',t2:'AD8',sector:'TechCloud',strength:'strong'},{t1:'ALU',t2:'NXT',sector:'TechCloud',strength:'strong'},{t1:'ALU',t2:'MP1',sector:'TechCloud',strength:'strong'},{t1:'ALU',t2:'BRN',sector:'TechCloud',strength:'strong'},
+  {t1:'ALU',t2:'NVX',sector:'TechCloud',strength:'strong'},{t1:'ALU',t2:'SDR',sector:'TechCloud',strength:'strong'},{t1:'ALU',t2:'TLX',sector:'TechCloud',strength:'strong'},{t1:'ALU',t2:'NEA',sector:'TechCloud',strength:'strong'},
+  {t1:'ALU',t2:'PME',sector:'TechCloud',strength:'strong'},{t1:'APX',t2:'AD8',sector:'TechCloud',strength:'strong'},{t1:'APX',t2:'NXT',sector:'TechCloud',strength:'strong'},{t1:'APX',t2:'MP1',sector:'TechCloud',strength:'strong'},
+  {t1:'APX',t2:'NVX',sector:'TechCloud',strength:'strong'},{t1:'APX',t2:'SDR',sector:'TechCloud',strength:'strong'},{t1:'APX',t2:'TLX',sector:'TechCloud',strength:'strong'},{t1:'APX',t2:'NEA',sector:'TechCloud',strength:'strong'},
+  {t1:'APX',t2:'PME',sector:'TechCloud',strength:'strong'},{t1:'CBA',t2:'MQG',sector:'BanksWealth',strength:'strong'},{t1:'CBA',t2:'ASX',sector:'BanksWealth',strength:'strong'},{t1:'CBA',t2:'HUB',sector:'BanksWealth',strength:'strong'},
+  {t1:'CBA',t2:'SQ2',sector:'BanksWealth',strength:'strong'},{t1:'CBA',t2:'TYR',sector:'BanksWealth',strength:'strong'},{t1:'CBA',t2:'PPT',sector:'BanksWealth',strength:'strong'},{t1:'NAB',t2:'BOQ',sector:'BanksWealth',strength:'strong'},
+  {t1:'NAB',t2:'BEN',sector:'BanksWealth',strength:'strong'},{t1:'NAB',t2:'MQG',sector:'BanksWealth',strength:'strong'},{t1:'NAB',t2:'ASX',sector:'BanksWealth',strength:'strong'},{t1:'NAB',t2:'HUB',sector:'BanksWealth',strength:'strong'},
+  {t1:'NAB',t2:'SQ2',sector:'BanksWealth',strength:'strong'},{t1:'NAB',t2:'TYR',sector:'BanksWealth',strength:'strong'},{t1:'NAB',t2:'PPT',sector:'BanksWealth',strength:'strong'},{t1:'WBC',t2:'BOQ',sector:'BanksWealth',strength:'strong'},
+  {t1:'WBC',t2:'BEN',sector:'BanksWealth',strength:'strong'},{t1:'WBC',t2:'MQG',sector:'BanksWealth',strength:'strong'},{t1:'WBC',t2:'ASX',sector:'BanksWealth',strength:'strong'},{t1:'WBC',t2:'HUB',sector:'BanksWealth',strength:'strong'},
+  {t1:'WBC',t2:'SQ2',sector:'BanksWealth',strength:'strong'},{t1:'WBC',t2:'TYR',sector:'BanksWealth',strength:'strong'},{t1:'WBC',t2:'PPT',sector:'BanksWealth',strength:'strong'},{t1:'ANZ',t2:'BOQ',sector:'BanksWealth',strength:'strong'},
+  {t1:'ANZ',t2:'BEN',sector:'BanksWealth',strength:'strong'},{t1:'ANZ',t2:'MQG',sector:'BanksWealth',strength:'strong'},{t1:'ANZ',t2:'ASX',sector:'BanksWealth',strength:'strong'},{t1:'ANZ',t2:'HUB',sector:'BanksWealth',strength:'strong'},
+  {t1:'ANZ',t2:'SQ2',sector:'BanksWealth',strength:'strong'},{t1:'ANZ',t2:'TYR',sector:'BanksWealth',strength:'strong'},{t1:'ANZ',t2:'PPT',sector:'BanksWealth',strength:'strong'},{t1:'BOQ',t2:'MQG',sector:'BanksWealth',strength:'strong'},
+  {t1:'JBH',t2:'AX1',sector:'RetailConsumer',strength:'strong'},{t1:'JBH',t2:'PMV',sector:'RetailConsumer',strength:'strong'},{t1:'JBH',t2:'LOV',sector:'RetailConsumer',strength:'strong'},{t1:'JBH',t2:'KMD',sector:'RetailConsumer',strength:'strong'},
+  {t1:'JBH',t2:'MTS',sector:'RetailConsumer',strength:'strong'},{t1:'JBH',t2:'BIG',sector:'RetailConsumer',strength:'strong'},{t1:'JBH',t2:'UNI',sector:'RetailConsumer',strength:'strong'},{t1:'HVN',t2:'AX1',sector:'RetailConsumer',strength:'strong'},
+  {t1:'HVN',t2:'PMV',sector:'RetailConsumer',strength:'strong'},{t1:'HVN',t2:'LOV',sector:'RetailConsumer',strength:'strong'},{t1:'HVN',t2:'SUL',sector:'RetailConsumer',strength:'strong'},{t1:'HVN',t2:'DMP',sector:'RetailConsumer',strength:'strong'},
+  {t1:'HVN',t2:'KMD',sector:'RetailConsumer',strength:'strong'},{t1:'HVN',t2:'WES',sector:'RetailConsumer',strength:'strong'},{t1:'HVN',t2:'COL',sector:'RetailConsumer',strength:'strong'},{t1:'HVN',t2:'MTS',sector:'RetailConsumer',strength:'strong'},
+  {t1:'HVN',t2:'BIG',sector:'RetailConsumer',strength:'strong'},{t1:'HVN',t2:'UNI',sector:'RetailConsumer',strength:'strong'},{t1:'NCK',t2:'PMV',sector:'RetailConsumer',strength:'strong'},{t1:'NCK',t2:'LOV',sector:'RetailConsumer',strength:'strong'},
+  {t1:'NCK',t2:'DMP',sector:'RetailConsumer',strength:'strong'},{t1:'NCK',t2:'KMD',sector:'RetailConsumer',strength:'strong'},{t1:'NCK',t2:'WES',sector:'RetailConsumer',strength:'strong'},{t1:'NCK',t2:'COL',sector:'RetailConsumer',strength:'strong'},
+  {t1:'NCK',t2:'MTS',sector:'RetailConsumer',strength:'strong'},{t1:'NCK',t2:'UNI',sector:'RetailConsumer',strength:'strong'},{t1:'AX1',t2:'LOV',sector:'RetailConsumer',strength:'strong'},{t1:'AX1',t2:'SUL',sector:'RetailConsumer',strength:'strong'},
+  {t1:'AX1',t2:'DMP',sector:'RetailConsumer',strength:'strong'},{t1:'AX1',t2:'KMD',sector:'RetailConsumer',strength:'strong'},{t1:'AX1',t2:'WES',sector:'RetailConsumer',strength:'strong'},{t1:'AX1',t2:'COL',sector:'RetailConsumer',strength:'strong'},
+  {t1:'AX1',t2:'MTS',sector:'RetailConsumer',strength:'strong'},{t1:'AX1',t2:'BIG',sector:'RetailConsumer',strength:'strong'},{t1:'AX1',t2:'UNI',sector:'RetailConsumer',strength:'strong'},{t1:'PMV',t2:'SUL',sector:'RetailConsumer',strength:'strong'},
+  {t1:'PMV',t2:'DMP',sector:'RetailConsumer',strength:'strong'},{t1:'PMV',t2:'WES',sector:'RetailConsumer',strength:'strong'},{t1:'PMV',t2:'COL',sector:'RetailConsumer',strength:'strong'},{t1:'PMV',t2:'MTS',sector:'RetailConsumer',strength:'strong'},
+  {t1:'PMV',t2:'BIG',sector:'RetailConsumer',strength:'strong'},{t1:'PMV',t2:'UNI',sector:'RetailConsumer',strength:'strong'},{t1:'LOV',t2:'SUL',sector:'RetailConsumer',strength:'strong'},{t1:'ALL',t2:'SGR',sector:'GamingLeisure',strength:'strong'},
+  {t1:'ALL',t2:'BET',sector:'GamingLeisure',strength:'strong'},{t1:'ALL',t2:'STG',sector:'GamingLeisure',strength:'strong'},{t1:'ALL',t2:'PBH',sector:'GamingLeisure',strength:'strong'},{t1:'TAH',t2:'SGR',sector:'GamingLeisure',strength:'strong'},
+  {t1:'TAH',t2:'BET',sector:'GamingLeisure',strength:'strong'},{t1:'TAH',t2:'STG',sector:'GamingLeisure',strength:'strong'},{t1:'TAH',t2:'PBH',sector:'GamingLeisure',strength:'strong'},{t1:'IPL',t2:'ORI',sector:'ChemicalsExplosives',strength:'strong'},
+  {t1:'IPL',t2:'NUF',sector:'ChemicalsExplosives',strength:'strong'},{t1:'IPL',t2:'DGL',sector:'ChemicalsExplosives',strength:'strong'},{t1:'IPL',t2:'PPG',sector:'ChemicalsExplosives',strength:'strong'},{t1:'IPL',t2:'BXB',sector:'ChemicalsExplosives',strength:'strong'},
+  {t1:'ORI',t2:'NUF',sector:'ChemicalsExplosives',strength:'strong'},{t1:'ORI',t2:'DGL',sector:'ChemicalsExplosives',strength:'strong'},{t1:'ORI',t2:'PPG',sector:'ChemicalsExplosives',strength:'strong'},{t1:'TCL',t2:'ALX',sector:'InfrastructureToll',strength:'strong'},
+  {t1:'TCL',t2:'SKI',sector:'InfrastructureToll',strength:'strong'},{t1:'APA',t2:'QUB',sector:'InfrastructureToll',strength:'strong'},{t1:'APA',t2:'AZJ',sector:'InfrastructureToll',strength:'strong'},{t1:'APA',t2:'ALX',sector:'InfrastructureToll',strength:'strong'},
+  {t1:'APA',t2:'SKI',sector:'InfrastructureToll',strength:'strong'},{t1:'AST',t2:'QUB',sector:'InfrastructureToll',strength:'strong'},{t1:'AST',t2:'AZJ',sector:'InfrastructureToll',strength:'strong'},{t1:'AST',t2:'ALX',sector:'InfrastructureToll',strength:'strong'},
+  {t1:'MFG',t2:'PDL',sector:'WealthAssetMgmt',strength:'strong'},{t1:'MFG',t2:'BVS',sector:'WealthAssetMgmt',strength:'strong'},{t1:'MFG',t2:'PPS',sector:'WealthAssetMgmt',strength:'strong'},{t1:'PPT',t2:'BVS',sector:'WealthAssetMgmt',strength:'strong'},
+  {t1:'PPT',t2:'PPS',sector:'WealthAssetMgmt',strength:'strong'},{t1:'PTM',t2:'GQG',sector:'WealthAssetMgmt',strength:'strong'},{t1:'PTM',t2:'JHG',sector:'WealthAssetMgmt',strength:'strong'},{t1:'PTM',t2:'CGF',sector:'WealthAssetMgmt',strength:'strong'},
+  {t1:'PTM',t2:'PDL',sector:'WealthAssetMgmt',strength:'strong'},{t1:'PTM',t2:'NWL',sector:'WealthAssetMgmt',strength:'strong'},{t1:'PTM',t2:'BVS',sector:'WealthAssetMgmt',strength:'strong'},{t1:'PTM',t2:'PPS',sector:'WealthAssetMgmt',strength:'strong'},
+  {t1:'GQG',t2:'CGF',sector:'WealthAssetMgmt',strength:'strong'},{t1:'GQG',t2:'PDL',sector:'WealthAssetMgmt',strength:'strong'},{t1:'GQG',t2:'NWL',sector:'WealthAssetMgmt',strength:'strong'},{t1:'GQG',t2:'BVS',sector:'WealthAssetMgmt',strength:'strong'},
+  {t1:'GQG',t2:'PPS',sector:'WealthAssetMgmt',strength:'strong'},{t1:'JHG',t2:'CGF',sector:'WealthAssetMgmt',strength:'strong'},{t1:'NCM',t2:'DEG',sector:'GoldMiners',strength:'strong'},{t1:'NCM',t2:'WAF',sector:'GoldMiners',strength:'strong'},
+  {t1:'NCM',t2:'RRL',sector:'GoldMiners',strength:'strong'},{t1:'NCM',t2:'SBM',sector:'GoldMiners',strength:'strong'},{t1:'NCM',t2:'PRU',sector:'GoldMiners',strength:'strong'},{t1:'NCM',t2:'RSG',sector:'GoldMiners',strength:'strong'},
+  {t1:'NCM',t2:'OGC',sector:'GoldMiners',strength:'strong'},{t1:'NCM',t2:'SAR',sector:'GoldMiners',strength:'strong'},{t1:'NCM',t2:'SLR',sector:'GoldMiners',strength:'strong'},{t1:'NCM',t2:'CYL',sector:'GoldMiners',strength:'strong'},
+  {t1:'NCM',t2:'BGL',sector:'GoldMiners',strength:'strong'},{t1:'NCM',t2:'GOR',sector:'GoldMiners',strength:'strong'},{t1:'NCM',t2:'MML',sector:'GoldMiners',strength:'strong'},{t1:'NCM',t2:'RMS',sector:'GoldMiners',strength:'strong'},
+  {t1:'NCM',t2:'RED',sector:'GoldMiners',strength:'strong'},{t1:'NCM',t2:'CMR',sector:'GoldMiners',strength:'strong'},{t1:'NST',t2:'DEG',sector:'GoldMiners',strength:'strong'},{t1:'NST',t2:'WAF',sector:'GoldMiners',strength:'strong'},
+  {t1:'NST',t2:'SBM',sector:'GoldMiners',strength:'strong'},{t1:'NST',t2:'RSG',sector:'GoldMiners',strength:'strong'},{t1:'NST',t2:'OGC',sector:'GoldMiners',strength:'strong'},{t1:'NST',t2:'SAR',sector:'GoldMiners',strength:'strong'},
+  {t1:'NST',t2:'SLR',sector:'GoldMiners',strength:'strong'},{t1:'NST',t2:'CYL',sector:'GoldMiners',strength:'strong'},{t1:'NST',t2:'BGL',sector:'GoldMiners',strength:'strong'},{t1:'NST',t2:'GOR',sector:'GoldMiners',strength:'strong'},
+  {t1:'NST',t2:'MML',sector:'GoldMiners',strength:'strong'},{t1:'NST',t2:'RED',sector:'GoldMiners',strength:'strong'},{t1:'NST',t2:'CMR',sector:'GoldMiners',strength:'strong'},{t1:'EVN',t2:'WAF',sector:'GoldMiners',strength:'strong'},
+  {t1:'EVN',t2:'RRL',sector:'GoldMiners',strength:'strong'},{t1:'EVN',t2:'SBM',sector:'GoldMiners',strength:'strong'},{t1:'EVN',t2:'PRU',sector:'GoldMiners',strength:'strong'},{t1:'EVN',t2:'RSG',sector:'GoldMiners',strength:'strong'},
+  {t1:'EVN',t2:'OGC',sector:'GoldMiners',strength:'strong'},{t1:'EVN',t2:'SAR',sector:'GoldMiners',strength:'strong'},{t1:'EVN',t2:'SLR',sector:'GoldMiners',strength:'strong'},{t1:'EVN',t2:'CYL',sector:'GoldMiners',strength:'strong'},
+  {t1:'EVN',t2:'BGL',sector:'GoldMiners',strength:'strong'},{t1:'EVN',t2:'GOR',sector:'GoldMiners',strength:'strong'},{t1:'EVN',t2:'MML',sector:'GoldMiners',strength:'strong'},{t1:'EVN',t2:'RMS',sector:'GoldMiners',strength:'strong'},
+  {t1:'EVN',t2:'RED',sector:'GoldMiners',strength:'strong'},{t1:'EVN',t2:'CMR',sector:'GoldMiners',strength:'strong'},{t1:'DEG',t2:'WAF',sector:'GoldMiners',strength:'strong'},{t1:'DEG',t2:'RRL',sector:'GoldMiners',strength:'strong'},
+  {t1:'DEG',t2:'SBM',sector:'GoldMiners',strength:'strong'},{t1:'DEG',t2:'PRU',sector:'GoldMiners',strength:'strong'},{t1:'DEG',t2:'RSG',sector:'GoldMiners',strength:'strong'},{t1:'DEG',t2:'OGC',sector:'GoldMiners',strength:'strong'},
+  {t1:'DEG',t2:'SAR',sector:'GoldMiners',strength:'strong'},{t1:'DEG',t2:'SLR',sector:'GoldMiners',strength:'strong'},{t1:'DEG',t2:'CYL',sector:'GoldMiners',strength:'strong'},{t1:'DEG',t2:'BGL',sector:'GoldMiners',strength:'strong'},
+  {t1:'DEG',t2:'GOR',sector:'GoldMiners',strength:'strong'},{t1:'DEG',t2:'MML',sector:'GoldMiners',strength:'strong'},{t1:'DEG',t2:'RED',sector:'GoldMiners',strength:'strong'},{t1:'DEG',t2:'CMR',sector:'GoldMiners',strength:'strong'},
+  {t1:'WAF',t2:'RRL',sector:'GoldMiners',strength:'strong'},{t1:'WAF',t2:'SBM',sector:'GoldMiners',strength:'strong'},{t1:'WAF',t2:'PRU',sector:'GoldMiners',strength:'strong'},{t1:'WAF',t2:'RSG',sector:'GoldMiners',strength:'strong'},
+  {t1:'WAF',t2:'OGC',sector:'GoldMiners',strength:'strong'},{t1:'WAF',t2:'SAR',sector:'GoldMiners',strength:'strong'},{t1:'WAF',t2:'SLR',sector:'GoldMiners',strength:'strong'},{t1:'WAF',t2:'CYL',sector:'GoldMiners',strength:'strong'},
+  {t1:'WAF',t2:'BGL',sector:'GoldMiners',strength:'strong'},{t1:'WAF',t2:'GOR',sector:'GoldMiners',strength:'strong'},{t1:'WAF',t2:'MML',sector:'GoldMiners',strength:'strong'},{t1:'WAF',t2:'RMS',sector:'GoldMiners',strength:'strong'},
+  {t1:'WAF',t2:'RED',sector:'GoldMiners',strength:'strong'},{t1:'WAF',t2:'CMR',sector:'GoldMiners',strength:'strong'},{t1:'RRL',t2:'SBM',sector:'GoldMiners',strength:'strong'},{t1:'RRL',t2:'PRU',sector:'GoldMiners',strength:'strong'},
+  {t1:'RRL',t2:'RSG',sector:'GoldMiners',strength:'strong'},{t1:'RRL',t2:'OGC',sector:'GoldMiners',strength:'strong'},{t1:'RRL',t2:'SAR',sector:'GoldMiners',strength:'strong'},{t1:'RRL',t2:'CYL',sector:'GoldMiners',strength:'strong'},
+  {t1:'RRL',t2:'BGL',sector:'GoldMiners',strength:'strong'},{t1:'RRL',t2:'GOR',sector:'GoldMiners',strength:'strong'},{t1:'RRL',t2:'MML',sector:'GoldMiners',strength:'strong'},{t1:'RRL',t2:'RMS',sector:'GoldMiners',strength:'strong'},
+  {t1:'RRL',t2:'RED',sector:'GoldMiners',strength:'strong'},{t1:'RRL',t2:'CMR',sector:'GoldMiners',strength:'strong'},{t1:'SBM',t2:'PRU',sector:'GoldMiners',strength:'strong'},{t1:'SBM',t2:'RSG',sector:'GoldMiners',strength:'strong'},
+  {t1:'SBM',t2:'OGC',sector:'GoldMiners',strength:'strong'},{t1:'SBM',t2:'SAR',sector:'GoldMiners',strength:'strong'},{t1:'SBM',t2:'SLR',sector:'GoldMiners',strength:'strong'},{t1:'SBM',t2:'CYL',sector:'GoldMiners',strength:'strong'},
+  {t1:'SBM',t2:'BGL',sector:'GoldMiners',strength:'strong'},{t1:'SBM',t2:'GOR',sector:'GoldMiners',strength:'strong'},{t1:'SBM',t2:'MML',sector:'GoldMiners',strength:'strong'},{t1:'SBM',t2:'RED',sector:'GoldMiners',strength:'strong'},
+  {t1:'SBM',t2:'CMR',sector:'GoldMiners',strength:'strong'},{t1:'PRU',t2:'RSG',sector:'GoldMiners',strength:'strong'},{t1:'BHP',t2:'AGY',sector:'IronOre',strength:'strong'},{t1:'BHP',t2:'CIA',sector:'IronOre',strength:'strong'},
+  {t1:'BHP',t2:'CHN',sector:'IronOre',strength:'strong'},{t1:'BHP',t2:'CZR',sector:'IronOre',strength:'strong'},{t1:'BHP',t2:'MGX',sector:'IronOre',strength:'strong'},{t1:'BHP',t2:'GRR',sector:'IronOre',strength:'strong'},
+  {t1:'BHP',t2:'SRL',sector:'IronOre',strength:'strong'},{t1:'BHP',t2:'BC8',sector:'IronOre',strength:'strong'},{t1:'RIO',t2:'MIN',sector:'IronOre',strength:'strong'},{t1:'RIO',t2:'AGY',sector:'IronOre',strength:'strong'},
+  {t1:'RIO',t2:'CIA',sector:'IronOre',strength:'strong'},{t1:'RIO',t2:'CHN',sector:'IronOre',strength:'strong'},{t1:'RIO',t2:'CZR',sector:'IronOre',strength:'strong'},{t1:'RIO',t2:'MGX',sector:'IronOre',strength:'strong'},
+  {t1:'RIO',t2:'GRR',sector:'IronOre',strength:'strong'},{t1:'RIO',t2:'SRL',sector:'IronOre',strength:'strong'},{t1:'RIO',t2:'BC8',sector:'IronOre',strength:'strong'},{t1:'FMG',t2:'MIN',sector:'IronOre',strength:'strong'},
+  {t1:'FMG',t2:'AGY',sector:'IronOre',strength:'strong'},{t1:'FMG',t2:'CIA',sector:'IronOre',strength:'strong'},{t1:'FMG',t2:'CHN',sector:'IronOre',strength:'strong'},{t1:'FMG',t2:'CZR',sector:'IronOre',strength:'strong'},
+  {t1:'FMG',t2:'MGX',sector:'IronOre',strength:'strong'},{t1:'FMG',t2:'GRR',sector:'IronOre',strength:'strong'},{t1:'FMG',t2:'SRL',sector:'IronOre',strength:'strong'},{t1:'FMG',t2:'BC8',sector:'IronOre',strength:'strong'},
+  {t1:'MIN',t2:'AGY',sector:'IronOre',strength:'strong'},{t1:'MIN',t2:'CIA',sector:'IronOre',strength:'strong'},{t1:'MIN',t2:'CHN',sector:'IronOre',strength:'strong'},{t1:'MIN',t2:'CZR',sector:'IronOre',strength:'strong'},
+  {t1:'MIN',t2:'MGX',sector:'IronOre',strength:'strong'},{t1:'MIN',t2:'GRR',sector:'IronOre',strength:'strong'},{t1:'MIN',t2:'SRL',sector:'IronOre',strength:'strong'},{t1:'MIN',t2:'BC8',sector:'IronOre',strength:'strong'},
+  {t1:'AGY',t2:'CIA',sector:'IronOre',strength:'strong'},{t1:'AGY',t2:'CHN',sector:'IronOre',strength:'strong'},{t1:'PLS',t2:'CXO',sector:'LithiumBattery',strength:'strong'},{t1:'PLS',t2:'INR',sector:'LithiumBattery',strength:'strong'},
+  {t1:'PLS',t2:'LKE',sector:'LithiumBattery',strength:'strong'},{t1:'PLS',t2:'NMT',sector:'LithiumBattery',strength:'strong'},{t1:'PLS',t2:'SYR',sector:'LithiumBattery',strength:'strong'},{t1:'PLS',t2:'AVZ',sector:'LithiumBattery',strength:'strong'},
+  {t1:'PLS',t2:'FFX',sector:'LithiumBattery',strength:'strong'},{t1:'PLS',t2:'LLL',sector:'LithiumBattery',strength:'strong'},{t1:'AKE',t2:'LTR',sector:'LithiumBattery',strength:'strong'},{t1:'AKE',t2:'CXO',sector:'LithiumBattery',strength:'strong'},
+  {t1:'AKE',t2:'INR',sector:'LithiumBattery',strength:'strong'},{t1:'AKE',t2:'LKE',sector:'LithiumBattery',strength:'strong'},{t1:'AKE',t2:'NMT',sector:'LithiumBattery',strength:'strong'},{t1:'AKE',t2:'SYR',sector:'LithiumBattery',strength:'strong'},
+  {t1:'AKE',t2:'AVZ',sector:'LithiumBattery',strength:'strong'},{t1:'AKE',t2:'FFX',sector:'LithiumBattery',strength:'strong'},{t1:'AKE',t2:'GL1',sector:'LithiumBattery',strength:'strong'},{t1:'AKE',t2:'LLL',sector:'LithiumBattery',strength:'strong'},
+  {t1:'AKE',t2:'ASN',sector:'LithiumBattery',strength:'strong'},{t1:'AKE',t2:'VUL',sector:'LithiumBattery',strength:'strong'},{t1:'LTR',t2:'INR',sector:'LithiumBattery',strength:'strong'},{t1:'LTR',t2:'LKE',sector:'LithiumBattery',strength:'strong'},
+  {t1:'LTR',t2:'NMT',sector:'LithiumBattery',strength:'strong'},{t1:'LTR',t2:'SYR',sector:'LithiumBattery',strength:'strong'},{t1:'LTR',t2:'AVZ',sector:'LithiumBattery',strength:'strong'},{t1:'LTR',t2:'FFX',sector:'LithiumBattery',strength:'strong'},
+  {t1:'LTR',t2:'LLL',sector:'LithiumBattery',strength:'strong'},{t1:'LTR',t2:'ASN',sector:'LithiumBattery',strength:'strong'},{t1:'LTR',t2:'VUL',sector:'LithiumBattery',strength:'strong'},{t1:'CXO',t2:'INR',sector:'LithiumBattery',strength:'strong'},
+  {t1:'CXO',t2:'LKE',sector:'LithiumBattery',strength:'strong'},{t1:'CXO',t2:'NMT',sector:'LithiumBattery',strength:'strong'},{t1:'CXO',t2:'SYR',sector:'LithiumBattery',strength:'strong'},{t1:'CXO',t2:'AVZ',sector:'LithiumBattery',strength:'strong'},
+  {t1:'CXO',t2:'FFX',sector:'LithiumBattery',strength:'strong'},{t1:'CXO',t2:'LLL',sector:'LithiumBattery',strength:'strong'},{t1:'CXO',t2:'ASN',sector:'LithiumBattery',strength:'strong'},{t1:'CXO',t2:'VUL',sector:'LithiumBattery',strength:'strong'},
+  {t1:'INR',t2:'LKE',sector:'LithiumBattery',strength:'strong'},{t1:'INR',t2:'NMT',sector:'LithiumBattery',strength:'strong'},{t1:'INR',t2:'SYR',sector:'LithiumBattery',strength:'strong'},{t1:'INR',t2:'AVZ',sector:'LithiumBattery',strength:'strong'},
+  {t1:'INR',t2:'FFX',sector:'LithiumBattery',strength:'strong'},{t1:'INR',t2:'GL1',sector:'LithiumBattery',strength:'strong'},{t1:'INR',t2:'LLL',sector:'LithiumBattery',strength:'strong'},{t1:'INR',t2:'ASN',sector:'LithiumBattery',strength:'strong'},
+  {t1:'INR',t2:'VUL',sector:'LithiumBattery',strength:'strong'},{t1:'LKE',t2:'NMT',sector:'LithiumBattery',strength:'strong'},{t1:'LKE',t2:'SYR',sector:'LithiumBattery',strength:'strong'},{t1:'NIC',t2:'JRV',sector:'NickelCobalt',strength:'strong'},
+  {t1:'NIC',t2:'QPM',sector:'NickelCobalt',strength:'strong'},{t1:'NIC',t2:'GME',sector:'NickelCobalt',strength:'strong'},{t1:'WSA',t2:'JRV',sector:'NickelCobalt',strength:'strong'},{t1:'WSA',t2:'QPM',sector:'NickelCobalt',strength:'strong'},
+  {t1:'WSA',t2:'GME',sector:'NickelCobalt',strength:'strong'},{t1:'PAN',t2:'JRV',sector:'NickelCobalt',strength:'strong'},{t1:'PAN',t2:'QPM',sector:'NickelCobalt',strength:'strong'},{t1:'PAN',t2:'GME',sector:'NickelCobalt',strength:'strong'},
+  {t1:'MCR',t2:'JRV',sector:'NickelCobalt',strength:'strong'},{t1:'MCR',t2:'MZZ',sector:'NickelCobalt',strength:'strong'},{t1:'CSL',t2:'PME',sector:'HealthDevices',strength:'strong'},{t1:'CSL',t2:'PNV',sector:'HealthDevices',strength:'strong'},
+  {t1:'CSL',t2:'EBO',sector:'HealthDevices',strength:'strong'},{t1:'CSL',t2:'MVF',sector:'HealthDevices',strength:'strong'},{t1:'CSL',t2:'HLS',sector:'HealthDevices',strength:'strong'},{t1:'RHC',t2:'COH',sector:'HealthDevices',strength:'strong'},
+  {t1:'RHC',t2:'PME',sector:'HealthDevices',strength:'strong'},{t1:'RHC',t2:'PNV',sector:'HealthDevices',strength:'strong'},{t1:'SHL',t2:'PME',sector:'HealthDevices',strength:'strong'},{t1:'SHL',t2:'PNV',sector:'HealthDevices',strength:'strong'},
+  {t1:'RMD',t2:'EBO',sector:'HealthDevices',strength:'strong'},{t1:'RMD',t2:'MVF',sector:'HealthDevices',strength:'strong'},{t1:'RMD',t2:'HLS',sector:'HealthDevices',strength:'strong'},{t1:'COH',t2:'FPH',sector:'HealthDevices',strength:'strong'},
+  {t1:'COH',t2:'EBO',sector:'HealthDevices',strength:'strong'},{t1:'COH',t2:'MVF',sector:'HealthDevices',strength:'strong'},{t1:'SGP',t2:'SCG',sector:'PropertyREIT',strength:'strong'},{t1:'SGP',t2:'VCX',sector:'PropertyREIT',strength:'strong'},
+  {t1:'SGP',t2:'GOZ',sector:'PropertyREIT',strength:'strong'},{t1:'SGP',t2:'NSR',sector:'PropertyREIT',strength:'strong'},{t1:'MGR',t2:'CHC',sector:'PropertyREIT',strength:'strong'},{t1:'MGR',t2:'ABP',sector:'PropertyREIT',strength:'strong'},
+  {t1:'MGR',t2:'CLW',sector:'PropertyREIT',strength:'strong'},{t1:'MGR',t2:'AOF',sector:'PropertyREIT',strength:'strong'},{t1:'MGR',t2:'GOZ',sector:'PropertyREIT',strength:'strong'},{t1:'MGR',t2:'NSR',sector:'PropertyREIT',strength:'strong'},
+  {t1:'GPT',t2:'CHC',sector:'PropertyREIT',strength:'strong'},{t1:'GPT',t2:'AOF',sector:'PropertyREIT',strength:'strong'},{t1:'GPT',t2:'GOZ',sector:'PropertyREIT',strength:'strong'},{t1:'GPT',t2:'NSR',sector:'PropertyREIT',strength:'strong'},
+  {t1:'SCG',t2:'CHC',sector:'PropertyREIT',strength:'strong'},{t1:'SCG',t2:'ABP',sector:'PropertyREIT',strength:'strong'},{t1:'SCG',t2:'CLW',sector:'PropertyREIT',strength:'strong'},{t1:'SCG',t2:'AOF',sector:'PropertyREIT',strength:'strong'},
+  {t1:'SCG',t2:'GOZ',sector:'PropertyREIT',strength:'strong'},{t1:'SCG',t2:'NSR',sector:'PropertyREIT',strength:'strong'},{t1:'VCX',t2:'CHC',sector:'PropertyREIT',strength:'strong'},{t1:'VCX',t2:'ABP',sector:'PropertyREIT',strength:'strong'},
+  {t1:'VCX',t2:'CLW',sector:'PropertyREIT',strength:'strong'},{t1:'REA',t2:'OML',sector:'MediaPortals',strength:'strong'},{t1:'CAR',t2:'SWM',sector:'MediaPortals',strength:'strong'},{t1:'CAR',t2:'OML',sector:'MediaPortals',strength:'strong'},
+  {t1:'SEK',t2:'SWM',sector:'MediaPortals',strength:'strong'},{t1:'ZIP',t2:'OFX',sector:'FintechPayments',strength:'strong'},{t1:'ZIP',t2:'PPS',sector:'FintechPayments',strength:'strong'},{t1:'ZIP',t2:'PPH',sector:'FintechPayments',strength:'strong'},
+  {t1:'ZIP',t2:'HUM',sector:'FintechPayments',strength:'strong'},{t1:'ZIP',t2:'TYR',sector:'FintechPayments',strength:'strong'},{t1:'SZL',t2:'EML',sector:'FintechPayments',strength:'strong'},{t1:'SZL',t2:'BVS',sector:'FintechPayments',strength:'strong'},
+  {t1:'SZL',t2:'HUM',sector:'FintechPayments',strength:'strong'},{t1:'SZL',t2:'TYR',sector:'FintechPayments',strength:'strong'},{t1:'SPT',t2:'EML',sector:'FintechPayments',strength:'strong'},{t1:'SPT',t2:'PPS',sector:'FintechPayments',strength:'strong'},
+  {t1:'SPT',t2:'BVS',sector:'FintechPayments',strength:'strong'},{t1:'SPT',t2:'PPH',sector:'FintechPayments',strength:'strong'},{t1:'SPT',t2:'HUM',sector:'FintechPayments',strength:'strong'},{t1:'SPT',t2:'TYR',sector:'FintechPayments',strength:'strong'},
+  {t1:'OFX',t2:'EML',sector:'FintechPayments',strength:'strong'},{t1:'OFX',t2:'PPS',sector:'FintechPayments',strength:'strong'},{t1:'OFX',t2:'BVS',sector:'FintechPayments',strength:'strong'},{t1:'OFX',t2:'PPH',sector:'FintechPayments',strength:'strong'},
+  {t1:'OFX',t2:'HUM',sector:'FintechPayments',strength:'strong'},{t1:'ORG',t2:'MEZ',sector:'EnergyRetail',strength:'strong'},{t1:'JHX',t2:'BKW',sector:'BuildingMaterials',strength:'strong'},{t1:'BLD',t2:'BKW',sector:'BuildingMaterials',strength:'strong'},
+  {t1:'CSR',t2:'BKW',sector:'BuildingMaterials',strength:'strong'},{t1:'ABY',t2:'ADH',sector:'BuildingMaterials',strength:'strong'},{t1:'ABY',t2:'BKW',sector:'BuildingMaterials',strength:'strong'},{t1:'GWA',t2:'ADH',sector:'BuildingMaterials',strength:'strong'},
+  {t1:'GWA',t2:'BKW',sector:'BuildingMaterials',strength:'strong'}
 ];
 
 const SMT_WEAK_PAIRS = [
@@ -7364,6 +7485,102 @@ const SMT_WEAK_PAIRS = [
   {t1:'IRE',t2:'S32',sector:'Steel',strength:'weak'},{t1:'JHX',t2:'BSL',sector:'Steel',strength:'weak'},{t1:'JHX',t2:'GBF',sector:'Steel',strength:'weak'},
   {t1:'IEL',t2:'WEB',sector:'Education',strength:'weak'},{t1:'SEK',t2:'WEB',sector:'Education',strength:'weak'},{t1:'IDP',t2:'WEB',sector:'Education',strength:'weak'},
   {t1:'IEL',t2:'FLT',sector:'Education',strength:'weak'},{t1:'SEK',t2:'FLT',sector:'Education',strength:'weak'},
+,
+  // ── Expansion Pairs (Weak) ──
+  {t1:'AGE',t2:'EL8',sector:'Uranium',strength:'weak'},{t1:'AGE',t2:'ACB',sector:'Uranium',strength:'weak'},{t1:'NXG',t2:'GTR',sector:'Uranium',strength:'weak'},{t1:'NXG',t2:'ERA',sector:'Uranium',strength:'weak'},
+  {t1:'NXG',t2:'MEY',sector:'Uranium',strength:'weak'},{t1:'NXG',t2:'VMY',sector:'Uranium',strength:'weak'},{t1:'NXG',t2:'DEV',sector:'Uranium',strength:'weak'},{t1:'NXG',t2:'EL8',sector:'Uranium',strength:'weak'},
+  {t1:'NXG',t2:'TOE',sector:'Uranium',strength:'weak'},{t1:'NXG',t2:'ACB',sector:'Uranium',strength:'weak'},{t1:'GTR',t2:'ERA',sector:'Uranium',strength:'weak'},{t1:'GTR',t2:'MEY',sector:'Uranium',strength:'weak'},
+  {t1:'GTR',t2:'VMY',sector:'Uranium',strength:'weak'},{t1:'GTR',t2:'DEV',sector:'Uranium',strength:'weak'},{t1:'GTR',t2:'EL8',sector:'Uranium',strength:'weak'},{t1:'GTR',t2:'TOE',sector:'Uranium',strength:'weak'},
+  {t1:'GTR',t2:'ACB',sector:'Uranium',strength:'weak'},{t1:'ERA',t2:'MEY',sector:'Uranium',strength:'weak'},{t1:'ERA',t2:'VMY',sector:'Uranium',strength:'weak'},{t1:'ERA',t2:'DEV',sector:'Uranium',strength:'weak'},
+  {t1:'ERA',t2:'EL8',sector:'Uranium',strength:'weak'},{t1:'ERA',t2:'TOE',sector:'Uranium',strength:'weak'},{t1:'ERA',t2:'ACB',sector:'Uranium',strength:'weak'},{t1:'MEY',t2:'VMY',sector:'Uranium',strength:'weak'},
+  {t1:'MEY',t2:'DEV',sector:'Uranium',strength:'weak'},{t1:'MEY',t2:'EL8',sector:'Uranium',strength:'weak'},{t1:'MEY',t2:'TOE',sector:'Uranium',strength:'weak'},{t1:'MEY',t2:'ACB',sector:'Uranium',strength:'weak'},
+  {t1:'VMY',t2:'DEV',sector:'Uranium',strength:'weak'},{t1:'VMY',t2:'EL8',sector:'Uranium',strength:'weak'},{t1:'VMY',t2:'TOE',sector:'Uranium',strength:'weak'},{t1:'VMY',t2:'ACB',sector:'Uranium',strength:'weak'},
+  {t1:'DEV',t2:'EL8',sector:'Uranium',strength:'weak'},{t1:'DEV',t2:'TOE',sector:'Uranium',strength:'weak'},{t1:'DEV',t2:'ACB',sector:'Uranium',strength:'weak'},{t1:'EL8',t2:'TOE',sector:'Uranium',strength:'weak'},
+  {t1:'EL8',t2:'ACB',sector:'Uranium',strength:'weak'},{t1:'TOE',t2:'ACB',sector:'Uranium',strength:'weak'},{t1:'VML',t2:'REE',sector:'RareEarth',strength:'weak'},{t1:'ASM',t2:'NTU',sector:'RareEarth',strength:'weak'},
+  {t1:'ASM',t2:'HAS',sector:'RareEarth',strength:'weak'},{t1:'ASM',t2:'ABX',sector:'RareEarth',strength:'weak'},{t1:'ASM',t2:'ARR',sector:'RareEarth',strength:'weak'},{t1:'ASM',t2:'REE',sector:'RareEarth',strength:'weak'},
+  {t1:'NTU',t2:'HAS',sector:'RareEarth',strength:'weak'},{t1:'NTU',t2:'ABX',sector:'RareEarth',strength:'weak'},{t1:'NTU',t2:'ARR',sector:'RareEarth',strength:'weak'},{t1:'NTU',t2:'REE',sector:'RareEarth',strength:'weak'},
+  {t1:'HAS',t2:'ABX',sector:'RareEarth',strength:'weak'},{t1:'HAS',t2:'ARR',sector:'RareEarth',strength:'weak'},{t1:'HAS',t2:'REE',sector:'RareEarth',strength:'weak'},{t1:'ABX',t2:'ARR',sector:'RareEarth',strength:'weak'},
+  {t1:'ABX',t2:'REE',sector:'RareEarth',strength:'weak'},{t1:'ARR',t2:'REE',sector:'RareEarth',strength:'weak'},{t1:'CVN',t2:'WGR',sector:'OilGas',strength:'weak'},{t1:'CVN',t2:'MAY',sector:'OilGas',strength:'weak'},
+  {t1:'COE',t2:'BRU',sector:'OilGas',strength:'weak'},{t1:'COE',t2:'FAR',sector:'OilGas',strength:'weak'},{t1:'COE',t2:'STX',sector:'OilGas',strength:'weak'},{t1:'COE',t2:'EMR',sector:'OilGas',strength:'weak'},
+  {t1:'COE',t2:'WGR',sector:'OilGas',strength:'weak'},{t1:'COE',t2:'MAY',sector:'OilGas',strength:'weak'},{t1:'BRU',t2:'FAR',sector:'OilGas',strength:'weak'},{t1:'BRU',t2:'STX',sector:'OilGas',strength:'weak'},
+  {t1:'BRU',t2:'EMR',sector:'OilGas',strength:'weak'},{t1:'BRU',t2:'WGR',sector:'OilGas',strength:'weak'},{t1:'BRU',t2:'MAY',sector:'OilGas',strength:'weak'},{t1:'FAR',t2:'STX',sector:'OilGas',strength:'weak'},
+  {t1:'FAR',t2:'EMR',sector:'OilGas',strength:'weak'},{t1:'FAR',t2:'WGR',sector:'OilGas',strength:'weak'},{t1:'FAR',t2:'MAY',sector:'OilGas',strength:'weak'},{t1:'STX',t2:'EMR',sector:'OilGas',strength:'weak'},
+  {t1:'STX',t2:'WGR',sector:'OilGas',strength:'weak'},{t1:'STX',t2:'MAY',sector:'OilGas',strength:'weak'},{t1:'EMR',t2:'WGR',sector:'OilGas',strength:'weak'},{t1:'EMR',t2:'MAY',sector:'OilGas',strength:'weak'},
+  {t1:'WGR',t2:'MAY',sector:'OilGas',strength:'weak'},{t1:'AD8',t2:'NXT',sector:'TechCloud',strength:'weak'},{t1:'AD8',t2:'MP1',sector:'TechCloud',strength:'weak'},{t1:'AD8',t2:'BRN',sector:'TechCloud',strength:'weak'},
+  {t1:'AD8',t2:'NVX',sector:'TechCloud',strength:'weak'},{t1:'AD8',t2:'SDR',sector:'TechCloud',strength:'weak'},{t1:'AD8',t2:'TLX',sector:'TechCloud',strength:'weak'},{t1:'AD8',t2:'NEA',sector:'TechCloud',strength:'weak'},
+  {t1:'AD8',t2:'PME',sector:'TechCloud',strength:'weak'},{t1:'NXT',t2:'BRN',sector:'TechCloud',strength:'weak'},{t1:'NXT',t2:'NVX',sector:'TechCloud',strength:'weak'},{t1:'NXT',t2:'SDR',sector:'TechCloud',strength:'weak'},
+  {t1:'NXT',t2:'TLX',sector:'TechCloud',strength:'weak'},{t1:'NXT',t2:'NEA',sector:'TechCloud',strength:'weak'},{t1:'NXT',t2:'PME',sector:'TechCloud',strength:'weak'},{t1:'MP1',t2:'BRN',sector:'TechCloud',strength:'weak'},
+  {t1:'MP1',t2:'NVX',sector:'TechCloud',strength:'weak'},{t1:'MP1',t2:'SDR',sector:'TechCloud',strength:'weak'},{t1:'MP1',t2:'TLX',sector:'TechCloud',strength:'weak'},{t1:'MP1',t2:'NEA',sector:'TechCloud',strength:'weak'},
+  {t1:'MP1',t2:'PME',sector:'TechCloud',strength:'weak'},{t1:'BRN',t2:'NVX',sector:'TechCloud',strength:'weak'},{t1:'BRN',t2:'SDR',sector:'TechCloud',strength:'weak'},{t1:'BRN',t2:'TLX',sector:'TechCloud',strength:'weak'},
+  {t1:'BRN',t2:'NEA',sector:'TechCloud',strength:'weak'},{t1:'BRN',t2:'PME',sector:'TechCloud',strength:'weak'},{t1:'NVX',t2:'SDR',sector:'TechCloud',strength:'weak'},{t1:'NVX',t2:'TLX',sector:'TechCloud',strength:'weak'},
+  {t1:'NVX',t2:'NEA',sector:'TechCloud',strength:'weak'},{t1:'NVX',t2:'PME',sector:'TechCloud',strength:'weak'},{t1:'SDR',t2:'TLX',sector:'TechCloud',strength:'weak'},{t1:'SDR',t2:'NEA',sector:'TechCloud',strength:'weak'},
+  {t1:'BOQ',t2:'ASX',sector:'BanksWealth',strength:'weak'},{t1:'BOQ',t2:'HUB',sector:'BanksWealth',strength:'weak'},{t1:'BOQ',t2:'SQ2',sector:'BanksWealth',strength:'weak'},{t1:'BOQ',t2:'TYR',sector:'BanksWealth',strength:'weak'},
+  {t1:'BOQ',t2:'PPT',sector:'BanksWealth',strength:'weak'},{t1:'BEN',t2:'MQG',sector:'BanksWealth',strength:'weak'},{t1:'BEN',t2:'ASX',sector:'BanksWealth',strength:'weak'},{t1:'BEN',t2:'HUB',sector:'BanksWealth',strength:'weak'},
+  {t1:'BEN',t2:'SQ2',sector:'BanksWealth',strength:'weak'},{t1:'BEN',t2:'TYR',sector:'BanksWealth',strength:'weak'},{t1:'BEN',t2:'PPT',sector:'BanksWealth',strength:'weak'},{t1:'MQG',t2:'SQ2',sector:'BanksWealth',strength:'weak'},
+  {t1:'MQG',t2:'TYR',sector:'BanksWealth',strength:'weak'},{t1:'ASX',t2:'HUB',sector:'BanksWealth',strength:'weak'},{t1:'ASX',t2:'SQ2',sector:'BanksWealth',strength:'weak'},{t1:'ASX',t2:'TYR',sector:'BanksWealth',strength:'weak'},
+  {t1:'ASX',t2:'PPT',sector:'BanksWealth',strength:'weak'},{t1:'HUB',t2:'SQ2',sector:'BanksWealth',strength:'weak'},{t1:'HUB',t2:'TYR',sector:'BanksWealth',strength:'weak'},{t1:'SQ2',t2:'TYR',sector:'BanksWealth',strength:'weak'},
+  {t1:'SQ2',t2:'PPT',sector:'BanksWealth',strength:'weak'},{t1:'TYR',t2:'PPT',sector:'BanksWealth',strength:'weak'},{t1:'LOV',t2:'DMP',sector:'RetailConsumer',strength:'weak'},{t1:'LOV',t2:'KMD',sector:'RetailConsumer',strength:'weak'},
+  {t1:'LOV',t2:'WES',sector:'RetailConsumer',strength:'weak'},{t1:'LOV',t2:'COL',sector:'RetailConsumer',strength:'weak'},{t1:'LOV',t2:'MTS',sector:'RetailConsumer',strength:'weak'},{t1:'LOV',t2:'BIG',sector:'RetailConsumer',strength:'weak'},
+  {t1:'LOV',t2:'UNI',sector:'RetailConsumer',strength:'weak'},{t1:'SUL',t2:'DMP',sector:'RetailConsumer',strength:'weak'},{t1:'SUL',t2:'KMD',sector:'RetailConsumer',strength:'weak'},{t1:'SUL',t2:'COL',sector:'RetailConsumer',strength:'weak'},
+  {t1:'SUL',t2:'MTS',sector:'RetailConsumer',strength:'weak'},{t1:'SUL',t2:'BIG',sector:'RetailConsumer',strength:'weak'},{t1:'SUL',t2:'UNI',sector:'RetailConsumer',strength:'weak'},{t1:'DMP',t2:'KMD',sector:'RetailConsumer',strength:'weak'},
+  {t1:'DMP',t2:'WES',sector:'RetailConsumer',strength:'weak'},{t1:'DMP',t2:'COL',sector:'RetailConsumer',strength:'weak'},{t1:'DMP',t2:'MTS',sector:'RetailConsumer',strength:'weak'},{t1:'DMP',t2:'BIG',sector:'RetailConsumer',strength:'weak'},
+  {t1:'DMP',t2:'UNI',sector:'RetailConsumer',strength:'weak'},{t1:'KMD',t2:'WES',sector:'RetailConsumer',strength:'weak'},{t1:'KMD',t2:'COL',sector:'RetailConsumer',strength:'weak'},{t1:'KMD',t2:'MTS',sector:'RetailConsumer',strength:'weak'},
+  {t1:'WES',t2:'MTS',sector:'RetailConsumer',strength:'weak'},{t1:'WES',t2:'BIG',sector:'RetailConsumer',strength:'weak'},{t1:'WES',t2:'UNI',sector:'RetailConsumer',strength:'weak'},{t1:'COL',t2:'BIG',sector:'RetailConsumer',strength:'weak'},
+  {t1:'COL',t2:'UNI',sector:'RetailConsumer',strength:'weak'},{t1:'MTS',t2:'BIG',sector:'RetailConsumer',strength:'weak'},{t1:'MTS',t2:'UNI',sector:'RetailConsumer',strength:'weak'},{t1:'BIG',t2:'UNI',sector:'RetailConsumer',strength:'weak'},
+  {t1:'SGR',t2:'BET',sector:'GamingLeisure',strength:'weak'},{t1:'SGR',t2:'STG',sector:'GamingLeisure',strength:'weak'},{t1:'SGR',t2:'PBH',sector:'GamingLeisure',strength:'weak'},{t1:'BET',t2:'STG',sector:'GamingLeisure',strength:'weak'},
+  {t1:'BET',t2:'PBH',sector:'GamingLeisure',strength:'weak'},{t1:'STG',t2:'PBH',sector:'GamingLeisure',strength:'weak'},{t1:'ORI',t2:'BXB',sector:'ChemicalsExplosives',strength:'weak'},{t1:'NUF',t2:'DGL',sector:'ChemicalsExplosives',strength:'weak'},
+  {t1:'NUF',t2:'PPG',sector:'ChemicalsExplosives',strength:'weak'},{t1:'NUF',t2:'BXB',sector:'ChemicalsExplosives',strength:'weak'},{t1:'DGL',t2:'PPG',sector:'ChemicalsExplosives',strength:'weak'},{t1:'DGL',t2:'BXB',sector:'ChemicalsExplosives',strength:'weak'},
+  {t1:'AST',t2:'SKI',sector:'InfrastructureToll',strength:'weak'},{t1:'QUB',t2:'ALX',sector:'InfrastructureToll',strength:'weak'},{t1:'QUB',t2:'SKI',sector:'InfrastructureToll',strength:'weak'},{t1:'AZJ',t2:'ALX',sector:'InfrastructureToll',strength:'weak'},
+  {t1:'AZJ',t2:'SKI',sector:'InfrastructureToll',strength:'weak'},{t1:'ALX',t2:'SKI',sector:'InfrastructureToll',strength:'weak'},{t1:'JHG',t2:'PDL',sector:'WealthAssetMgmt',strength:'weak'},{t1:'JHG',t2:'NWL',sector:'WealthAssetMgmt',strength:'weak'},
+  {t1:'JHG',t2:'BVS',sector:'WealthAssetMgmt',strength:'weak'},{t1:'JHG',t2:'PPS',sector:'WealthAssetMgmt',strength:'weak'},{t1:'CGF',t2:'NWL',sector:'WealthAssetMgmt',strength:'weak'},{t1:'CGF',t2:'BVS',sector:'WealthAssetMgmt',strength:'weak'},
+  {t1:'CGF',t2:'PPS',sector:'WealthAssetMgmt',strength:'weak'},{t1:'AMP',t2:'BVS',sector:'WealthAssetMgmt',strength:'weak'},{t1:'PDL',t2:'NWL',sector:'WealthAssetMgmt',strength:'weak'},{t1:'PDL',t2:'BVS',sector:'WealthAssetMgmt',strength:'weak'},
+  {t1:'PDL',t2:'PPS',sector:'WealthAssetMgmt',strength:'weak'},{t1:'NWL',t2:'BVS',sector:'WealthAssetMgmt',strength:'weak'},{t1:'NWL',t2:'PPS',sector:'WealthAssetMgmt',strength:'weak'},{t1:'PRU',t2:'OGC',sector:'GoldMiners',strength:'weak'},
+  {t1:'PRU',t2:'SAR',sector:'GoldMiners',strength:'weak'},{t1:'PRU',t2:'SLR',sector:'GoldMiners',strength:'weak'},{t1:'PRU',t2:'CYL',sector:'GoldMiners',strength:'weak'},{t1:'PRU',t2:'BGL',sector:'GoldMiners',strength:'weak'},
+  {t1:'PRU',t2:'GOR',sector:'GoldMiners',strength:'weak'},{t1:'PRU',t2:'MML',sector:'GoldMiners',strength:'weak'},{t1:'PRU',t2:'RMS',sector:'GoldMiners',strength:'weak'},{t1:'PRU',t2:'RED',sector:'GoldMiners',strength:'weak'},
+  {t1:'PRU',t2:'CMR',sector:'GoldMiners',strength:'weak'},{t1:'RSG',t2:'OGC',sector:'GoldMiners',strength:'weak'},{t1:'RSG',t2:'SAR',sector:'GoldMiners',strength:'weak'},{t1:'RSG',t2:'SLR',sector:'GoldMiners',strength:'weak'},
+  {t1:'RSG',t2:'CYL',sector:'GoldMiners',strength:'weak'},{t1:'RSG',t2:'BGL',sector:'GoldMiners',strength:'weak'},{t1:'RSG',t2:'MML',sector:'GoldMiners',strength:'weak'},{t1:'RSG',t2:'RMS',sector:'GoldMiners',strength:'weak'},
+  {t1:'RSG',t2:'RED',sector:'GoldMiners',strength:'weak'},{t1:'RSG',t2:'CMR',sector:'GoldMiners',strength:'weak'},{t1:'OGC',t2:'SAR',sector:'GoldMiners',strength:'weak'},{t1:'OGC',t2:'SLR',sector:'GoldMiners',strength:'weak'},
+  {t1:'OGC',t2:'CYL',sector:'GoldMiners',strength:'weak'},{t1:'OGC',t2:'BGL',sector:'GoldMiners',strength:'weak'},{t1:'OGC',t2:'GOR',sector:'GoldMiners',strength:'weak'},{t1:'OGC',t2:'MML',sector:'GoldMiners',strength:'weak'},
+  {t1:'OGC',t2:'RMS',sector:'GoldMiners',strength:'weak'},{t1:'OGC',t2:'RED',sector:'GoldMiners',strength:'weak'},{t1:'OGC',t2:'CMR',sector:'GoldMiners',strength:'weak'},{t1:'SAR',t2:'SLR',sector:'GoldMiners',strength:'weak'},
+  {t1:'SAR',t2:'CYL',sector:'GoldMiners',strength:'weak'},{t1:'SAR',t2:'BGL',sector:'GoldMiners',strength:'weak'},{t1:'SAR',t2:'GOR',sector:'GoldMiners',strength:'weak'},{t1:'SAR',t2:'MML',sector:'GoldMiners',strength:'weak'},
+  {t1:'SAR',t2:'RMS',sector:'GoldMiners',strength:'weak'},{t1:'SAR',t2:'RED',sector:'GoldMiners',strength:'weak'},{t1:'SAR',t2:'CMR',sector:'GoldMiners',strength:'weak'},{t1:'SLR',t2:'CYL',sector:'GoldMiners',strength:'weak'},
+  {t1:'SLR',t2:'BGL',sector:'GoldMiners',strength:'weak'},{t1:'SLR',t2:'GOR',sector:'GoldMiners',strength:'weak'},{t1:'SLR',t2:'MML',sector:'GoldMiners',strength:'weak'},{t1:'SLR',t2:'RMS',sector:'GoldMiners',strength:'weak'},
+  {t1:'SLR',t2:'RED',sector:'GoldMiners',strength:'weak'},{t1:'SLR',t2:'CMR',sector:'GoldMiners',strength:'weak'},{t1:'CYL',t2:'BGL',sector:'GoldMiners',strength:'weak'},{t1:'CYL',t2:'GOR',sector:'GoldMiners',strength:'weak'},
+  {t1:'CYL',t2:'MML',sector:'GoldMiners',strength:'weak'},{t1:'CYL',t2:'RMS',sector:'GoldMiners',strength:'weak'},{t1:'CYL',t2:'RED',sector:'GoldMiners',strength:'weak'},{t1:'CYL',t2:'CMR',sector:'GoldMiners',strength:'weak'},
+  {t1:'BGL',t2:'GOR',sector:'GoldMiners',strength:'weak'},{t1:'BGL',t2:'MML',sector:'GoldMiners',strength:'weak'},{t1:'BGL',t2:'RMS',sector:'GoldMiners',strength:'weak'},{t1:'BGL',t2:'RED',sector:'GoldMiners',strength:'weak'},
+  {t1:'BGL',t2:'CMR',sector:'GoldMiners',strength:'weak'},{t1:'GOR',t2:'MML',sector:'GoldMiners',strength:'weak'},{t1:'GOR',t2:'RMS',sector:'GoldMiners',strength:'weak'},{t1:'GOR',t2:'RED',sector:'GoldMiners',strength:'weak'},
+  {t1:'GOR',t2:'CMR',sector:'GoldMiners',strength:'weak'},{t1:'MML',t2:'RMS',sector:'GoldMiners',strength:'weak'},{t1:'MML',t2:'RED',sector:'GoldMiners',strength:'weak'},{t1:'MML',t2:'CMR',sector:'GoldMiners',strength:'weak'},
+  {t1:'RMS',t2:'RED',sector:'GoldMiners',strength:'weak'},{t1:'RMS',t2:'CMR',sector:'GoldMiners',strength:'weak'},{t1:'RED',t2:'CMR',sector:'GoldMiners',strength:'weak'},{t1:'AGY',t2:'CZR',sector:'IronOre',strength:'weak'},
+  {t1:'AGY',t2:'MGX',sector:'IronOre',strength:'weak'},{t1:'AGY',t2:'GRR',sector:'IronOre',strength:'weak'},{t1:'AGY',t2:'SRL',sector:'IronOre',strength:'weak'},{t1:'AGY',t2:'BC8',sector:'IronOre',strength:'weak'},
+  {t1:'CIA',t2:'CHN',sector:'IronOre',strength:'weak'},{t1:'CIA',t2:'CZR',sector:'IronOre',strength:'weak'},{t1:'CIA',t2:'MGX',sector:'IronOre',strength:'weak'},{t1:'CIA',t2:'GRR',sector:'IronOre',strength:'weak'},
+  {t1:'CIA',t2:'SRL',sector:'IronOre',strength:'weak'},{t1:'CIA',t2:'BC8',sector:'IronOre',strength:'weak'},{t1:'CHN',t2:'CZR',sector:'IronOre',strength:'weak'},{t1:'CHN',t2:'MGX',sector:'IronOre',strength:'weak'},
+  {t1:'CHN',t2:'GRR',sector:'IronOre',strength:'weak'},{t1:'CHN',t2:'SRL',sector:'IronOre',strength:'weak'},{t1:'CHN',t2:'BC8',sector:'IronOre',strength:'weak'},{t1:'CZR',t2:'MGX',sector:'IronOre',strength:'weak'},
+  {t1:'CZR',t2:'GRR',sector:'IronOre',strength:'weak'},{t1:'CZR',t2:'SRL',sector:'IronOre',strength:'weak'},{t1:'CZR',t2:'BC8',sector:'IronOre',strength:'weak'},{t1:'MGX',t2:'SRL',sector:'IronOre',strength:'weak'},
+  {t1:'MGX',t2:'BC8',sector:'IronOre',strength:'weak'},{t1:'GRR',t2:'SRL',sector:'IronOre',strength:'weak'},{t1:'GRR',t2:'BC8',sector:'IronOre',strength:'weak'},{t1:'SRL',t2:'BC8',sector:'IronOre',strength:'weak'},
+  {t1:'LKE',t2:'AVZ',sector:'LithiumBattery',strength:'weak'},{t1:'LKE',t2:'FFX',sector:'LithiumBattery',strength:'weak'},{t1:'LKE',t2:'GL1',sector:'LithiumBattery',strength:'weak'},{t1:'LKE',t2:'LLL',sector:'LithiumBattery',strength:'weak'},
+  {t1:'LKE',t2:'ASN',sector:'LithiumBattery',strength:'weak'},{t1:'NMT',t2:'SYR',sector:'LithiumBattery',strength:'weak'},{t1:'NMT',t2:'AVZ',sector:'LithiumBattery',strength:'weak'},{t1:'NMT',t2:'FFX',sector:'LithiumBattery',strength:'weak'},
+  {t1:'NMT',t2:'GL1',sector:'LithiumBattery',strength:'weak'},{t1:'NMT',t2:'LLL',sector:'LithiumBattery',strength:'weak'},{t1:'NMT',t2:'ASN',sector:'LithiumBattery',strength:'weak'},{t1:'NMT',t2:'VUL',sector:'LithiumBattery',strength:'weak'},
+  {t1:'SYR',t2:'AVZ',sector:'LithiumBattery',strength:'weak'},{t1:'SYR',t2:'FFX',sector:'LithiumBattery',strength:'weak'},{t1:'SYR',t2:'GL1',sector:'LithiumBattery',strength:'weak'},{t1:'SYR',t2:'LLL',sector:'LithiumBattery',strength:'weak'},
+  {t1:'SYR',t2:'ASN',sector:'LithiumBattery',strength:'weak'},{t1:'SYR',t2:'VUL',sector:'LithiumBattery',strength:'weak'},{t1:'AVZ',t2:'FFX',sector:'LithiumBattery',strength:'weak'},{t1:'AVZ',t2:'GL1',sector:'LithiumBattery',strength:'weak'},
+  {t1:'AVZ',t2:'LLL',sector:'LithiumBattery',strength:'weak'},{t1:'AVZ',t2:'ASN',sector:'LithiumBattery',strength:'weak'},{t1:'AVZ',t2:'VUL',sector:'LithiumBattery',strength:'weak'},{t1:'FFX',t2:'GL1',sector:'LithiumBattery',strength:'weak'},
+  {t1:'FFX',t2:'LLL',sector:'LithiumBattery',strength:'weak'},{t1:'FFX',t2:'ASN',sector:'LithiumBattery',strength:'weak'},{t1:'FFX',t2:'VUL',sector:'LithiumBattery',strength:'weak'},{t1:'GL1',t2:'LLL',sector:'LithiumBattery',strength:'weak'},
+  {t1:'GL1',t2:'ASN',sector:'LithiumBattery',strength:'weak'},{t1:'GL1',t2:'VUL',sector:'LithiumBattery',strength:'weak'},{t1:'LLL',t2:'ASN',sector:'LithiumBattery',strength:'weak'},{t1:'LLL',t2:'VUL',sector:'LithiumBattery',strength:'weak'},
+  {t1:'ASN',t2:'VUL',sector:'LithiumBattery',strength:'weak'},{t1:'MCR',t2:'QPM',sector:'NickelCobalt',strength:'weak'},{t1:'MCR',t2:'GME',sector:'NickelCobalt',strength:'weak'},{t1:'JRV',t2:'MZZ',sector:'NickelCobalt',strength:'weak'},
+  {t1:'JRV',t2:'QPM',sector:'NickelCobalt',strength:'weak'},{t1:'JRV',t2:'GME',sector:'NickelCobalt',strength:'weak'},{t1:'MZZ',t2:'QPM',sector:'NickelCobalt',strength:'weak'},{t1:'MZZ',t2:'GME',sector:'NickelCobalt',strength:'weak'},
+  {t1:'QPM',t2:'GME',sector:'NickelCobalt',strength:'weak'},{t1:'COH',t2:'HLS',sector:'HealthDevices',strength:'weak'},{t1:'FPH',t2:'PME',sector:'HealthDevices',strength:'weak'},{t1:'FPH',t2:'PNV',sector:'HealthDevices',strength:'weak'},
+  {t1:'FPH',t2:'MVF',sector:'HealthDevices',strength:'weak'},{t1:'FPH',t2:'HLS',sector:'HealthDevices',strength:'weak'},{t1:'PME',t2:'EBO',sector:'HealthDevices',strength:'weak'},{t1:'PME',t2:'MVF',sector:'HealthDevices',strength:'weak'},
+  {t1:'PME',t2:'HLS',sector:'HealthDevices',strength:'weak'},{t1:'PNV',t2:'EBO',sector:'HealthDevices',strength:'weak'},{t1:'PNV',t2:'MVF',sector:'HealthDevices',strength:'weak'},{t1:'PNV',t2:'HLS',sector:'HealthDevices',strength:'weak'},
+  {t1:'VCX',t2:'AOF',sector:'PropertyREIT',strength:'weak'},{t1:'VCX',t2:'GOZ',sector:'PropertyREIT',strength:'weak'},{t1:'VCX',t2:'NSR',sector:'PropertyREIT',strength:'weak'},{t1:'CHC',t2:'CLW',sector:'PropertyREIT',strength:'weak'},
+  {t1:'CHC',t2:'AOF',sector:'PropertyREIT',strength:'weak'},{t1:'CHC',t2:'GOZ',sector:'PropertyREIT',strength:'weak'},{t1:'CHC',t2:'NSR',sector:'PropertyREIT',strength:'weak'},{t1:'DXS',t2:'ABP',sector:'PropertyREIT',strength:'weak'},
+  {t1:'DXS',t2:'GOZ',sector:'PropertyREIT',strength:'weak'},{t1:'DXS',t2:'NSR',sector:'PropertyREIT',strength:'weak'},{t1:'ABP',t2:'CLW',sector:'PropertyREIT',strength:'weak'},{t1:'ABP',t2:'AOF',sector:'PropertyREIT',strength:'weak'},
+  {t1:'CLW',t2:'GOZ',sector:'PropertyREIT',strength:'weak'},{t1:'CLW',t2:'NSR',sector:'PropertyREIT',strength:'weak'},{t1:'AOF',t2:'GOZ',sector:'PropertyREIT',strength:'weak'},{t1:'AOF',t2:'NSR',sector:'PropertyREIT',strength:'weak'},
+  {t1:'SEK',t2:'OML',sector:'MediaPortals',strength:'weak'},{t1:'NEC',t2:'DHG',sector:'MediaPortals',strength:'weak'},{t1:'SWM',t2:'DHG',sector:'MediaPortals',strength:'weak'},{t1:'DHG',t2:'OML',sector:'MediaPortals',strength:'weak'},
+  {t1:'OFX',t2:'TYR',sector:'FintechPayments',strength:'weak'},{t1:'EML',t2:'BVS',sector:'FintechPayments',strength:'weak'},{t1:'EML',t2:'PPH',sector:'FintechPayments',strength:'weak'},{t1:'EML',t2:'HUM',sector:'FintechPayments',strength:'weak'},
+  {t1:'EML',t2:'TYR',sector:'FintechPayments',strength:'weak'},{t1:'PPS',t2:'PPH',sector:'FintechPayments',strength:'weak'},{t1:'PPS',t2:'HUM',sector:'FintechPayments',strength:'weak'},{t1:'PPS',t2:'TYR',sector:'FintechPayments',strength:'weak'},
+  {t1:'BVS',t2:'PPH',sector:'FintechPayments',strength:'weak'},{t1:'BVS',t2:'HUM',sector:'FintechPayments',strength:'weak'},{t1:'BVS',t2:'TYR',sector:'FintechPayments',strength:'weak'},{t1:'PPH',t2:'HUM',sector:'FintechPayments',strength:'weak'},
+  {t1:'PPH',t2:'TYR',sector:'FintechPayments',strength:'weak'},{t1:'HUM',t2:'TYR',sector:'FintechPayments',strength:'weak'},{t1:'MEZ',t2:'INE',sector:'EnergyRetail',strength:'weak'},{t1:'INE',t2:'APA',sector:'EnergyRetail',strength:'weak'},
+  {t1:'RWC',t2:'SKC',sector:'BuildingMaterials',strength:'weak'},{t1:'RWC',t2:'BKW',sector:'BuildingMaterials',strength:'weak'},{t1:'SKC',t2:'ADH',sector:'BuildingMaterials',strength:'weak'},{t1:'SKC',t2:'BKW',sector:'BuildingMaterials',strength:'weak'},
+  {t1:'ADH',t2:'BKW',sector:'BuildingMaterials',strength:'weak'}
 ];
 
 // Combined universe for scanning
