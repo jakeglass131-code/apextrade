@@ -4677,7 +4677,7 @@ if (pb) pb.addEventListener('click', requestPushPermission);
 const pb2 = document.getElementById('push-btn-settings');
 if (pb2) pb2.addEventListener('click', requestPushPermission);
 </script>
-
+<script>
 // ═══════════════════════════════════════════════════════
 // GLOBAL TIMEFRAME SELECTOR
 // ═══════════════════════════════════════════════════════
@@ -4751,6 +4751,7 @@ function filterScanner() {
   if (sel && activeScanMarket) sel.value = activeScanMarket;
   if (_origFilterScanner) _origFilterScanner();
 }
+</script>
 
 </body>
 </html>
