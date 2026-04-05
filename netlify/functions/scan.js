@@ -1,186 +1,163 @@
-// CRT Scanner v11 - Jake's exact rules + TV cache priority
-//
-// Rules:
-// 1. CRT candle = completed calendar period (year/quarter/half/month)
-// 2. Sweep candle = next period, wicked beyond the CRT low/high AND closed back inside
-// 3. TBOS = TBOS-timeframe candle closes back above the last swing high before the sweep
-// 4. Entry forming = current TBOS candle is sweeping now (no TBOS yet confirmed)
+// CRT Scanner v12 - Jake's exact rules
+// Optimized: parallel Yahoo fetches + in-memory cache + batch scanning
 
-const CACHE_URL = process.env.URL ? process.env.URL + '/.netlify/functions/cache' : 'https://apextrade-proxy.netlify.app/.netlify/functions/cache';
+// In-memory cache shared across warm invocations
+var dataCache = {};
+var CACHE_TTL = 3600000; // 1 hour
 
-exports.handler = async (event) => {
-  const H = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
+exports.handler = async function(event) {
+  var H = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: H, body: '' };
-  const ticker = (event.queryStringParameters || {}).ticker;
-  if (!ticker) return { statusCode: 400, headers: H, body: JSON.stringify({ error: 'ticker required' }) };
-  const sym = ticker.includes('.') ? ticker : ticker + '.AX';
-  var dataSource = 'yahoo';
+  var params = event.queryStringParameters || {};
+  var ticker = params.ticker;
 
-  // Try TV cache first, fall back to Yahoo
-  async function getCandles(iv, rg) {
-    if (iv === '1d' || iv === '1wk' || iv === '1mo') {
-      try {
-        var cr = await fetch(CACHE_URL + '?ticker=' + encodeURIComponent(ticker));
-        if (!cr.ok) throw new Error('cache fetch failed');
-        var cd = await cr.json();
-        if (cd.hit && !cd.stale && cd.candles && cd.candles.length >= 20) {
-          dataSource = 'tradingview';
-          var candles = cd.candles.map(function(c) {
-            return { t: c.t, date: new Date(c.t).toISOString().slice(0, 10), o: c.o, h: c.h, l: c.l, c: c.c };
-          });
-          if (iv === '1wk') return aggWeekly(candles);
-          if (iv === '1mo') return aggMonthly(candles);
-          return candles;
-        }
-      } catch(e) {}
-    }
-    return yf(iv, rg);
+  // Batch mode: ?tickers=BHP,CBA,CSL
+  if (params.tickers) {
+    var list = params.tickers.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+    var results = await Promise.all(list.map(function(t) { return scanTicker(t).catch(function(e) { return { ticker: t, signals: [], error: e.message }; }); }));
+    return { statusCode: 200, headers: H, body: JSON.stringify({ results: results }) };
   }
 
-  function aggWeekly(daily) {
-    var weeks = {}, ord = [];
-    daily.forEach(function(c) {
-      var d = new Date(c.t);
-      var day = d.getUTCDay();
-      var mon = new Date(c.t - day * 86400000);
-      var k = mon.toISOString().slice(0, 10);
-      if (!weeks[k]) { weeks[k] = { t: c.t, date: c.date, o: c.o, h: c.h, l: c.l, c: c.c }; ord.push(k); }
-      else { if (c.h > weeks[k].h) weeks[k].h = c.h; if (c.l < weeks[k].l) weeks[k].l = c.l; weeks[k].c = c.c; }
-    });
-    return ord.map(function(k) { return weeks[k]; });
-  }
-
-  function aggMonthly(daily) {
-    var months = {}, ord = [];
-    daily.forEach(function(c) {
-      var k = c.date.substring(0, 7);
-      if (!months[k]) { months[k] = { t: c.t, date: c.date, o: c.o, h: c.h, l: c.l, c: c.c }; ord.push(k); }
-      else { if (c.h > months[k].h) months[k].h = c.h; if (c.l < months[k].l) months[k].l = c.l; months[k].c = c.c; }
-    });
-    return ord.map(function(k) { return months[k]; });
-  }
-
-  async function yf(iv, rg) {
-    const r = await fetch(
-      'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=' + iv + '&range=' + rg,
-      { headers: { 'User-Agent': 'Mozilla/5.0' } }
-    );
-    if (!r.ok) throw new Error('Yahoo ' + r.status);
-    const d = await r.json();
-    const res = d.chart && d.chart.result && d.chart.result[0];
-    if (!res) throw new Error('no data');
-    const ts = res.timestamp || [];
-    const q = (res.indicators && res.indicators.quote && res.indicators.quote[0]) || {};
-    return ts.map(function(t, i) {
-      return {
-        t: t * 1000,
-        date: new Date(t * 1000).toISOString().slice(0, 10),
-        o: q.open && q.open[i],
-        h: q.high && q.high[i],
-        l: q.low && q.low[i],
-        c: q.close && q.close[i]
-      };
-    }).filter(function(c) { return c.o != null && c.c != null && c.h != null && c.l != null; });
-  }
-
-  // Group monthly candles into calendar periods
-  function grp(arr, keyFn) {
-    var g = {}, ord = [];
-    arr.forEach(function(c) {
-      var k = keyFn(c);
-      if (!g[k]) { g[k] = { t: c.t, date: c.date, o: c.o, h: c.h, l: c.l, c: c.c }; ord.push(k); }
-      else { if (c.h > g[k].h) g[k].h = c.h; if (c.l < g[k].l) g[k].l = c.l; g[k].c = c.c; }
-    });
-    return ord.map(function(k) { return g[k]; });
-  }
-  function ky(c) { return c.date.substring(0, 4); }
-  function kq(c) { var m = parseInt(c.date.substring(5, 7)); return c.date.substring(0, 4) + '-Q' + Math.ceil(m / 3); }
-  function kh(c) { var m = parseInt(c.date.substring(5, 7)); return c.date.substring(0, 4) + (m <= 6 ? '-H1' : '-H2'); }
-  function k9(c) { var m = parseInt(c.date.substring(5, 7)); return c.date.substring(0, 4) + (m <= 9 ? '-P1' : '-P2'); }
+  if (!ticker) return { statusCode: 400, headers: H, body: JSON.stringify({ error: 'ticker required. Use ?ticker=BHP or ?tickers=BHP,CBA,CSL' }) };
 
   try {
-    var mo1 = await getCandles('1mo', '15y');
-    var wk1 = await getCandles('1wk', '5y');
-    var day1 = await getCandles('1d', '3y');
-    if (mo1.length < 24) throw new Error('insufficient data');
+    var result = await scanTicker(ticker);
+    return { statusCode: 200, headers: H, body: JSON.stringify(result) };
+  } catch (err) {
+    return { statusCode: 200, headers: H, body: JSON.stringify({ ticker: ticker, signals: [], error: err.message }) };
+  }
+};
 
-    var day2 = [];
-    for (var i = 0; i < day1.length; i += 2) {
-      var s = day1.slice(i, i + 2);
-      if (s.length) day2.push({
-        t: s[0].t, date: s[0].date, o: s[0].o,
-        h: Math.max(s[0].h, s[1] ? s[1].h : s[0].h),
-        l: Math.min(s[0].l, s[1] ? s[1].l : s[0].l),
-        c: s[s.length - 1].c
-      });
-    }
+async function scanTicker(ticker) {
+  var sym = ticker.includes('.') ? ticker : ticker + '.AX';
 
-    var MODELS = [
-      { label: '1M CRT',  C: mo1,        T: day2, entryTFs: ['1D', '4H'] },
-      { label: '3M CRT',  C: grp(mo1,kq),T: mo1,  entryTFs: ['2D', '3D'] },
-      { label: '6M CRT',  C: grp(mo1,kh),T: wk1,  entryTFs: ['2W', '1W'] },
-      { label: '9M CRT',  C: grp(mo1,k9),T: wk1,  entryTFs: ['2W', '1W'] },
-      { label: '12M CRT', C: grp(mo1,ky),T: mo1,  entryTFs: ['3W', '2W'] },
-    ];
+  // Fetch all 3 timeframes in PARALLEL
+  var results = await Promise.all([
+    getCachedOrFetch(sym, '1mo', '15y'),
+    getCachedOrFetch(sym, '1wk', '5y'),
+    getCachedOrFetch(sym, '1d', '3y')
+  ]);
+  var mo1 = results[0], wk1 = results[1], day1 = results[2];
 
-    var signals = [];
+  if (mo1.length < 24) throw new Error('insufficient data');
 
-    for (var mi = 0; mi < MODELS.length; mi++) {
-      var m = MODELS[mi], C = m.C, T = m.T;
-      if (!C || C.length < 3 || !T || !T.length) continue;
+  var day2 = [];
+  for (var i = 0; i < day1.length; i += 2) {
+    var s = day1.slice(i, i + 2);
+    if (s.length) day2.push({
+      t: s[0].t, date: s[0].date, o: s[0].o,
+      h: Math.max(s[0].h, s[1] ? s[1].h : s[0].h),
+      l: Math.min(s[0].l, s[1] ? s[1].l : s[0].l),
+      c: s[s.length - 1].c
+    });
+  }
 
-      for (var ii = C.length - 3; ii <= C.length - 2; ii++) {
-        if (ii < 0) continue;
-        var crt = C[ii], inner = C[ii + 1];
-        if (!crt || !inner) continue;
-        var crtRange = crt.h - crt.l;
-        if (crtRange <= 0) continue;
+  var MODELS = [
+    { label: '1M CRT',  C: mo1,        T: day2, entryTFs: ['1D', '4H'] },
+    { label: '3M CRT',  C: grp(mo1,kq),T: mo1,  entryTFs: ['2D', '3D'] },
+    { label: '6M CRT',  C: grp(mo1,kh),T: wk1,  entryTFs: ['2W', '1W'] },
+    { label: '9M CRT',  C: grp(mo1,k9),T: wk1,  entryTFs: ['2W', '1W'] },
+    { label: '12M CRT', C: grp(mo1,ky),T: mo1,  entryTFs: ['3W', '2W'] },
+  ];
 
-        if (inner.l < crt.l && inner.c > crt.l && inner.h < crt.h) {
-          var tbos = T.filter(function(x) { return x.t > inner.t; });
-          if (tbos.length) {
-            var tbosLvl = crt.h;
-            var preSweep = T.filter(function(x) { return x.t > crt.t && x.t <= inner.t; });
-            preSweep.forEach(function(x) { if (x.h > tbosLvl) tbosLvl = x.h; });
-            var purges = 1;
-            var tbosC = null, tbosAge = null;
-            for (var j = 0; j < tbos.length; j++) {
-              var c = tbos[j];
-              if (c.l < crt.l) purges++;
-              if (c.c > tbosLvl && !tbosC) { tbosC = c; tbosAge = tbos.length - 1 - j; }
-            }
-            var last = tbos[tbos.length - 1];
-            var sweepingNow = !tbosC && last.l < crt.l && last.c >= crt.l;
-            var tbosForming = !tbosC && !sweepingNow && last.c > tbosLvl;
-            var targetHit = tbos.some(function(x){return x.c>crt.h;});
-            if (!targetHit && (tbosC || sweepingNow || tbosForming)) {
-              if (!tbosC || tbosAge <= 5) {
-                var conf = 60; if (purges >= 2) conf += 10;
-                if (tbosForming) conf += 15; else if (tbosC && tbosAge === 0) conf += 15; else if (tbosC && tbosAge === 1) conf += 10; else if (tbosC && tbosAge === 2) conf += 5;
-                if (sweepingNow) conf += 5; conf = Math.min(conf, 85);
-                signals.push({ type: purges >= 2 ? 'Double Purge CRT' : 'Classic CRT', model: m.label, direction: 'LONG', crtHigh: crt.h, crtLow: crt.l, crtDate: crt.date, innerClose: inner.c, innerDate: inner.date, sweepLow: inner.l, tbosLevel: tbosLvl, tbosDate: tbosC ? tbosC.date : (tbosForming ? 'Forming now' : (sweepingNow ? 'Sweep forming' : null)), tbosAge: tbosC ? tbosAge : -1, purgeCount: purges, entryTFs: m.entryTFs, baseConfidence: conf, sweepingNow: sweepingNow, tbosForming: tbosForming });
-              }
-            }
+  var signals = [];
+
+  for (var mi = 0; mi < MODELS.length; mi++) {
+    var m = MODELS[mi], C = m.C, T = m.T;
+    if (!C || C.length < 3 || !T || !T.length) continue;
+
+    for (var ii = C.length - 3; ii <= C.length - 2; ii++) {
+      if (ii < 0) continue;
+      var crt = C[ii], inner = C[ii + 1];
+      if (!crt || !inner) continue;
+      var crtRange = crt.h - crt.l;
+      if (crtRange <= 0) continue;
+
+      // BULLISH
+      if (inner.l < crt.l && inner.c > crt.l && inner.h < crt.h) {
+        var tbos = T.filter(function(x) { return x.t > inner.t; });
+        if (tbos.length) {
+          var tbosLvl = crt.h;
+          T.filter(function(x) { return x.t > crt.t && x.t <= inner.t; }).forEach(function(x) { if (x.h > tbosLvl) tbosLvl = x.h; });
+          var purges = 1, tbosC = null, tbosAge = null;
+          for (var j = 0; j < tbos.length; j++) {
+            if (tbos[j].l < crt.l) purges++;
+            if (tbos[j].c > tbosLvl && !tbosC) { tbosC = tbos[j]; tbosAge = tbos.length - 1 - j; }
           }
-        }
-        if (inner.h > crt.h && inner.c < crt.h && inner.l > crt.l) {
-          var tbos = T.filter(function(x) { return x.t > inner.t; });
-          if (tbos.length) {
-            var tbosLvl = crt.l; var preSweep = T.filter(function(x) { return x.t > crt.t && x.t <= inner.t; });
-            preSweep.forEach(function(x) { if (x.l < tbosLvl) tbosLvl = x.l; });
-            var purges = 1; var tbosC = null, tbosAge = null;
-            for (var j = 0; j < tbos.length; j++) { var c = tbos[j]; if (c.h > crt.h) purges++; if (c.c < tbosLvl && !tbosC) { tbosC = c; tbosAge = tbos.length - 1 - j; } }
-            var last = tbos[tbos.length - 1]; var sweepingNow = !tbosC && last.h > crt.h && last.c <= crt.h; var tbosForming = !tbosC && !sweepingNow && last.c < tbosLvl;
-            var targetHit = tbos.some(function(x){return x.c<crt.l;});
-            if (!targetHit && ((tbosC && tbosAge <= 5) || sweepingNow || tbosForming)) {
-              var conf = 60; if (purges >= 2) conf += 10; if (tbosForming) conf += 15; else if (tbosC && tbosAge === 0) conf += 15; else if (tbosC && tbosAge === 1) conf += 10; else if (tbosC && tbosAge === 2) conf += 5; if (sweepingNow) conf += 5; conf = Math.min(conf, 85);
-              signals.push({ type: purges >= 2 ? 'Double Purge CRT' : 'Classic CRT', model: m.label, direction: 'SHORT', crtHigh: crt.h, crtLow: crt.l, crtDate: crt.date, innerClose: inner.c, innerDate: inner.date, sweepHigh: inner.h, tbosLevel: tbosLvl, tbosDate: tbosC ? tbosC.date : (tbosForming ? 'Forming now' : (sweepingNow ? 'Sweep forming' : null)), tbosAge: tbosC ? tbosAge : -1, purgeCount: purges, entryTFs: m.entryTFs, baseConfidence: conf, sweepingNow: sweepingNow, tbosForming: tbosForming });
+          var last = tbos[tbos.length - 1];
+          var sweepingNow = !tbosC && last.l < crt.l && last.c >= crt.l;
+          var tbosForming = !tbosC && !sweepingNow && last.c > tbosLvl;
+          var targetHit = tbos.some(function(x) { return x.c > crt.h; });
+          if (!targetHit && (tbosC || sweepingNow || tbosForming)) {
+            if (!tbosC || tbosAge <= 5) {
+              var conf = 60; if (purges >= 2) conf += 10;
+              if (tbosForming) conf += 15; else if (tbosC && tbosAge === 0) conf += 15; else if (tbosC && tbosAge === 1) conf += 10; else if (tbosC && tbosAge === 2) conf += 5;
+              if (sweepingNow) conf += 5; conf = Math.min(conf, 85);
+              signals.push({ type: purges >= 2 ? 'Double Purge CRT' : 'Classic CRT', model: m.label, direction: 'LONG', crtHigh: crt.h, crtLow: crt.l, crtDate: crt.date, innerClose: inner.c, innerDate: inner.date, sweepLow: inner.l, tbosLevel: tbosLvl, tbosDate: tbosC ? tbosC.date : (tbosForming ? 'Forming now' : (sweepingNow ? 'Sweep forming' : null)), tbosAge: tbosC ? tbosAge : -1, purgeCount: purges, entryTFs: m.entryTFs, baseConfidence: conf, sweepingNow: sweepingNow, tbosForming: tbosForming });
             }
           }
         }
       }
+
+      // BEARISH
+      if (inner.h > crt.h && inner.c < crt.h && inner.l > crt.l) {
+        var tbos2 = T.filter(function(x) { return x.t > inner.t; });
+        if (tbos2.length) {
+          var tbosLvl2 = crt.l;
+          T.filter(function(x) { return x.t > crt.t && x.t <= inner.t; }).forEach(function(x) { if (x.l < tbosLvl2) tbosLvl2 = x.l; });
+          var purges2 = 1, tbosC2 = null, tbosAge2 = null;
+          for (var j2 = 0; j2 < tbos2.length; j2++) { if (tbos2[j2].h > crt.h) purges2++; if (tbos2[j2].c < tbosLvl2 && !tbosC2) { tbosC2 = tbos2[j2]; tbosAge2 = tbos2.length - 1 - j2; } }
+          var last2 = tbos2[tbos2.length - 1]; var sweepingNow2 = !tbosC2 && last2.h > crt.h && last2.c <= crt.h; var tbosForming2 = !tbosC2 && !sweepingNow2 && last2.c < tbosLvl2;
+          var targetHit2 = tbos2.some(function(x) { return x.c < crt.l; });
+          if (!targetHit2 && ((tbosC2 && tbosAge2 <= 5) || sweepingNow2 || tbosForming2)) {
+            var conf2 = 60; if (purges2 >= 2) conf2 += 10; if (tbosForming2) conf2 += 15; else if (tbosC2 && tbosAge2 === 0) conf2 += 15; else if (tbosC2 && tbosAge2 === 1) conf2 += 10; else if (tbosC2 && tbosAge2 === 2) conf2 += 5; if (sweepingNow2) conf2 += 5; conf2 = Math.min(conf2, 85);
+            signals.push({ type: purges2 >= 2 ? 'Double Purge CRT' : 'Classic CRT', model: m.label, direction: 'SHORT', crtHigh: crt.h, crtLow: crt.l, crtDate: crt.date, innerClose: inner.c, innerDate: inner.date, sweepHigh: inner.h, tbosLevel: tbosLvl2, tbosDate: tbosC2 ? tbosC2.date : (tbosForming2 ? 'Forming now' : (sweepingNow2 ? 'Sweep forming' : null)), tbosAge: tbosC2 ? tbosAge2 : -1, purgeCount: purges2, entryTFs: m.entryTFs, baseConfidence: conf2, sweepingNow: sweepingNow2, tbosForming: tbosForming2 });
+          }
+        }
+      }
     }
-    var price = day1.length ? day1[day1.length - 1].c : null;
-    return { statusCode: 200, headers: H, body: JSON.stringify({ ticker: ticker, signals: signals, dataSource: dataSource, meta: { price: price, date: day1.length ? day1[day1.length - 1].date : null } }) };
-  } catch (err) { return { statusCode: 200, headers: H, body: JSON.stringify({ ticker: ticker, signals: [], error: err.message }) }; }
-};
+  }
+
+  var price = day1.length ? day1[day1.length - 1].c : null;
+  return { ticker: ticker, signals: signals, meta: { price: price, date: day1.length ? day1[day1.length - 1].date : null } };
+}
+
+// ── Cached Yahoo fetch ──
+function getCachedOrFetch(sym, interval, range) {
+  var key = sym + '_' + interval + '_' + range;
+  var cached = dataCache[key];
+  if (cached && (Date.now() - cached.time) < CACHE_TTL) return Promise.resolve(cached.data);
+  return yf(sym, interval, range).then(function(data) {
+    dataCache[key] = { data: data, time: Date.now() };
+    return data;
+  });
+}
+
+function yf(sym, iv, rg) {
+  return fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=' + iv + '&range=' + rg, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+    .then(function(r) { if (!r.ok) throw new Error('Yahoo ' + r.status); return r.json(); })
+    .then(function(d) {
+      var res = d.chart && d.chart.result && d.chart.result[0];
+      if (!res) throw new Error('no data');
+      var ts = res.timestamp || [];
+      var q = (res.indicators && res.indicators.quote && res.indicators.quote[0]) || {};
+      return ts.map(function(t, i) {
+        return { t: t * 1000, date: new Date(t * 1000).toISOString().slice(0, 10), o: q.open && q.open[i], h: q.high && q.high[i], l: q.low && q.low[i], c: q.close && q.close[i] };
+      }).filter(function(c) { return c.o != null && c.c != null && c.h != null && c.l != null; });
+    });
+}
+
+// ── Grouping helpers ──
+function grp(arr, keyFn) {
+  var g = {}, ord = [];
+  arr.forEach(function(c) {
+    var k = keyFn(c);
+    if (!g[k]) { g[k] = { t: c.t, date: c.date, o: c.o, h: c.h, l: c.l, c: c.c }; ord.push(k); }
+    else { if (c.h > g[k].h) g[k].h = c.h; if (c.l < g[k].l) g[k].l = c.l; g[k].c = c.c; }
+  });
+  return ord.map(function(k) { return g[k]; });
+}
+function ky(c) { return c.date.substring(0, 4); }
+function kq(c) { var m = parseInt(c.date.substring(5, 7)); return c.date.substring(0, 4) + '-Q' + Math.ceil(m / 3); }
+function kh(c) { var m = parseInt(c.date.substring(5, 7)); return c.date.substring(0, 4) + (m <= 6 ? '-H1' : '-H2'); }
+function k9(c) { var m = parseInt(c.date.substring(5, 7)); return c.date.substring(0, 4) + (m <= 9 ? '-P1' : '-P2'); }
