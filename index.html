@@ -1231,26 +1231,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 <!-- ═══════════════ PAGE: FUTURES ═══════════════ -->
 <div class="page" id="page-futures">
   <div class="ph">
-    <div><div class="ph-t">Futures</div><div class="ph-s">Intel · CRT Scanner · Bullish Scanner</div></div>
+    <div><div class="ph-t">Intelligence</div><div class="ph-s">Futures &amp; FX · Multi-indicator confidence · CRT &amp; Bullish Scanner</div></div>
     <div class="ph-r"><button class="btn" onclick="requestPushPermission()">🔔 Alerts</button></div>
   </div>
   <!-- Sub-tabs -->
   <div style="display:flex;align-items:center;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0;padding:0 20px">
-    <button class="smkt active" id="fut-tab-intel"   onclick="setFutTab('intel')"   style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:700">📊 Intel</button>
+    <button class="smkt active" id="fut-tab-intel"   onclick="setFutTab('intel')"   style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:700">📊 Intelligence</button>
     <button class="smkt"        id="fut-tab-crt"     onclick="setFutTab('crt')"     style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600">⚡ CRT Scanner</button>
     <button class="smkt"        id="fut-tab-bullish" onclick="setFutTab('bullish')"  style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600">📈 Bullish</button>
     <div style="flex:1"></div>
-    <div id="fut-ctrl-intel" style="display:flex;align-items:center;gap:8px;padding:6px 0">
-      <select id="fut-intel-sym" style="font-size:11px;padding:4px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
-        <option value="NAS100">NAS100</option><option value="SPX500">SPX500</option>
-        <option value="US30">US30</option><option value="RUSSELL">RUSSELL</option>
-        <option value="XAU/USD">XAU/USD (Gold)</option><option value="XAG/USD">XAG/USD (Silver)</option>
-        <option value="AUD/USD">AUD/USD</option><option value="EUR/USD">EUR/USD</option>
-        <option value="GBP/USD">GBP/USD</option><option value="USD/JPY">USD/JPY</option>
-      </select>
-      <button onclick="runFutIntel()" class="btn g" style="font-size:11px">Analyse</button>
-      <button onclick="fetchFutNews()" class="btn" style="font-size:11px">Refresh news</button>
-    </div>
+    <div id="fut-ctrl-intel" style="display:none"></div>
     <div id="fut-ctrl-crt" style="display:none;align-items:center;gap:8px;padding:6px 0">
       <button class="btn g" onclick="runFutCrtScan()" style="font-size:11px">⚡ Scan Futures</button>
     </div>
@@ -1274,28 +1264,41 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <div id="fut-momentum-bar" class="momentum-bar"></div>
   <!-- Market regime banner -->
   <div id="fut-regime-banner" style="display:none;padding:6px 20px;font-size:11px;font-family:var(--fm);letter-spacing:.03em;border-bottom:1px solid var(--border2)"></div>
-  <!-- INTEL panel -->
+  <!-- INTELLIGENCE panel — Dovvy hybrid trading style -->
   <div id="fut-panel-intel" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
-    <div class="scroll">
-      <div style="display:grid;grid-template-columns:300px 1fr;min-height:300px">
-        <div style="border-right:1px solid var(--border2);padding:20px;overflow-y:auto">
-          <div id="fut-intel-score">
-            <div style="text-align:center;padding:32px 16px;color:var(--text3)">
-              <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">Select instrument above</div>
-              <div style="font-size:11px;margin-bottom:14px">NQ · ES · Gold · Crude · FX</div>
-              <button onclick="runFutIntel()" class="btn g" style="font-size:11px">Analyse NAS100</button>
-            </div>
+
+    <!-- TF selector + Run All button -->
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
+      <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em">TIMEFRAME</span>
+      <button class="tf-btn active" id="fut-tf-D"  onclick="setFutTF('D',this)">Daily</button>
+      <button class="tf-btn"        id="fut-tf-4H" onclick="setFutTF('4H',this)">4H</button>
+      <button class="tf-btn"        id="fut-tf-1H" onclick="setFutTF('1H',this)">1H</button>
+      <button class="tf-btn"        id="fut-tf-W"  onclick="setFutTF('W',this)">Weekly</button>
+      <div style="flex:1"></div>
+      <span id="fut-intel-last" style="font-size:10px;color:var(--text3)"></span>
+      <button class="btn g" onclick="runFutIntelAll()" id="fut-run-all" style="font-size:11px;padding:5px 14px">▶ Run All</button>
+    </div>
+
+    <div class="scroll" style="padding:16px 20px">
+
+      <!-- Live pair cards grid — Dovvy style -->
+      <div id="fut-pair-grid" class="pair-grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:16px"></div>
+
+      <!-- News feed below cards -->
+      <div class="panel">
+        <div class="phead">
+          <div class="ptitle">Global macro feed</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="pmeta" id="fut-feed-time">Live</div>
+            <button class="btn" onclick="fetchFutNews()" style="font-size:10px;padding:3px 8px">Refresh</button>
           </div>
         </div>
-        <div style="padding:20px;overflow-y:auto"><div id="fut-intel-detail"></div></div>
-      </div>
-      <div class="panel" style="margin:16px 20px">
-        <div class="phead"><div class="ptitle">Global macro feed</div><div class="pmeta" id="fut-feed-time">Live</div></div>
         <div id="fut-news-feed">
           <div class="iitem"><div class="idot" style="background:var(--red)"></div><div><div class="itext"><strong>US jobs surge unexpectedly</strong> in March — 178k vs 128k expected. Dollar strengthening across majors.</div><div class="imeta"><span class="itime">4h ago</span><span class="itag ih">High · USD</span></div></div></div>
           <div class="iitem"><div class="idot" style="background:var(--amber)"></div><div><div class="itext"><strong>Oil prices jump</strong> after Trump threatens more Iran strikes — WTI above $102.</div><div class="imeta"><span class="itime">5h ago</span><span class="itag im2">Medium · WTI</span></div></div></div>
         </div>
       </div>
+
     </div>
   </div>
   <!-- CRT SCANNER panel -->
@@ -1377,8 +1380,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <button class="btn smt-filter" data-filter="bullish" onclick="filterSmtResults('bullish',this)" style="font-size:10px;padding:4px 12px">Bullish SMT</button>
     <button class="btn smt-filter" data-filter="bearish" onclick="filterSmtResults('bearish',this)" style="font-size:10px;padding:4px 12px">Bearish SMT</button>
     <button class="btn smt-filter" data-filter="aplus" onclick="filterSmtResults('aplus',this)" style="font-size:10px;padding:4px 12px">A/A+ Grade</button>
-    <button class="btn smt-filter" data-filter="strong" onclick="filterSmtResults('strong',this)" style="font-size:10px;padding:4px 12px;border-color:rgba(0,212,168,.4);color:var(--green)">Strong</button>
-    <button class="btn smt-filter" data-filter="weak" onclick="filterSmtResults('weak',this)" style="font-size:10px;padding:4px 12px;border-color:rgba(255,179,71,.4);color:var(--amber)">Weak</button>
     <div style="flex:1"></div>
     <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em">SORT</span>
     <button class="btn smt-sort active" onclick="sortSmtResults('correlation',this)" style="font-size:10px;padding:4px 10px">Correlation</button>
@@ -6152,6 +6153,7 @@ function setFutTab(tab) {
   const stats = document.getElementById('fut-stats');
   if (stats) stats.style.display = tab !== 'intel' ? 'flex' : 'none';
   updateFutMomBar();
+  if (tab === 'intel') { setTimeout(() => { if (typeof renderFutIntelCards === 'function') renderFutIntelCards(null); }, 100); }
 }
 
 function updateFutMomBar() {
@@ -6825,329 +6827,54 @@ setInterval(() => {
 }, 6 * 3600 * 1000);
 
 
-// Curated SMT pair universe — every major ASX sector
-// Split into STRONG (high correlation) and WEAK (moderate correlation) tiers
-
-const SMT_STRONG_PAIRS = [
-  // Banks (existing — strong)
-  {t1:'CBA',t2:'WBC',sector:'Banks',strength:'strong'},{t1:'CBA',t2:'NAB',sector:'Banks',strength:'strong'},{t1:'CBA',t2:'ANZ',sector:'Banks',strength:'strong'},
-  {t1:'WBC',t2:'NAB',sector:'Banks',strength:'strong'},{t1:'WBC',t2:'ANZ',sector:'Banks',strength:'strong'},{t1:'NAB',t2:'ANZ',sector:'Banks',strength:'strong'},
-  {t1:'CBA',t2:'BEN',sector:'Banks',strength:'strong'},{t1:'CBA',t2:'BOQ',sector:'Banks',strength:'strong'},{t1:'BEN',t2:'BOQ',sector:'Banks',strength:'strong'},
-  // Iron Ore / Diversified Miners (existing — strong)
-  {t1:'BHP',t2:'RIO',sector:'Miners',strength:'strong'},{t1:'BHP',t2:'FMG',sector:'Miners',strength:'strong'},{t1:'RIO',t2:'FMG',sector:'Miners',strength:'strong'},
-  {t1:'BHP',t2:'S32',sector:'Miners',strength:'strong'},{t1:'BHP',t2:'MIN',sector:'Miners',strength:'strong'},{t1:'RIO',t2:'S32',sector:'Miners',strength:'strong'},
-  // Gold (existing — strong)
-  {t1:'NST',t2:'EVN',sector:'Gold',strength:'strong'},{t1:'NCM',t2:'NST',sector:'Gold',strength:'strong'},{t1:'NCM',t2:'EVN',sector:'Gold',strength:'strong'},
-  {t1:'RMS',t2:'DEG',sector:'Gold',strength:'strong'},{t1:'SBM',t2:'RMS',sector:'Gold',strength:'strong'},{t1:'GOR',t2:'RSG',sector:'Gold',strength:'strong'},
-  {t1:'RRL',t2:'SLR',sector:'Gold',strength:'strong'},{t1:'NST',t2:'RMS',sector:'Gold',strength:'strong'},{t1:'EVN',t2:'DEG',sector:'Gold',strength:'strong'},
-  // Lithium (existing — strong)
-  {t1:'PLS',t2:'LTR',sector:'Lithium',strength:'strong'},{t1:'PLS',t2:'IGO',sector:'Lithium',strength:'strong'},{t1:'MIN',t2:'PLS',sector:'Lithium',strength:'strong'},
-  {t1:'AKE',t2:'PLS',sector:'Lithium',strength:'strong'},{t1:'CXO',t2:'LTR',sector:'Lithium',strength:'strong'},{t1:'IGO',t2:'MIN',sector:'Lithium',strength:'strong'},
-  // Energy (existing — strong)
-  {t1:'WDS',t2:'STO',sector:'Energy',strength:'strong'},{t1:'WDS',t2:'BPT',sector:'Energy',strength:'strong'},{t1:'STO',t2:'BPT',sector:'Energy',strength:'strong'},
-  {t1:'WDS',t2:'ORG',sector:'Energy',strength:'strong'},{t1:'STO',t2:'ORG',sector:'Energy',strength:'strong'},
-  // Retail / Consumer (existing — strong)
-  {t1:'WES',t2:'WOW',sector:'Retail',strength:'strong'},{t1:'JBH',t2:'HVN',sector:'Retail',strength:'strong'},{t1:'PMV',t2:'LOV',sector:'Retail',strength:'strong'},
-  {t1:'WOW',t2:'COH',sector:'Retail',strength:'strong'},{t1:'DMP',t2:'JBH',sector:'Retail',strength:'strong'},
-  // Fuel / Convenience (existing — strong)
-  {t1:'ALD',t2:'VEA',sector:'Energy',strength:'strong'},
-  // Insurance (existing — strong)
-  {t1:'QBE',t2:'SUN',sector:'Insurance',strength:'strong'},{t1:'QBE',t2:'IAG',sector:'Insurance',strength:'strong'},{t1:'SUN',t2:'IAG',sector:'Insurance',strength:'strong'},
-  {t1:'QBE',t2:'MPL',sector:'Insurance',strength:'strong'},
-  // REITs (existing — strong)
-  {t1:'GMG',t2:'SGP',sector:'REITs',strength:'strong'},{t1:'SCG',t2:'GPT',sector:'REITs',strength:'strong'},{t1:'DXS',t2:'CHC',sector:'REITs',strength:'strong'},
-  {t1:'BWP',t2:'CQR',sector:'REITs',strength:'strong'},{t1:'MGR',t2:'VCX',sector:'REITs',strength:'strong'},
-  // Tech (existing — strong)
-  {t1:'XRO',t2:'WTC',sector:'Software',strength:'strong'},{t1:'XRO',t2:'ALU',sector:'Software',strength:'strong'},{t1:'TNE',t2:'WTC',sector:'Software',strength:'strong'},
-  {t1:'ALU',t2:'WTC',sector:'Software',strength:'strong'},{t1:'PME',t2:'TNE',sector:'Software',strength:'strong'},
-  // Healthcare (existing — strong)
-  {t1:'CSL',t2:'RHC',sector:'Healthcare',strength:'strong'},{t1:'CSL',t2:'SHL',sector:'Healthcare',strength:'strong'},{t1:'RHC',t2:'SHL',sector:'Healthcare',strength:'strong'},
-  {t1:'RMD',t2:'COH',sector:'Healthcare',strength:'strong'},{t1:'CSL',t2:'RMD',sector:'Healthcare',strength:'strong'},
-  // Infrastructure / Utilities (existing — strong)
-  {t1:'TCL',t2:'APA',sector:'Infrastructure',strength:'strong'},{t1:'APA',t2:'AGL',sector:'Infrastructure',strength:'strong'},
-  // Telco (existing — strong)
-  {t1:'TLS',t2:'TPG',sector:'Telco',strength:'strong'},
-  // Building / Materials (existing — strong)
-  {t1:'JHX',t2:'BLD',sector:'Building',strength:'strong'},{t1:'AMC',t2:'ORA',sector:'Building',strength:'strong'},{t1:'BXB',t2:'AMC',sector:'Building',strength:'strong'},
-  // Diversified / Other (existing — strong)
-  {t1:'MQG',t2:'ASX',sector:'Diversified',strength:'strong'},{t1:'ALL',t2:'TAH',sector:'Gaming',strength:'strong'},
-  {t1:'QAN',t2:'WEB',sector:'Travel',strength:'strong'},{t1:'FLT',t2:'WEB',sector:'Travel',strength:'strong'},
-  // Cross-market (existing — strong)
-  {t1:'BHP',t2:'WDS',sector:'Resources-X',strength:'strong'},{t1:'CBA',t2:'BHP',sector:'Macro-X',strength:'strong'},
-  {t1:'CSL',t2:'XRO',sector:'Growth-X',strength:'strong'},{t1:'WES',t2:'TLS',sector:'Defensive-X',strength:'strong'},
-
-  // ── NEW STRONG: Materials ──
-  {t1:'ABX',t2:'LYC',sector:'Materials',strength:'strong'},{t1:'ABX',t2:'ILU',sector:'Materials',strength:'strong'},
-  {t1:'AVM',t2:'SBM',sector:'Materials',strength:'strong'},{t1:'AVM',t2:'RRL',sector:'Materials',strength:'strong'},
-  {t1:'ALK',t2:'GOR',sector:'Materials',strength:'strong'},{t1:'ALK',t2:'SBM',sector:'Materials',strength:'strong'},
-  {t1:'AAI',t2:'RIO',sector:'Materials',strength:'strong'},{t1:'AAI',t2:'S32',sector:'Materials',strength:'strong'},
-  {t1:'AGY',t2:'CXO',sector:'Materials',strength:'strong'},{t1:'AGY',t2:'LTR',sector:'Materials',strength:'strong'},{t1:'AGY',t2:'SYR',sector:'Materials',strength:'strong'},
-  {t1:'BTR',t2:'WGX',sector:'Materials',strength:'strong'},{t1:'BTR',t2:'CMM',sector:'Materials',strength:'strong'},{t1:'BTR',t2:'RSG',sector:'Materials',strength:'strong'},
-  {t1:'LYC',t2:'ILU',sector:'Materials',strength:'strong'},{t1:'LYC',t2:'ARU',sector:'Materials',strength:'strong'},
-  {t1:'MAC',t2:'SFR',sector:'Materials',strength:'strong'},{t1:'MAC',t2:'AIS',sector:'Materials',strength:'strong'},{t1:'MAC',t2:'HGO',sector:'Materials',strength:'strong'},
-  {t1:'MAH',t2:'NWH',sector:'Materials',strength:'strong'},{t1:'MAH',t2:'MND',sector:'Materials',strength:'strong'},{t1:'MAH',t2:'ORI',sector:'Materials',strength:'strong'},
-  {t1:'MGT',t2:'MGU',sector:'Materials',strength:'strong'},{t1:'MGT',t2:'GWR',sector:'Materials',strength:'strong'},
-  {t1:'MGU',t2:'GWR',sector:'Materials',strength:'strong'},{t1:'MGU',t2:'SRK',sector:'Materials',strength:'strong'},
-  {t1:'MIN',t2:'LTR',sector:'Lithium',strength:'strong'},{t1:'MIN',t2:'IGO',sector:'Lithium',strength:'strong'},{t1:'MIN',t2:'CXO',sector:'Lithium',strength:'strong'},
-  {t1:'MIN',t2:'WHC',sector:'Materials',strength:'strong'},{t1:'MIN',t2:'NHC',sector:'Materials',strength:'strong'},
-  {t1:'NST',t2:'PRU',sector:'Gold',strength:'strong'},{t1:'NST',t2:'RRL',sector:'Gold',strength:'strong'},{t1:'NST',t2:'GMD',sector:'Gold',strength:'strong'},
-  {t1:'NIC',t2:'IGO',sector:'Materials',strength:'strong'},{t1:'NIC',t2:'S32',sector:'Materials',strength:'strong'},
-  {t1:'MGX',t2:'GRR',sector:'Materials',strength:'strong'},{t1:'MGX',t2:'FEX',sector:'Materials',strength:'strong'},
-  {t1:'GLA',t2:'AEE',sector:'Materials',strength:'strong'},{t1:'GLA',t2:'BMN',sector:'Materials',strength:'strong'},{t1:'GLA',t2:'DYL',sector:'Materials',strength:'strong'},
-  {t1:'GLA',t2:'LOT',sector:'Materials',strength:'strong'},{t1:'GLA',t2:'TOE',sector:'Materials',strength:'strong'},
-  {t1:'MAT',t2:'LYC',sector:'Materials',strength:'strong'},{t1:'MAT',t2:'MEK',sector:'Materials',strength:'strong'},{t1:'MAT',t2:'NMG',sector:'Materials',strength:'strong'},
-  {t1:'MM8',t2:'MEK',sector:'Materials',strength:'strong'},{t1:'MM8',t2:'LYC',sector:'Materials',strength:'strong'},{t1:'MM8',t2:'NMG',sector:'Materials',strength:'strong'},
-  {t1:'MEK',t2:'LYC',sector:'Materials',strength:'strong'},{t1:'MEK',t2:'NMG',sector:'Materials',strength:'strong'},
-  {t1:'MTM',t2:'LYC',sector:'Materials',strength:'strong'},{t1:'MTM',t2:'MEK',sector:'Materials',strength:'strong'},
-  {t1:'MEG',t2:'ILU',sector:'Materials',strength:'strong'},
-  {t1:'BKT',t2:'SYR',sector:'Materials',strength:'strong'},{t1:'BKT',t2:'RNU',sector:'Materials',strength:'strong'},{t1:'BKT',t2:'TLG',sector:'Materials',strength:'strong'},
-  {t1:'MLG',t2:'MAH',sector:'Materials',strength:'strong'},{t1:'MLG',t2:'NWH',sector:'Materials',strength:'strong'},
-  {t1:'MTH',t2:'SVL',sector:'Materials',strength:'strong'},{t1:'MTH',t2:'IVR',sector:'Materials',strength:'strong'},
-  {t1:'MRR',t2:'ALY',sector:'Materials',strength:'strong'},{t1:'MRR',t2:'MEG',sector:'Materials',strength:'strong'},
-  {t1:'ZNC',t2:'TMB',sector:'Materials',strength:'strong'},{t1:'TMB',t2:'KGD',sector:'Materials',strength:'strong'},
-  {t1:'GBE',t2:'ILU',sector:'Materials',strength:'strong'},
-  {t1:'REZ',t2:'KAI',sector:'Materials',strength:'strong'},{t1:'REZ',t2:'MAT',sector:'Materials',strength:'strong'},
-  {t1:'MMA',t2:'BML',sector:'Materials',strength:'strong'},{t1:'MMA',t2:'IVR',sector:'Materials',strength:'strong'},{t1:'MMA',t2:'SVL',sector:'Materials',strength:'strong'},
-  {t1:'GUE',t2:'BMN',sector:'Materials',strength:'strong'},{t1:'GUE',t2:'LOT',sector:'Materials',strength:'strong'},
-  {t1:'NMG',t2:'GBR',sector:'Materials',strength:'strong'},{t1:'NMG',t2:'PNR',sector:'Materials',strength:'strong'},
-  {t1:'MDI',t2:'BDG',sector:'Materials',strength:'strong'},{t1:'MDI',t2:'FAU',sector:'Materials',strength:'strong'},
-  {t1:'NFL',t2:'AEE',sector:'Materials',strength:'strong'},{t1:'NFL',t2:'MEU',sector:'Materials',strength:'strong'},
-  {t1:'LM8',t2:'GAL',sector:'Materials',strength:'strong'},{t1:'LM8',t2:'CTM',sector:'Materials',strength:'strong'},
-  {t1:'DVL',t2:'CMP',sector:'Healthcare',strength:'strong'},{t1:'DVL',t2:'MX1',sector:'Healthcare',strength:'strong'},
-  {t1:'MAU',t2:'BC8',sector:'Materials',strength:'strong'},{t1:'BC8',t2:'RMS',sector:'Gold',strength:'strong'},
-  {t1:'MGA',t2:'CNB',sector:'Materials',strength:'strong'},{t1:'MGA',t2:'AUQ',sector:'Materials',strength:'strong'},
-  {t1:'MEI',t2:'BRE',sector:'Materials',strength:'strong'},{t1:'MEI',t2:'ILU',sector:'Materials',strength:'strong'},{t1:'MEI',t2:'NTU',sector:'Materials',strength:'strong'},
-  {t1:'SKM',t2:'SMM',sector:'Materials',strength:'strong'},{t1:'RTG',t2:'INR',sector:'Materials',strength:'strong'},
-  {t1:'INR',t2:'ETM',sector:'Materials',strength:'strong'},
-  {t1:'NTU',t2:'ARU',sector:'Materials',strength:'strong'},
-  {t1:'MAG',t2:'AUQ',sector:'Materials',strength:'strong'},
-
-  // ── NEW STRONG: Energy ──
-  {t1:'AGL',t2:'APA',sector:'Energy',strength:'strong'},
-  {t1:'AGE',t2:'DYL',sector:'Energy',strength:'strong'},{t1:'AGE',t2:'BOE',sector:'Energy',strength:'strong'},{t1:'AGE',t2:'PDN',sector:'Energy',strength:'strong'},
-  {t1:'AGE',t2:'LOT',sector:'Energy',strength:'strong'},{t1:'AGE',t2:'AEE',sector:'Energy',strength:'strong'},{t1:'AGE',t2:'TOE',sector:'Energy',strength:'strong'},
-  {t1:'LOT',t2:'PDN',sector:'Energy',strength:'strong'},{t1:'LOT',t2:'BOE',sector:'Energy',strength:'strong'},{t1:'LOT',t2:'DYL',sector:'Energy',strength:'strong'},
-  {t1:'LOT',t2:'PEN',sector:'Energy',strength:'strong'},{t1:'LOT',t2:'BMN',sector:'Energy',strength:'strong'},
-  {t1:'ALD',t2:'WDS',sector:'Energy',strength:'strong'},
-  {t1:'AEE',t2:'DYL',sector:'Energy',strength:'strong'},{t1:'AEE',t2:'LOT',sector:'Energy',strength:'strong'},
-  {t1:'BMN',t2:'PDN',sector:'Energy',strength:'strong'},{t1:'BMN',t2:'DYL',sector:'Energy',strength:'strong'},{t1:'BMN',t2:'LOT',sector:'Energy',strength:'strong'},
-  {t1:'BMN',t2:'AGE',sector:'Energy',strength:'strong'},{t1:'BMN',t2:'AEE',sector:'Energy',strength:'strong'},
-  {t1:'BSN',t2:'PDN',sector:'Energy',strength:'strong'},{t1:'BSN',t2:'DYL',sector:'Energy',strength:'strong'},{t1:'BSN',t2:'LOT',sector:'Energy',strength:'strong'},
-  {t1:'BSN',t2:'AGE',sector:'Energy',strength:'strong'},{t1:'BSN',t2:'AEE',sector:'Energy',strength:'strong'},
-  {t1:'BPT',t2:'CTP',sector:'Energy',strength:'strong'},{t1:'BPT',t2:'HZN',sector:'Energy',strength:'strong'},
-  {t1:'BTL',t2:'KAR',sector:'Energy',strength:'strong'},{t1:'BTL',t2:'HZN',sector:'Energy',strength:'strong'},{t1:'BTL',t2:'CTP',sector:'Energy',strength:'strong'},
-  {t1:'BOE',t2:'PDN',sector:'Energy',strength:'strong'},{t1:'BOE',t2:'BMN',sector:'Energy',strength:'strong'},
-  {t1:'BHP',t2:'ILU',sector:'Materials',strength:'strong'},
-  {t1:'BRK',t2:'CVN',sector:'Energy',strength:'strong'},{t1:'BRK',t2:'VEN',sector:'Energy',strength:'strong'},{t1:'BRK',t2:'GAS',sector:'Energy',strength:'strong'},
-  {t1:'BRU',t2:'KAR',sector:'Energy',strength:'strong'},{t1:'BRU',t2:'VEN',sector:'Energy',strength:'strong'},{t1:'CVN',t2:'KAR',sector:'Energy',strength:'strong'},
-  {t1:'CXU',t2:'LOT',sector:'Energy',strength:'strong'},{t1:'CXU',t2:'AGE',sector:'Energy',strength:'strong'},{t1:'CXU',t2:'BMN',sector:'Energy',strength:'strong'},
-  {t1:'CXU',t2:'AEE',sector:'Energy',strength:'strong'},
-  {t1:'DYL',t2:'PDN',sector:'Energy',strength:'strong'},{t1:'DYL',t2:'LOT',sector:'Energy',strength:'strong'},{t1:'DYL',t2:'AGE',sector:'Energy',strength:'strong'},
-  {t1:'DYL',t2:'BMN',sector:'Energy',strength:'strong'},
-  {t1:'GNE',t2:'MEZ',sector:'Energy',strength:'strong'},{t1:'GNE',t2:'CEN',sector:'Energy',strength:'strong'},{t1:'GNE',t2:'MCY',sector:'Energy',strength:'strong'},
-  {t1:'HZN',t2:'CUE',sector:'Energy',strength:'strong'},{t1:'HZN',t2:'KAR',sector:'Energy',strength:'strong'},
-  {t1:'KAR',t2:'STO',sector:'Energy',strength:'strong'},{t1:'KAR',t2:'WDS',sector:'Energy',strength:'strong'},{t1:'KAR',t2:'HZN',sector:'Energy',strength:'strong'},
-  {t1:'KAR',t2:'BTL',sector:'Energy',strength:'strong'},{t1:'KAR',t2:'ORG',sector:'Energy',strength:'strong'},
-  {t1:'MCY',t2:'MEZ',sector:'Energy',strength:'strong'},{t1:'MCY',t2:'CEN',sector:'Energy',strength:'strong'},{t1:'MCY',t2:'GNE',sector:'Energy',strength:'strong'},
-  {t1:'NHC',t2:'WHC',sector:'Energy',strength:'strong'},{t1:'NHC',t2:'CEN',sector:'Energy',strength:'strong'},{t1:'NHC',t2:'YAL',sector:'Energy',strength:'strong'},
-  {t1:'NHC',t2:'SMR',sector:'Energy',strength:'strong'},{t1:'NHC',t2:'TER',sector:'Energy',strength:'strong'},
-  {t1:'ORG',t2:'STO',sector:'Energy',strength:'strong'},{t1:'ORG',t2:'WDS',sector:'Energy',strength:'strong'},{t1:'ORG',t2:'KAR',sector:'Energy',strength:'strong'},
-  {t1:'PDN',t2:'DYL',sector:'Energy',strength:'strong'},{t1:'PDN',t2:'LOT',sector:'Energy',strength:'strong'},{t1:'PDN',t2:'AGE',sector:'Energy',strength:'strong'},
-  {t1:'PDN',t2:'BMN',sector:'Energy',strength:'strong'},
-  {t1:'PCL',t2:'DYL',sector:'Energy',strength:'strong'},{t1:'PCL',t2:'LOT',sector:'Energy',strength:'strong'},{t1:'PCL',t2:'AGE',sector:'Energy',strength:'strong'},
-  {t1:'PCL',t2:'BMN',sector:'Energy',strength:'strong'},{t1:'PCL',t2:'PDN',sector:'Energy',strength:'strong'},
-  {t1:'PEN',t2:'AGE',sector:'Energy',strength:'strong'},{t1:'PEN',t2:'TOE',sector:'Energy',strength:'strong'},
-  {t1:'TER',t2:'SMR',sector:'Energy',strength:'strong'},{t1:'TER',t2:'NHC',sector:'Energy',strength:'strong'},{t1:'TER',t2:'WHC',sector:'Energy',strength:'strong'},
-  {t1:'TOE',t2:'PEN',sector:'Energy',strength:'strong'},{t1:'TOE',t2:'AGE',sector:'Energy',strength:'strong'},
-  {t1:'VEN',t2:'BRK',sector:'Energy',strength:'strong'},{t1:'VEN',t2:'CTP',sector:'Energy',strength:'strong'},
-  {t1:'WHC',t2:'NHC',sector:'Energy',strength:'strong'},{t1:'WHC',t2:'YAL',sector:'Energy',strength:'strong'},{t1:'WHC',t2:'SMR',sector:'Energy',strength:'strong'},
-  {t1:'YAL',t2:'WHC',sector:'Energy',strength:'strong'},{t1:'YAL',t2:'NHC',sector:'Energy',strength:'strong'},
-  {t1:'RLT',t2:'D3E',sector:'Energy',strength:'strong'},{t1:'RLT',t2:'NHE',sector:'Energy',strength:'strong'},{t1:'RLT',t2:'GGE',sector:'Energy',strength:'strong'},
-  {t1:'D3E',t2:'NHE',sector:'Energy',strength:'strong'},{t1:'FZR',t2:'HPR',sector:'Energy',strength:'strong'},
-  {t1:'EV1',t2:'SYR',sector:'Energy',strength:'strong'},{t1:'EV1',t2:'RNU',sector:'Energy',strength:'strong'},{t1:'EV1',t2:'TLG',sector:'Energy',strength:'strong'},
-  {t1:'GAS',t2:'TMK',sector:'Energy',strength:'strong'},{t1:'GAS',t2:'GLL',sector:'Energy',strength:'strong'},
-  {t1:'TM1',t2:'AUZ',sector:'Energy',strength:'strong'},{t1:'TM1',t2:'FME',sector:'Energy',strength:'strong'},
-  {t1:'SHE',t2:'BRK',sector:'Energy',strength:'strong'},
-  {t1:'THR',t2:'HAR',sector:'Energy',strength:'strong'},{t1:'THR',t2:'TEE',sector:'Energy',strength:'strong'},
-  {t1:'SRL',t2:'AUZ',sector:'Energy',strength:'strong'},{t1:'IPB',t2:'CVN',sector:'Energy',strength:'strong'},{t1:'FAR',t2:'CVN',sector:'Energy',strength:'strong'},
-  {t1:'CUE',t2:'CTP',sector:'Energy',strength:'strong'},{t1:'TEE',t2:'THR',sector:'Energy',strength:'strong'},
-  {t1:'NXG',t2:'PDN',sector:'Energy',strength:'strong'},{t1:'NXG',t2:'DYL',sector:'Energy',strength:'strong'},{t1:'NXG',t2:'BOE',sector:'Energy',strength:'strong'},{t1:'NXG',t2:'LOT',sector:'Energy',strength:'strong'},
-  {t1:'EME',t2:'AGE',sector:'Energy',strength:'strong'},{t1:'EME',t2:'BMN',sector:'Energy',strength:'strong'},
-  {t1:'GLL',t2:'LKO',sector:'Energy',strength:'strong'},
-  {t1:'GHY',t2:'HZR',sector:'Energy',strength:'strong'},
-  {t1:'LIO',t2:'HZR',sector:'Energy',strength:'strong'},{t1:'LIO',t2:'PH2',sector:'Energy',strength:'strong'},
-  {t1:'EXR',t2:'PH2',sector:'Energy',strength:'strong'},
-  {t1:'FME',t2:'CHN',sector:'Energy',strength:'strong'},{t1:'FME',t2:'POD',sector:'Energy',strength:'strong'},
-  {t1:'CND',t2:'JPR',sector:'Energy',strength:'strong'},{t1:'CRD',t2:'IVZ',sector:'Energy',strength:'strong'},
-  {t1:'PGY',t2:'HZR',sector:'Energy',strength:'strong'},{t1:'PV1',t2:'HZR',sector:'Energy',strength:'strong'},
-  {t1:'QPM',t2:'CTM',sector:'Energy',strength:'strong'},{t1:'QPM',t2:'COB',sector:'Energy',strength:'strong'},
-  {t1:'BLU',t2:'BRU',sector:'Energy',strength:'strong'},
-  {t1:'HE8',t2:'BRU',sector:'Energy',strength:'strong'},
-  {t1:'EOL',t2:'TNE',sector:'Software',strength:'strong'},{t1:'EOL',t2:'XRO',sector:'Software',strength:'strong'},
-
-  // ── NEW STRONG: Software & Services ──
-  {t1:'NXT',t2:'MAQ',sector:'Software',strength:'strong'},{t1:'NXT',t2:'DGT',sector:'Software',strength:'strong'},{t1:'NXT',t2:'GMG',sector:'Software',strength:'strong'},
-  {t1:'NXT',t2:'IFT',sector:'Software',strength:'strong'},{t1:'NXT',t2:'MP1',sector:'Software',strength:'strong'},
-  {t1:'XRO',t2:'EOL',sector:'Software',strength:'strong'},{t1:'ACE',t2:'SPZ',sector:'Software',strength:'strong'},{t1:'APX',t2:'BRN',sector:'Software',strength:'strong'},
-  {t1:'MP1',t2:'NXT',sector:'Software',strength:'strong'},{t1:'MP1',t2:'SLC',sector:'Software',strength:'strong'},
-  {t1:'AR9',t2:'SNS',sector:'Software',strength:'strong'},{t1:'ATA',t2:'MAQ',sector:'Software',strength:'strong'},
-  {t1:'FCT',t2:'SPZ',sector:'Software',strength:'strong'},{t1:'MAQ',t2:'NXT',sector:'Software',strength:'strong'},{t1:'MAQ',t2:'RHP',sector:'Software',strength:'strong'},
-  {t1:'BRN',t2:'AXE',sector:'Software',strength:'strong'},{t1:'WBT',t2:'AXE',sector:'Software',strength:'strong'},{t1:'BVS',t2:'PPS',sector:'Software',strength:'strong'},
-  {t1:'MFG',t2:'PPT',sector:'Software',strength:'strong'},{t1:'DGT',t2:'NXT',sector:'Software',strength:'strong'},
-  {t1:'IFT',t2:'NXT',sector:'Software',strength:'strong'},{t1:'WTC',t2:'NXT',sector:'Software',strength:'strong'},
-  {t1:'TNE',t2:'EOL',sector:'Software',strength:'strong'},{t1:'SPZ',t2:'ACE',sector:'Software',strength:'strong'},
-  {t1:'SNS',t2:'AR9',sector:'Software',strength:'strong'},{t1:'AXE',t2:'BRN',sector:'Software',strength:'strong'},
-  {t1:'PPS',t2:'BVS',sector:'Software',strength:'strong'},{t1:'PPT',t2:'MFG',sector:'Software',strength:'strong'},
-  {t1:'ID8',t2:'SMX',sector:'Software',strength:'strong'},{t1:'ID8',t2:'NOV',sector:'Software',strength:'strong'},
-  {t1:'NOV',t2:'NVQ',sector:'Software',strength:'strong'},
-  {t1:'DTL',t2:'DDR',sector:'Software',strength:'strong'},{t1:'DUG',t2:'DTL',sector:'Software',strength:'strong'},
-  {t1:'DXN',t2:'GMG',sector:'Software',strength:'strong'},{t1:'DDR',t2:'NXT',sector:'Software',strength:'strong'},
-  {t1:'IFM',t2:'DDR',sector:'Software',strength:'strong'},{t1:'IFM',t2:'DTL',sector:'Software',strength:'strong'},
-  {t1:'IRI',t2:'RDY',sector:'Software',strength:'strong'},{t1:'JAN',t2:'DDR',sector:'Software',strength:'strong'},{t1:'JAN',t2:'DTL',sector:'Software',strength:'strong'},
-  {t1:'JCS',t2:'TYR',sector:'Software',strength:'strong'},{t1:'SDR',t2:'ART',sector:'Software',strength:'strong'},
-  {t1:'GTI',t2:'EML',sector:'Software',strength:'strong'},{t1:'GTI',t2:'TYR',sector:'Software',strength:'strong'},
-  {t1:'SOC',t2:'ATA',sector:'Software',strength:'strong'},{t1:'SOC',t2:'CYB',sector:'Software',strength:'strong'},
-  {t1:'SPX',t2:'FND',sector:'Software',strength:'strong'},{t1:'SPX',t2:'TYR',sector:'Software',strength:'strong'},
-  {t1:'ART',t2:'SDR',sector:'Software',strength:'strong'},{t1:'OLL',t2:'JAN',sector:'Software',strength:'strong'},
-  {t1:'VNL',t2:'CAR',sector:'Software',strength:'strong'},{t1:'VNL',t2:'REA',sector:'Software',strength:'strong'},
-  {t1:'EGH',t2:'XRO',sector:'Software',strength:'strong'},
-  {t1:'RDY',t2:'TNE',sector:'Software',strength:'strong'},
-  {t1:'MME',t2:'FCL',sector:'Software',strength:'strong'},{t1:'NVQ',t2:'NOV',sector:'Software',strength:'strong'},
-  {t1:'XF1',t2:'PPE',sector:'Software',strength:'strong'},{t1:'XF1',t2:'RDY',sector:'Software',strength:'strong'},{t1:'XF1',t2:'ART',sector:'Software',strength:'strong'},
-  {t1:'ESK',t2:'BCC',sector:'Software',strength:'strong'},{t1:'FND',t2:'SPX',sector:'Software',strength:'strong'},
-  {t1:'HUB',t2:'NWL',sector:'Software',strength:'strong'},{t1:'AQZ',t2:'SKC',sector:'Software',strength:'strong'},
-  {t1:'SNS',t2:'BEO',sector:'Software',strength:'strong'},{t1:'SNS',t2:'SP3',sector:'Software',strength:'strong'},
-  {t1:'PPS',t2:'IFL',sector:'Software',strength:'strong'},{t1:'PPS',t2:'AMP',sector:'Software',strength:'strong'},{t1:'PPS',t2:'MQG',sector:'Software',strength:'strong'},
-  {t1:'ST1',t2:'VN8',sector:'Software',strength:'strong'},{t1:'ST1',t2:'SWP',sector:'Software',strength:'strong'},
-  {t1:'FLX',t2:'HAS',sector:'Software',strength:'strong'}
+const SMT_PAIRS = [
+  // Banks
+  {t1:'CBA',t2:'WBC',sector:'Banks'},{t1:'CBA',t2:'NAB',sector:'Banks'},{t1:'CBA',t2:'ANZ',sector:'Banks'},
+  {t1:'WBC',t2:'NAB',sector:'Banks'},{t1:'WBC',t2:'ANZ',sector:'Banks'},{t1:'NAB',t2:'ANZ',sector:'Banks'},
+  {t1:'CBA',t2:'BEN',sector:'Banks'},{t1:'CBA',t2:'BOQ',sector:'Banks'},{t1:'BEN',t2:'BOQ',sector:'Banks'},
+  // Iron Ore / Diversified Miners
+  {t1:'BHP',t2:'RIO',sector:'Miners'},{t1:'BHP',t2:'FMG',sector:'Miners'},{t1:'RIO',t2:'FMG',sector:'Miners'},
+  {t1:'BHP',t2:'S32',sector:'Miners'},{t1:'BHP',t2:'MIN',sector:'Miners'},{t1:'RIO',t2:'S32',sector:'Miners'},
+  // Gold
+  {t1:'NST',t2:'EVN',sector:'Gold'},{t1:'NCM',t2:'NST',sector:'Gold'},{t1:'NCM',t2:'EVN',sector:'Gold'},
+  {t1:'RMS',t2:'DEG',sector:'Gold'},{t1:'SBM',t2:'RMS',sector:'Gold'},{t1:'GOR',t2:'RSG',sector:'Gold'},
+  {t1:'RRL',t2:'SLR',sector:'Gold'},{t1:'NST',t2:'RMS',sector:'Gold'},{t1:'EVN',t2:'DEG',sector:'Gold'},
+  // Lithium
+  {t1:'PLS',t2:'LTR',sector:'Lithium'},{t1:'PLS',t2:'IGO',sector:'Lithium'},{t1:'MIN',t2:'PLS',sector:'Lithium'},
+  {t1:'AKE',t2:'PLS',sector:'Lithium'},{t1:'CXO',t2:'LTR',sector:'Lithium'},{t1:'IGO',t2:'MIN',sector:'Lithium'},
+  // Energy
+  {t1:'WDS',t2:'STO',sector:'Energy'},{t1:'WDS',t2:'BPT',sector:'Energy'},{t1:'STO',t2:'BPT',sector:'Energy'},
+  {t1:'WDS',t2:'ORG',sector:'Energy'},{t1:'STO',t2:'ORG',sector:'Energy'},
+  // Retail / Consumer
+  {t1:'WES',t2:'WOW',sector:'Retail'},{t1:'JBH',t2:'HVN',sector:'Retail'},{t1:'PMV',t2:'LOV',sector:'Retail'},
+  {t1:'WOW',t2:'COH',sector:'Retail'},{t1:'DMP',t2:'JBH',sector:'Retail'},
+  // Fuel / Convenience
+  {t1:'ALD',t2:'VEA',sector:'Fuel'},
+  // Insurance
+  {t1:'QBE',t2:'SUN',sector:'Insurance'},{t1:'QBE',t2:'IAG',sector:'Insurance'},{t1:'SUN',t2:'IAG',sector:'Insurance'},
+  {t1:'QBE',t2:'MPL',sector:'Insurance'},
+  // REITs
+  {t1:'GMG',t2:'SGP',sector:'REITs'},{t1:'SCG',t2:'GPT',sector:'REITs'},{t1:'DXS',t2:'CHC',sector:'REITs'},
+  {t1:'BWP',t2:'CQR',sector:'REITs'},{t1:'MGR',t2:'VCX',sector:'REITs'},
+  // Tech
+  {t1:'XRO',t2:'WTC',sector:'Tech'},{t1:'XRO',t2:'ALU',sector:'Tech'},{t1:'TNE',t2:'WTC',sector:'Tech'},
+  {t1:'ALU',t2:'WTC',sector:'Tech'},{t1:'PME',t2:'TNE',sector:'Tech'},
+  // Healthcare
+  {t1:'CSL',t2:'RHC',sector:'Healthcare'},{t1:'CSL',t2:'SHL',sector:'Healthcare'},{t1:'RHC',t2:'SHL',sector:'Healthcare'},
+  {t1:'RMD',t2:'COH',sector:'Healthcare'},{t1:'CSL',t2:'RMD',sector:'Healthcare'},
+  // Infrastructure / Utilities
+  {t1:'TCL',t2:'APA',sector:'Infrastructure'},{t1:'APA',t2:'AGL',sector:'Infrastructure'},
+  // Telco
+  {t1:'TLS',t2:'TPG',sector:'Telco'},
+  // Building / Materials
+  {t1:'JHX',t2:'BLD',sector:'Building'},{t1:'AMC',t2:'ORA',sector:'Building'},{t1:'BXB',t2:'AMC',sector:'Building'},
+  // Diversified / Other
+  {t1:'MQG',t2:'ASX',sector:'Diversified'},{t1:'ALL',t2:'TAH',sector:'Gaming'},
+  {t1:'QAN',t2:'WEB',sector:'Travel'},{t1:'FLT',t2:'WEB',sector:'Travel'},
+  // Cross-market (ASX vs US proxy via ASX-listed)
+  {t1:'BHP',t2:'WDS',sector:'Resources-X'},{t1:'CBA',t2:'BHP',sector:'Macro-X'},
+  {t1:'CSL',t2:'XRO',sector:'Growth-X'},{t1:'WES',t2:'TLS',sector:'Defensive-X'}
 ];
-
-const SMT_WEAK_PAIRS = [
-  // ── WEAK: Materials ──
-  {t1:'29M',t2:'BHP',sector:'Materials',strength:'weak'},{t1:'29M',t2:'BML',sector:'Materials',strength:'weak'},
-  {t1:'ABX',t2:'ETM',sector:'Materials',strength:'weak'},{t1:'ABX',t2:'S32',sector:'Materials',strength:'weak'},
-  {t1:'ACD',t2:'ARU',sector:'Materials',strength:'weak'},{t1:'ACD',t2:'LYC',sector:'Materials',strength:'weak'},
-  {t1:'AVM',t2:'SVL',sector:'Materials',strength:'weak'},{t1:'AVM',t2:'ETM',sector:'Materials',strength:'weak'},
-  {t1:'A1G',t2:'PRU',sector:'Gold',strength:'weak'},{t1:'A1M',t2:'IGO',sector:'Materials',strength:'weak'},
-  {t1:'ALK',t2:'EVN',sector:'Gold',strength:'weak'},{t1:'ALK',t2:'KFM',sector:'Materials',strength:'weak'},
-  {t1:'ASN',t2:'PLS',sector:'Lithium',strength:'weak'},{t1:'ASN',t2:'IGO',sector:'Lithium',strength:'weak'},
-  {t1:'GBE',t2:'ARU',sector:'Materials',strength:'weak'},{t1:'GBE',t2:'NTU',sector:'Materials',strength:'weak'},
-  {t1:'GRE',t2:'IGO',sector:'Materials',strength:'weak'},{t1:'GRE',t2:'BHP',sector:'Materials',strength:'weak'},{t1:'GRE',t2:'RIO',sector:'Materials',strength:'weak'},
-  {t1:'M3M',t2:'HGO',sector:'Materials',strength:'weak'},{t1:'M3M',t2:'MAC',sector:'Materials',strength:'weak'},
-  {t1:'MIO',t2:'MGT',sector:'Materials',strength:'weak'},{t1:'MIO',t2:'GWR',sector:'Materials',strength:'weak'},
-  {t1:'MAH',t2:'MIN',sector:'Materials',strength:'weak'},
-  {t1:'MAG',t2:'KSN',sector:'Materials',strength:'weak'},{t1:'MAG',t2:'CNB',sector:'Materials',strength:'weak'},{t1:'MAG',t2:'HGO',sector:'Materials',strength:'weak'},
-  {t1:'MGT',t2:'HIO',sector:'Materials',strength:'weak'},{t1:'MGU',t2:'HIO',sector:'Materials',strength:'weak'},
-  {t1:'MGA',t2:'KSN',sector:'Materials',strength:'weak'},
-  {t1:'MEI',t2:'ARU',sector:'Materials',strength:'weak'},{t1:'MEI',t2:'LIN',sector:'Materials',strength:'weak'},
-  {t1:'MIN',t2:'MAH',sector:'Materials',strength:'weak'},{t1:'MIN',t2:'PRN',sector:'Materials',strength:'weak'},
-  {t1:'MSV',t2:'PRN',sector:'Materials',strength:'weak'},{t1:'MTH',t2:'POL',sector:'Materials',strength:'weak'},
-  {t1:'MLG',t2:'PRN',sector:'Materials',strength:'weak'},{t1:'MLG',t2:'MIN',sector:'Materials',strength:'weak'},
-  {t1:'NIC',t2:'BHP',sector:'Materials',strength:'weak'},
-  {t1:'NTU',t2:'LYC',sector:'Materials',strength:'weak'},{t1:'NTU',t2:'ILU',sector:'Materials',strength:'weak'},
-  {t1:'MEG',t2:'ARU',sector:'Materials',strength:'weak'},{t1:'MEG',t2:'LYC',sector:'Materials',strength:'weak'},{t1:'MEG',t2:'NTU',sector:'Materials',strength:'weak'},
-  {t1:'MAT',t2:'MEG',sector:'Materials',strength:'weak'},{t1:'MAT',t2:'DRE',sector:'Materials',strength:'weak'},
-  {t1:'MM8',t2:'FAU',sector:'Materials',strength:'weak'},{t1:'MM8',t2:'DRE',sector:'Materials',strength:'weak'},
-  {t1:'MEK',t2:'DRE',sector:'Materials',strength:'weak'},{t1:'MEK',t2:'ETM',sector:'Materials',strength:'weak'},
-  {t1:'MTM',t2:'NTU',sector:'Materials',strength:'weak'},{t1:'MBK',t2:'ALY',sector:'Materials',strength:'weak'},
-  {t1:'NRX',t2:'CYM',sector:'Materials',strength:'weak'},{t1:'NRX',t2:'HMX',sector:'Materials',strength:'weak'},
-  {t1:'MMA',t2:'ASL',sector:'Materials',strength:'weak'},
-  {t1:'LLM',t2:'ASN',sector:'Materials',strength:'weak'},{t1:'LLM',t2:'PUR',sector:'Materials',strength:'weak'},{t1:'LLM',t2:'AUZ',sector:'Materials',strength:'weak'},
-  {t1:'NIM',t2:'ARL',sector:'Materials',strength:'weak'},{t1:'NIM',t2:'CHN',sector:'Materials',strength:'weak'},{t1:'NIM',t2:'CTM',sector:'Materials',strength:'weak'},
-  {t1:'GUE',t2:'AEE',sector:'Materials',strength:'weak'},{t1:'GUE',t2:'DYL',sector:'Materials',strength:'weak'},{t1:'GUE',t2:'GLA',sector:'Materials',strength:'weak'},
-  {t1:'BHM',t2:'POL',sector:'Materials',strength:'weak'},{t1:'BHM',t2:'SS1',sector:'Materials',strength:'weak'},
-  {t1:'BNR',t2:'MM1',sector:'Materials',strength:'weak'},{t1:'BCK',t2:'FMG',sector:'Miners',strength:'weak'},{t1:'BCK',t2:'MGX',sector:'Miners',strength:'weak'},
-  {t1:'BMG',t2:'YRL',sector:'Materials',strength:'weak'},{t1:'BMG',t2:'TMB',sector:'Materials',strength:'weak'},
-  {t1:'BML',t2:'29M',sector:'Materials',strength:'weak'},{t1:'BPM',t2:'ZNC',sector:'Materials',strength:'weak'},{t1:'BPM',t2:'GED',sector:'Materials',strength:'weak'},
-  {t1:'BRE',t2:'MEI',sector:'Materials',strength:'weak'},{t1:'BEZ',t2:'RTG',sector:'Materials',strength:'weak'},
-  {t1:'DVL',t2:'BB1',sector:'Healthcare',strength:'weak'},{t1:'DVL',t2:'EYE',sector:'Healthcare',strength:'weak'},
-  {t1:'AVR',t2:'HYD',sector:'Healthcare',strength:'weak'},{t1:'AVR',t2:'AYA',sector:'Healthcare',strength:'weak'},
-  {t1:'ESR',t2:'EPM',sector:'Materials',strength:'weak'},
-  {t1:'GL1',t2:'LTR',sector:'Lithium',strength:'weak'},{t1:'GL1',t2:'PLS',sector:'Lithium',strength:'weak'},{t1:'GL1',t2:'CXO',sector:'Lithium',strength:'weak'},
-  {t1:'MRZ',t2:'KOR',sector:'Materials',strength:'weak'},{t1:'MRZ',t2:'TEM',sector:'Materials',strength:'weak'},
-  {t1:'MDI',t2:'PRX',sector:'Materials',strength:'weak'},
-  {t1:'NWM',t2:'ARV',sector:'Materials',strength:'weak'},
-
-  // ── WEAK: Energy ──
-  {t1:'AGL',t2:'ORG',sector:'Energy',strength:'weak'},
-  {t1:'AGE',t2:'IGO',sector:'Energy',strength:'weak'},
-  {t1:'ALD',t2:'STO',sector:'Energy',strength:'weak'},{t1:'ALD',t2:'BPT',sector:'Energy',strength:'weak'},{t1:'ALD',t2:'ORG',sector:'Energy',strength:'weak'},
-  {t1:'BMN',t2:'BOE',sector:'Energy',strength:'weak'},{t1:'BMN',t2:'DEV',sector:'Energy',strength:'weak'},
-  {t1:'BSN',t2:'BOE',sector:'Energy',strength:'weak'},{t1:'BSN',t2:'TOE',sector:'Energy',strength:'weak'},
-  {t1:'BPT',t2:'KAR',sector:'Energy',strength:'weak'},{t1:'BTL',t2:'BPT',sector:'Energy',strength:'weak'},
-  {t1:'BOE',t2:'AGE',sector:'Energy',strength:'weak'},
-  {t1:'BHP',t2:'S32',sector:'Miners',strength:'weak'},{t1:'BHP',t2:'BOE',sector:'Energy',strength:'weak'},
-  {t1:'BRK',t2:'STX',sector:'Energy',strength:'weak'},{t1:'BRK',t2:'GLL',sector:'Energy',strength:'weak'},{t1:'BRK',t2:'BRU',sector:'Energy',strength:'weak'},
-  {t1:'BRU',t2:'BPT',sector:'Energy',strength:'weak'},{t1:'BRU',t2:'BRK',sector:'Energy',strength:'weak'},
-  {t1:'CEN',t2:'GNE',sector:'Energy',strength:'weak'},{t1:'CEN',t2:'ORG',sector:'Energy',strength:'weak'},
-  {t1:'DYL',t2:'BOE',sector:'Energy',strength:'weak'},
-  {t1:'FME',t2:'CTM',sector:'Energy',strength:'weak'},
-  {t1:'GGE',t2:'RLT',sector:'Energy',strength:'weak'},{t1:'GRV',t2:'GGE',sector:'Energy',strength:'weak'},
-  {t1:'HZN',t2:'ECH',sector:'Energy',strength:'weak'},{t1:'HZN',t2:'BPT',sector:'Energy',strength:'weak'},
-  {t1:'HCD',t2:'BUY',sector:'Energy',strength:'weak'},
-  {t1:'HPR',t2:'DRR',sector:'Energy',strength:'weak'},{t1:'HPR',t2:'S32',sector:'Energy',strength:'weak'},
-  {t1:'MCY',t2:'AGL',sector:'Energy',strength:'weak'},{t1:'MEZ',t2:'AGL',sector:'Energy',strength:'weak'},{t1:'NHC',t2:'AGL',sector:'Energy',strength:'weak'},
-  {t1:'ORG',t2:'APA',sector:'Energy',strength:'weak'},
-  {t1:'PDN',t2:'BOE',sector:'Energy',strength:'weak'},{t1:'PCL',t2:'BOE',sector:'Energy',strength:'weak'},
-  {t1:'PEN',t2:'LOT',sector:'Energy',strength:'weak'},
-  {t1:'TOE',t2:'PDN',sector:'Energy',strength:'weak'},{t1:'TOE',t2:'BOE',sector:'Energy',strength:'weak'},
-  {t1:'VEN',t2:'COI',sector:'Energy',strength:'weak'},{t1:'VEN',t2:'STX',sector:'Energy',strength:'weak'},
-  {t1:'WDS',t2:'ORG',sector:'Energy',strength:'weak'},{t1:'YAL',t2:'SMR',sector:'Energy',strength:'weak'},
-  {t1:'RLT',t2:'COI',sector:'Energy',strength:'weak'},{t1:'GLL',t2:'BLU',sector:'Energy',strength:'weak'},
-  {t1:'EDE',t2:'HZR',sector:'Energy',strength:'weak'},{t1:'EDE',t2:'NVX',sector:'Energy',strength:'weak'},
-  {t1:'BAS',t2:'AOK',sector:'Energy',strength:'weak'},{t1:'BAS',t2:'BRU',sector:'Energy',strength:'weak'},{t1:'BAS',t2:'MAY',sector:'Energy',strength:'weak'},
-  {t1:'BLU',t2:'TEG',sector:'Energy',strength:'weak'},{t1:'BLU',t2:'MAY',sector:'Energy',strength:'weak'},{t1:'BLU',t2:'CTP',sector:'Energy',strength:'weak'},
-  {t1:'GAS',t2:'BLU',sector:'Energy',strength:'weak'},{t1:'GAS',t2:'VEN',sector:'Energy',strength:'weak'},
-  {t1:'STX',t2:'COI',sector:'Energy',strength:'weak'},{t1:'STX',t2:'CTP',sector:'Energy',strength:'weak'},
-  {t1:'TM1',t2:'CHN',sector:'Energy',strength:'weak'},{t1:'THR',t2:'AEE',sector:'Energy',strength:'weak'},
-  {t1:'QPM',t2:'CNB',sector:'Energy',strength:'weak'},{t1:'NHE',t2:'RLT',sector:'Energy',strength:'weak'},
-  {t1:'HE8',t2:'COI',sector:'Energy',strength:'weak'},
-  {t1:'IVZ',t2:'FDR',sector:'Energy',strength:'weak'},{t1:'MCM',t2:'TER',sector:'Energy',strength:'weak'},
-  {t1:'EOL',t2:'RDY',sector:'Software',strength:'weak'},
-  {t1:'BKY',t2:'DYL',sector:'Energy',strength:'weak'},{t1:'BKY',t2:'LOT',sector:'Energy',strength:'weak'},
-  {t1:'ICN',t2:'TEG',sector:'Energy',strength:'weak'},
-  {t1:'ADD',t2:'LKE',sector:'Energy',strength:'weak'},
-  {t1:'OEL',t2:'WDS',sector:'Energy',strength:'weak'},{t1:'OEL',t2:'STO',sector:'Energy',strength:'weak'},
-  {t1:'BTE',t2:'GAS',sector:'Energy',strength:'weak'},{t1:'TOU',t2:'BTE',sector:'Energy',strength:'weak'},{t1:'TOU',t2:'COI',sector:'Energy',strength:'weak'},
-  {t1:'TBN',t2:'CTP',sector:'Energy',strength:'weak'},
-
-  // ── WEAK: Software & Services ──
-  {t1:'XRO',t2:'TNE',sector:'Software',strength:'weak'},{t1:'APX',t2:'MAQ',sector:'Software',strength:'weak'},
-  {t1:'ATA',t2:'FCT',sector:'Software',strength:'weak'},{t1:'ATA',t2:'AI1',sector:'Software',strength:'weak'},
-  {t1:'MAQ',t2:'SOR',sector:'Software',strength:'weak'},{t1:'MAQ',t2:'APX',sector:'Software',strength:'weak'},{t1:'MAQ',t2:'AI1',sector:'Software',strength:'weak'},{t1:'MAQ',t2:'SLC',sector:'Software',strength:'weak'},
-  {t1:'BRN',t2:'AI1',sector:'Software',strength:'weak'},
-  {t1:'BVS',t2:'IFL',sector:'Software',strength:'weak'},{t1:'BVS',t2:'TNE',sector:'Software',strength:'weak'},{t1:'BVS',t2:'QBE',sector:'Software',strength:'weak'},
-  {t1:'WTC',t2:'JCS',sector:'Software',strength:'weak'},{t1:'TNE',t2:'BVS',sector:'Software',strength:'weak'},{t1:'TNE',t2:'XRO',sector:'Software',strength:'weak'},
-  {t1:'TNE',t2:'TLS',sector:'Software',strength:'weak'},{t1:'TNE',t2:'GTK',sector:'Software',strength:'weak'},
-  {t1:'MP1',t2:'ABB',sector:'Software',strength:'weak'},{t1:'MP1',t2:'MAQ',sector:'Software',strength:'weak'},
-  {t1:'DUG',t2:'MAQ',sector:'Software',strength:'weak'},{t1:'DUG',t2:'ATA',sector:'Software',strength:'weak'},
-  {t1:'DXN',t2:'TPG',sector:'Software',strength:'weak'},{t1:'DXN',t2:'MAQ',sector:'Software',strength:'weak'},{t1:'DXN',t2:'DGT',sector:'Software',strength:'weak'},
-  {t1:'IFM',t2:'CAR',sector:'Software',strength:'weak'},{t1:'IFM',t2:'NXT',sector:'Software',strength:'weak'},
-  {t1:'JAN',t2:'NXT',sector:'Software',strength:'weak'},{t1:'JCS',t2:'RKN',sector:'Software',strength:'weak'},{t1:'JCS',t2:'WTC',sector:'Software',strength:'weak'},
-  {t1:'SDR',t2:'XRO',sector:'Software',strength:'weak'},{t1:'SDR',t2:'KLS',sector:'Software',strength:'weak'},
-  {t1:'GTI',t2:'KGN',sector:'Software',strength:'weak'},{t1:'GTI',t2:'ART',sector:'Software',strength:'weak'},
-  {t1:'GTK',t2:'TNE',sector:'Software',strength:'weak'},{t1:'GTK',t2:'APA',sector:'Software',strength:'weak'},
-  {t1:'SOC',t2:'CGO',sector:'Software',strength:'weak'},{t1:'SPX',t2:'ZIP',sector:'Software',strength:'weak'},
-  {t1:'FCT',t2:'ATA',sector:'Software',strength:'weak'},{t1:'FCT',t2:'AI1',sector:'Software',strength:'weak'},{t1:'FCT',t2:'ATV',sector:'Software',strength:'weak'},
-  {t1:'ART',t2:'GTI',sector:'Software',strength:'weak'},{t1:'WRK',t2:'XF1',sector:'Software',strength:'weak'},{t1:'WRK',t2:'ART',sector:'Software',strength:'weak'},
-  {t1:'OCL',t2:'RDY',sector:'Software',strength:'weak'},{t1:'OLL',t2:'SDR',sector:'Software',strength:'weak'},
-  {t1:'PKY',t2:'PPE',sector:'Software',strength:'weak'},{t1:'PPS',t2:'IRE',sector:'Software',strength:'weak'},
-  {t1:'ESK',t2:'SP3',sector:'Software',strength:'weak'},{t1:'ESK',t2:'ELS',sector:'Software',strength:'weak'},
-  {t1:'FND',t2:'EML',sector:'Software',strength:'weak'},{t1:'FLX',t2:'FCT',sector:'Software',strength:'weak'},
-  {t1:'XF1',t2:'WRK',sector:'Software',strength:'weak'},
-  {t1:'TAL',t2:'ICR',sector:'Software',strength:'weak'},{t1:'TAL',t2:'CBL',sector:'Software',strength:'weak'},
-  {t1:'W2V',t2:'EML',sector:'Software',strength:'weak'},{t1:'W2V',t2:'DTL',sector:'Software',strength:'weak'},
-  {t1:'EPX',t2:'IRE',sector:'Software',strength:'weak'},{t1:'TPG',t2:'DXN',sector:'Software',strength:'weak'},
-  {t1:'ORG',t2:'EOL',sector:'Software',strength:'weak'},
-  {t1:'LVE',t2:'BUB',sector:'Software',strength:'weak'},
-
-  // ── WEAK: Industrials ──
-  {t1:'AMX',t2:'IOD',sector:'Industrials',strength:'weak'}
-];
-
-// Combined universe for scanning
-const SMT_ALL_PAIRS = [...SMT_STRONG_PAIRS, ...SMT_WEAK_PAIRS];
-
 
 let smtResults = [];
 let smtScanning = false;
@@ -7162,22 +6889,21 @@ async function startSmtScan() {
   document.getElementById('smt-scan-btn').style.display = 'none';
   document.getElementById('smt-stop-btn').style.display = 'flex';
   document.getElementById('smt-progress').style.display = 'block';
-  document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div style="font-size:13px;color:var(--text2)">Scanning ' + SMT_ALL_PAIRS.length + ' pairs...</div></div>';
+  document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div style="font-size:13px;color:var(--text2)">Scanning ' + SMT_PAIRS.length + ' pairs...</div></div>';
 
-  const total = SMT_ALL_PAIRS.length;
+  const total = SMT_PAIRS.length;
   let scanned = 0, valid = 0, divs = 0, bull = 0, bear = 0;
 
   // Batch scan — 3 pairs at a time
   for (let i = 0; i < total; i += 3) {
     if (smtAbort) break;
-    const batch = SMT_ALL_PAIRS.slice(i, i + 3);
+    const batch = SMT_PAIRS.slice(i, i + 3);
     const promises = batch.map(pair =>
       fetch(SMT_PROXY + '?action=full&t1=' + pair.t1 + '&t2=' + pair.t2)
         .then(r => r.json())
         .then(data => {
           if (data.error) return null;
           data.sector = pair.sector;
-          data.strength = pair.strength || 'strong';
           return data;
         })
         .catch(() => null)
@@ -7263,8 +6989,6 @@ function renderSmtResults() {
     if (filter === 'bullish') return meaningfulDiv && r.activeDivergence.type === 'BULLISH';
     if (filter === 'bearish') return meaningfulDiv && r.activeDivergence.type === 'BEARISH';
     if (filter === 'aplus') return r.grade === 'A+' || r.grade === 'A';
-    if (filter === 'strong') return (r.strength === 'strong') && (r.isValid || meaningfulDiv);
-    if (filter === 'weak') return (r.strength === 'weak') && (r.isValid || meaningfulDiv);
     return true;
   });
 
@@ -7457,6 +7181,206 @@ async function checkCustomSmtPair() {
   } catch(e) {}
 })();
 
+
+
+// ══════════════════════════════════════════════════════════
+// FUTURES INTELLIGENCE — Dovvy hybrid trading style
+// Full grid of pairs, confidence bars, bull/bear/neutral
+// ══════════════════════════════════════════════════════════
+
+const FUT_INSTRUMENTS = [
+  { sym:'NAS100',  name:'NAS100',   cat:'Index',     desc:{
+    bull:'Tech sector leading. Breadth expanding. MTF bullish alignment. Momentum strong — trend continuation setup favoured.',
+    bear:'Tech selling off. Yield pressure headwind. Breadth narrowing. MTF bearish — risk-off tone, avoid longs.',
+    neut:'NAS100 consolidating. Earnings mixed. No clear directional bias — wait for breakout confirmation.'
+  }},
+  { sym:'SPX500',  name:'SPX500',   cat:'Index',     desc:{
+    bull:'Broad market bid. Risk-on tone. Strong close above key EMAs. MTF aligned bullish — buy pullbacks.',
+    bear:'SPX breaking down. Credit spreads widening. MTF bearish structure. Elevated VIX — reduce exposure.',
+    neut:'SPX range-bound between support and resistance. Waiting for macro catalyst or earnings catalyst.'
+  }},
+  { sym:'US30',    name:'DOW',      cat:'Index',     desc:{
+    bull:'Cyclicals leading. Value rotation supporting DOW. Strong industrials bid. MTF bullish — upside continuation.',
+    bear:'Cyclical rotation reversing. Industrials weak. MTF bearish. Below 50MA — defensive positioning.',
+    neut:'DOW consolidating. Sector rotation mixed. No clear leader — wait for directional break.'
+  }},
+  { sym:'XAU/USD', name:'XAU/USD',  cat:'Commodity', desc:{
+    bull:'Safe-haven bid intact. USD weakness supporting gold. RVOL elevated. CRT signal active — all conditions met.',
+    bear:'Gold fading as risk appetite returns. USD strength headwind. Below VWAP — watching support at prior swing low.',
+    neut:'Gold consolidating between key levels. Waiting for CPI or Fed catalyst to break direction.'
+  }},
+  { sym:'XAG/USD', name:'XAG/USD',  cat:'Commodity', desc:{
+    bull:'Silver following gold higher. Industrial demand supporting. RVOL 2×+. Outperforming gold ratio. CRT expanding.',
+    bear:'Silver underperforming gold. Industrial slowdown concern. MTF bearish. Watch gold/silver ratio.',
+    neut:'Silver ranging. Gold/silver ratio stable. No strong directional conviction — await breakout.'
+  }},
+  { sym:'AUD/USD', name:'AUD/USD',  cat:'FX Major',  desc:{
+    bull:'RBA policy divergence supporting AUD. USD softening. MTF full bullish alignment. CRT signal active.',
+    bear:'AUD under pressure. USD strength dominating. MTF bearish — avoid longs until structure recovers.',
+    neut:'Mixed signals. RBA on hold. USD data-dependent. MTF conflicted — wait for clearer directional bias.'
+  }},
+  { sym:'EUR/USD', name:'EUR/USD',  cat:'FX Major',  desc:{
+    bull:'ECB hawkish tone supporting EUR. USD softening on weak data. MTF aligning bullish. CRT setup forming on 4H.',
+    bear:'ECB dovish pivot risk. USD demand returning. MTF bearish — below 200MA — short bias on bounces.',
+    neut:'ECB vs Fed uncertainty creating mixed signals. MTF conflicted — no clear setup. Wait for catalyst.'
+  }},
+  { sym:'GBP/USD', name:'GBP/USD',  cat:'FX Major',  desc:{
+    bull:'BoE hawkish. UK data outperforming. Weekly + daily aligned. CRT pattern forming on 4H.',
+    bear:'BoE pivot risk growing. UK data missing. GBP breaking down. MTF bearish — short on rallies.',
+    neut:'BoE on hold. UK growth mixed. GBP range-bound — waiting for clearer macro catalyst.'
+  }},
+  { sym:'USD/JPY', name:'USD/JPY',  cat:'FX Major',  desc:{
+    bull:'BOJ dovish — holding yield curve control. USD yield support. MTF bullish — trend continuation.',
+    bear:'BOJ tightening signals. USD retreating. MTF bearish reversal — watch for intervention risk.',
+    neut:'BOJ/Fed policy standoff. USD/JPY range-bound 148-152. Watching for intervention or data break.'
+  }},
+  { sym:'DXY',     name:'DXY',      cat:'Index',     desc:{
+    bull:'USD bid on risk-off. Fed hawkish expectations. Real yields rising. MTF bullish — DXY strength = commodity headwind.',
+    bear:'Fed pivot expectations growing. USD selling off. MTF bearish — risk-on = commodity tailwind.',
+    neut:'DXY consolidating. Fed on hold. Mixed data — range-bound between 102-106. Watch CPI for direction.'
+  }},
+];
+
+let futIntelTF = 'D';
+let futIntelRunning = false;
+
+function setFutTF(tf, btn) {
+  futIntelTF = tf;
+  document.querySelectorAll('[id^="fut-tf-"]').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  // Re-render cards with new TF label
+  renderFutIntelCards(null);
+}
+
+function renderFutIntelCards(analysisResults) {
+  const grid = document.getElementById('fut-pair-grid');
+  if (!grid) return;
+
+  // Map of sym -> result (if we have real analysis)
+  const resultMap = {};
+  if (analysisResults) analysisResults.forEach(r => { resultMap[r.symbol] = r; });
+
+  grid.innerHTML = FUT_INSTRUMENTS.map(inst => {
+    const result = resultMap[inst.sym];
+    const price  = prices[inst.sym];
+    const pct    = typeof pctChange === 'function' ? pctChange(inst.sym) : 0;
+    const pctUp  = pct >= 0;
+
+    // Determine direction + confidence
+    let dir, conf, topDesc;
+    if (result) {
+      dir  = result.direction;
+      conf = result.confidence;
+      topDesc = result.signals?.[0]?.desc || inst.desc[dir === 'long' ? 'bull' : dir === 'short' ? 'bear' : 'neut'];
+    } else {
+      // Use existing getSentiment/getConfidence from price engine
+      const sent = typeof getSentiment === 'function' ? getSentiment(inst.sym) : 'neut';
+      conf       = typeof getConfidence === 'function' ? getConfidence(inst.sym) : Math.floor(Math.random() * 30 + 45);
+      dir        = sent === 'bull' ? 'long' : sent === 'bear' ? 'short' : 'neut';
+      topDesc    = inst.desc[sent] || inst.desc.neut;
+    }
+
+    const isBull = dir === 'long';
+    const isBear = dir === 'short';
+    const sentLabel = isBull ? 'Bullish' : isBear ? 'Bearish' : 'Neutral';
+    const sentCls   = isBull ? 'sbull' : isBear ? 'sbear' : 'sneut';
+    const confCol   = conf >= 75 ? 'var(--green)' : conf >= 55 ? 'var(--accent)' : 'var(--amber)';
+    const borderCol = conf >= 75 ? 'rgba(0,212,168,.3)' : conf >= 55 ? 'rgba(45,142,255,.2)' : 'var(--border2)';
+    const priceStr  = price != null ? (typeof fmtPrice === 'function' ? fmtPrice(inst.sym, price) : price.toFixed(2)) : '—';
+
+    return `<div class="pc2" data-sym="${inst.sym}" style="border-color:${borderCol};cursor:pointer" onclick="runFutIntelSingle('${inst.sym}')">
+      <div class="pc2-head">
+        <div>
+          <div class="pc2-name">${inst.name}</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:1px;font-weight:600;letter-spacing:.04em">${inst.cat}</div>
+        </div>
+        <span class="sent ${sentCls}">${sentLabel}</span>
+      </div>
+      <div class="pc2-body" style="font-size:11px;line-height:1.55;min-height:44px">${topDesc}</div>
+      <div class="pc2-bot" style="margin-top:8px">
+        <div class="pc2-price ${pctUp?'up':'dn'}">${priceStr}</div>
+        <div style="font-size:10px;color:${pctUp?'var(--green)':'var(--red)'};font-weight:600">${pctUp?'+':''}${pct.toFixed(2)}%</div>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:8px;margin-bottom:3px;display:flex;justify-content:space-between">
+        <span>${futIntelTF} confidence</span>
+        <span style="color:${confCol};font-weight:700">${conf}%</span>
+      </div>
+      <div style="background:var(--bg5);border-radius:2px;height:4px">
+        <div style="width:${conf}%;height:4px;border-radius:2px;background:${confCol};transition:width .8s ease"></div>
+      </div>
+      <div style="font-size:9px;color:var(--text4);margin-top:5px;text-align:right">Click to deep-analyse ▸</div>
+    </div>`;
+  }).join('');
+}
+
+// Run analysis on all futures instruments
+async function runFutIntelAll() {
+  if (futIntelRunning) return;
+  futIntelRunning = true;
+  const btn = document.getElementById('fut-run-all');
+  const last = document.getElementById('fut-intel-last');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Analysing...'; }
+
+  const tdKey = localStorage.getItem('apex_td_key');
+  if (!tdKey) {
+    showToast('Twelve Data Key Required', 'Add your TD key in Settings for live multi-indicator analysis', 'warning', 5000);
+    // Still render with price-engine sentiment
+    renderFutIntelCards(null);
+    futIntelRunning = false;
+    if (btn) { btn.disabled = false; btn.textContent = '▶ Run All'; }
+    return;
+  }
+
+  const results = [];
+  for (const inst of FUT_INSTRUMENTS) {
+    try {
+      if (typeof STRATEGY_ENGINE !== 'undefined') {
+        const result = await STRATEGY_ENGINE.analyzeInstrument(inst.sym, futIntelTF);
+        results.push({ symbol: inst.sym, ...result });
+        renderFutIntelCards(results); // update progressively
+        await new Promise(r => setTimeout(r, 400));
+      }
+    } catch(e) { console.warn('Fut intel error:', inst.sym, e); }
+  }
+
+  futIntelRunning = false;
+  if (btn) { btn.disabled = false; btn.textContent = '▶ Run All'; }
+  const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+  if (last) last.textContent = 'Updated ' + t + ' AWST';
+}
+
+// Run deep analysis on a single instrument and show results on that card
+async function runFutIntelSingle(sym) {
+  const grid = document.getElementById('fut-pair-grid');
+  const card = grid?.querySelector('[data-sym="' + sym + '"]');
+  if (!card) return;
+
+  const tdKey = localStorage.getItem('apex_td_key');
+  if (!tdKey) {
+    showToast('TD Key Required', 'Add Twelve Data key in Settings', 'warning');
+    return;
+  }
+
+  // Show loading on this card
+  const confLabel = card.querySelector('span[style*="font-weight:700"]');
+  if (confLabel) confLabel.textContent = 'Analysing...';
+
+  try {
+    if (typeof STRATEGY_ENGINE !== 'undefined') {
+      const result = await STRATEGY_ENGINE.analyzeInstrument(sym, futIntelTF);
+      // Update just this card
+      renderFutIntelCards([{ symbol: sym, ...result }]);
+    }
+  } catch(e) {
+    showToast('Analysis Error', e.message, 'warning');
+  }
+}
+
+// Auto-init: render cards with price engine data when tab opens
+// setFutTab intel init handled in main setFutTab
+
+// Also init when Futures page first loads
+const _origNavFut = null; // wired via nav() below
 
 </script>
 
