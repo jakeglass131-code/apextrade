@@ -7341,6 +7341,11 @@ function renderSmtResults() {
     </div>`;
   }).join('');
 
+  // Show scanning progress at bottom of grid while scanning
+  if (smtScanning) {
+    grid.innerHTML += '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 8px;width:6px;height:6px"></div><div id="smt-scan-counter" style="font-size:13px;color:var(--text2)">Scanning ' + smtResults.length + ' / ' + SMT_ALL_PAIRS.length + ' pairs...</div></div>';
+  }
+
   document.getElementById('smt-pairs-header').textContent = 'SMT Pair Universe · ' + filtered.length + ' pairs';
 }
 
