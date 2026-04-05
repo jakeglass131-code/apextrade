@@ -2537,7 +2537,10 @@ function nav(p) {
   const sb = document.getElementById('sb-' + p);
   if (pg) pg.classList.add('active');
   if (sb) sb.classList.add('active');
-  if (p === 'asx')     { updateAsxMomBar();  fetchAsxNews();  }
+  if (p === 'asx')     {
+    updateAsxMomBar(); fetchAsxNews();
+    if (typeof fundData !== 'undefined' && fundData.length === 0) setTimeout(runFundamentalsAgent, 800);
+  }
   if (p === 'futures') { updateFutMomBar();   fetchFutNews();  }
   if (p === 'dash') { if (typeof fetchOvernightData === 'function' && !Object.keys(overnightData||{}).length) fetchOvernightData(); }
   if (p === 'sector' || p === 'sectors') refreshSectorData();
