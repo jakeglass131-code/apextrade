@@ -796,6 +796,30 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .scan-mkt-tab:hover { color: var(--text2) !important; }
 .scan-mkt-tab.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
 
+
+/* Scanner market tabs */
+.smkt { transition: color .12s, border-color .12s; }
+.smkt:hover { color: var(--text2) !important; }
+.smkt.active { color: var(--accent) !important; border-bottom-color: var(--accent) !important; }
+
+/* View mode pills */
+.view-pill {
+  font-size: 11px; font-weight: 600; padding: 4px 12px;
+  border-radius: 99px; border: 1px solid var(--border2);
+  background: transparent; color: var(--text3); cursor: pointer; transition: all .12s;
+}
+.view-pill:hover { background: var(--bg4); color: var(--text2); }
+.view-pill.active { background: var(--accent2); color: var(--accent); border-color: rgba(45,142,255,.35); }
+
+/* Direction pills */
+.dir-pill {
+  font-size: 10px; font-weight: 600; padding: 3px 10px;
+  border-radius: 99px; border: 1px solid var(--border2);
+  background: transparent; color: var(--text3); cursor: pointer; transition: all .12s;
+}
+.dir-pill:hover { color: var(--text2); }
+.dir-pill.active { background: var(--bg4); color: var(--text); border-color: var(--border3); }
+
 </style>
 </head>
 <body>
@@ -993,128 +1017,122 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   </div>
 </div>
 
-<!-- ═══════════════ PAGE: SCANNER (merged with CRT) ═══════════════ -->
+<!-- ═══════════════ PAGE: SCANNER ═══════════════ -->
 <div class="page" id="page-scanner">
   <div class="ph">
     <div>
       <div class="ph-t">Scanner</div>
-      <div class="ph-s" id="scan-sub">Live every 5s · CRT · MTF · BOS · RVOL · Auction · Gap · VWAP · Sector</div>
+      <div class="ph-s" id="scan-sub">Live signals · ASX &amp; Futures</div>
     </div>
     <div class="ph-r">
-      <button class="btn" id="push-btn" onclick="requestPushPermission()">Enable alerts</button>
-      <select id="scan-type-filter" class="btn" onchange="filterScanner()" style="padding:6px 10px">
-        <option value="all">All signals</option>
-        <option value="crt">CRT only</option>
-        <option value="bos">BOS only</option>
-        <option value="mtf">MTF only</option>
-        <option value="rvol">RVOL only</option>
-        <option value="gap">Gap only</option>
-        <option value="vwap">VWAP only</option>
-      </select>
-      <select id="scan-dir-filter" class="btn" onchange="filterScanner()" style="padding:6px 10px">
-        <option value="all">Long &amp; Short</option>
-        <option value="long">Longs only</option>
-        <option value="short">Shorts only</option>
-      </select>
-      <button class="btn g" onclick="refreshPrices()">Scan now</button>
+      <button class="btn" id="push-btn" onclick="requestPushPermission()">🔔 Alerts</button>
+      <button class="btn g" onclick="scanRefreshActive()">Refresh</button>
     </div>
   </div>
 
-  <!-- Market filter tabs -->
-  <div style="display:flex;align-items:center;gap:0;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0;padding:0 20px">
-    <button class="scan-mkt-tab active" id="smkt-all"   onclick="setScanMarket('all')"    style="font-size:11px;padding:9px 16px;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:700;letter-spacing:.04em">All</button>
-    <button class="scan-mkt-tab"        id="smkt-asx"   onclick="setScanMarket('asx')"    style="font-size:11px;padding:9px 16px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600;letter-spacing:.04em">ASX</button>
-    <button class="scan-mkt-tab"        id="smkt-future" onclick="setScanMarket('future')" style="font-size:11px;padding:9px 16px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600;letter-spacing:.04em">Futures</button>
-    <button class="scan-mkt-tab"        id="smkt-forex" onclick="setScanMarket('forex')"   style="font-size:11px;padding:9px 16px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600;letter-spacing:.04em">Forex</button>
-    <button class="scan-mkt-tab"        id="smkt-crypto" onclick="setScanMarket('crypto')" style="font-size:11px;padding:9px 16px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600;letter-spacing:.04em">Crypto</button>
+  <!-- Market tabs: ASX | Futures -->
+  <div style="display:flex;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0;padding:0 20px">
+    <button class="smkt" id="smkt-asx" onclick="setScanMarket('asx')"
+      style="font-size:12px;padding:10px 20px;border:none;border-bottom:2px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-weight:700;letter-spacing:.04em">ASX</button>
+    <button class="smkt" id="smkt-future" onclick="setScanMarket('future')"
+      style="font-size:12px;padding:10px 20px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600;letter-spacing:.04em">Futures</button>
     <div style="flex:1"></div>
-    <!-- CRT sub-tab toggle -->
-    <button class="btn" id="crt-mode-btn" onclick="toggleCrtMode()" style="font-size:10px;padding:5px 12px;margin:6px 0">⚡ CRT Scan</button>
+    <!-- Direction pill -->
+    <div style="display:flex;align-items:center;gap:6px;padding:0 4px">
+      <button class="dir-pill active" id="dir-all"   onclick="setScanDir('all')"   >Both</button>
+      <button class="dir-pill"        id="dir-long"  onclick="setScanDir('long')"  >Longs</button>
+      <button class="dir-pill"        id="dir-short" onclick="setScanDir('short')" >Shorts</button>
+    </div>
   </div>
 
-  <!-- Global timeframe selector -->
-  <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
-    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
-    <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
-    <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
-    <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
-    <button class="tf-btn"        data-tf="6M"  onclick="setGlobalTF('6M',this)">6M</button>
-    <button class="tf-btn"        data-tf="1Y"  onclick="setGlobalTF('1Y',this)">1Y</button>
-    <button class="tf-btn"        data-tf="YTD" onclick="setGlobalTF('YTD',this)">YTD</button>
-  </div>
-  <!-- Scanner stats bar -->
-  <div id="momentum-bar" class="momentum-bar"></div>
-  <div style="background:var(--bg4);border-bottom:1px solid var(--border2);padding:8px 20px;display:flex;gap:24px;align-items:center;flex-shrink:0" id="scan-stats-bar">
-    <div style="font-size:11px;color:var(--text3)">SIGNALS <span id="stat-total" style="color:var(--text);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)">HIGH <span id="stat-high" style="color:var(--red);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)">MEDIUM <span id="stat-med" style="color:var(--amber);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)">LONGS <span id="stat-long" style="color:var(--green);font-weight:700">—</span></div>
-    <div style="font-size:11px;color:var(--text3)">SHORTS <span id="stat-short" style="color:var(--red);font-weight:700">—</span></div>
+  <!-- View mode pills: CRT | Bullish -->
+  <div style="display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
+    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em">VIEW</span>
+    <button class="view-pill active" id="view-crt"     onclick="setScanView('crt')"    >⚡ CRT Setups</button>
+    <button class="view-pill"        id="view-bullish" onclick="setScanView('bullish')" >📈 Bullish Signals</button>
     <div style="flex:1"></div>
-    <div style="font-size:11px;color:var(--text3)">Avg confidence <span id="stat-conf" style="color:var(--accent);font-weight:700">—</span></div>
+    <!-- CRT-specific controls (only shown in CRT view) -->
+    <div id="crt-controls" style="display:flex;align-items:center;gap:8px">
+      <select id="crt-tf-filter" style="font-size:11px;padding:5px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
+        <option value="all">All TFs</option>
+        <option value="1M CRT">1M</option>
+        <option value="3M CRT">3M</option>
+        <option value="6M CRT">6M</option>
+        <option value="9M CRT">9M</option>
+        <option value="12M CRT">12M</option>
+      </select>
+      <button class="btn" onclick="stopCrtScan()" id="crt-stop-btn" style="display:none;background:rgba(255,68,102,.15);color:var(--red);font-size:11px">Stop</button>
+      <button class="btn g" onclick="startCrtScan()" id="crt-scan-btn" style="font-size:11px">Scan</button>
+    </div>
+    <!-- Bullish-specific controls -->
+    <div id="bullish-controls" style="display:none;align-items:center;gap:8px">
+      <span style="font-size:11px;color:var(--text3)">Min conf</span>
+      <select id="bull-conf-filter" onchange="filterBullish()" style="font-size:11px;padding:5px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
+        <option value="50">50%+</option>
+        <option value="60" selected>60%+</option>
+        <option value="70">70%+</option>
+        <option value="80">80%+</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- CRT progress bar -->
+  <div id="crt-progress-bar" style="display:none;padding:6px 20px;flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border2)">
+    <div style="background:var(--bg4);border-radius:99px;height:3px;overflow:hidden;margin-bottom:3px">
+      <div id="crt-progress-fill" style="height:3px;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:99px;width:0%;transition:width .3s"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
+      <span id="crt-progress-text">Scanning...</span>
+      <span id="crt-progress-pct">0%</span>
+    </div>
+  </div>
+
+  <!-- Stat strip -->
+  <div style="background:var(--bg4);border-bottom:1px solid var(--border2);padding:6px 20px;display:flex;gap:20px;align-items:center;flex-shrink:0">
+    <div style="font-size:11px;color:var(--text3)">Signals <span id="stat-total" style="color:var(--text);font-weight:700">—</span></div>
+    <div style="font-size:11px;color:var(--text3)">Longs <span id="stat-long" style="color:var(--green);font-weight:700">—</span></div>
+    <div style="font-size:11px;color:var(--text3)">Shorts <span id="stat-short" style="color:var(--red);font-weight:700">—</span></div>
+    <div style="font-size:11px;color:var(--text3)" id="crt-stat-wrap" style="display:none">
+      Scanned <span id="crt-stat-scanned" style="color:var(--text);font-weight:700">—</span>
+      · Conf <span id="crt-stat-confidence" style="color:var(--amber);font-weight:700">—</span>
+    </div>
+    <div style="flex:1"></div>
     <div style="font-size:11px;color:var(--text3)">Updated <span id="stat-time" style="color:var(--text2)">—</span></div>
   </div>
+  <div id="momentum-bar" class="momentum-bar"></div>
 
-  <!-- Normal scanner view -->
-  <div id="scan-normal-view" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
-    <div style="display:grid;grid-template-columns:110px 80px 80px 60px 1fr 120px 90px;gap:8px;padding:7px 20px;background:var(--bg5);border-bottom:1px solid var(--border2);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;flex-shrink:0">
-      <div>Instrument</div><div>Price</div><div>Change</div><div>RVOL</div><div>Signals &amp; analysis</div><div style="text-align:center">Timeframes</div><div style="text-align:right">Confidence</div>
+  <!-- CRT view -->
+  <div id="scan-crt-view" style="display:flex;flex-direction:column;flex:1;overflow:hidden">
+    <div class="scroll" style="padding:20px" id="crt-scroll">
+      <div id="crt-signals-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:12px">
+        <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text3)">
+          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">⚡ CRT Scanner</div>
+          <div style="font-size:12px;margin-bottom:16px">Scans ASX stocks for Jake's CRT model setups</div>
+          <button class="btn g" onclick="startCrtScan()" style="font-size:12px;padding:8px 20px">Start Scan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bullish signals view (hidden by default) -->
+  <div id="scan-bullish-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
+    <div style="display:grid;grid-template-columns:110px 80px 80px 1fr 90px;gap:8px;padding:7px 20px;background:var(--bg5);border-bottom:1px solid var(--border2);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;flex-shrink:0">
+      <div>Instrument</div><div>Price</div><div>Change</div><div>Signals</div><div style="text-align:right">Confidence</div>
     </div>
     <div class="scroll" style="padding:0" id="scanner-scroll">
       <div id="strategy-signals-body">
         <div style="padding:40px;text-align:center;color:var(--text3)">
-          <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">Running strategy engine...</div>
-          <div style="font-size:12px">Scanning 38 instruments across all markets</div>
+          <div style="font-size:14px;font-weight:600;color:var(--text2);margin-bottom:8px">Loading signals...</div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- CRT scanner view (hidden by default) -->
-  <div id="scan-crt-view" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-    <div style="padding:10px 20px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:10px;flex-shrink:0;background:var(--bg2)">
-      <select id="crt-tf-filter" class="sel" style="font-size:11px;padding:6px 10px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
-        <option value="all">All TFs</option>
-        <option value="1M CRT">1M CRT</option>
-        <option value="3M CRT">3M CRT</option>
-        <option value="6M CRT">6M CRT</option>
-        <option value="9M CRT">9M CRT</option>
-        <option value="12M CRT">12M CRT</option>
-      </select>
-      <select id="crt-dir-filter" class="sel" style="font-size:11px;padding:6px 10px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
-        <option value="all">Both</option>
-        <option value="LONG">Long</option>
-        <option value="SHORT">Short</option>
-      </select>
-      <button class="btn" onclick="stopCrtScan()" id="crt-stop-btn" style="display:none;background:rgba(255,68,102,.15);color:var(--red)">Stop</button>
-      <button class="btn g" onclick="startCrtScan()" id="crt-scan-btn">⚡ Scan ASX</button>
-      <div style="flex:1"></div>
-      <div id="crt-stat-summary" style="display:none;font-size:11px;color:var(--text3)">
-        <span style="color:var(--text);font-weight:700" id="crt-stat-scanned">0</span> scanned ·
-        <span style="color:var(--green);font-weight:700" id="crt-stat-signals">0</span> signals ·
-        <span style="color:var(--green)" id="crt-stat-longs">0</span>L /
-        <span style="color:var(--red)" id="crt-stat-shorts">0</span>S ·
-        Conf <span style="color:var(--amber)" id="crt-stat-confidence">—</span>
-      </div>
-    </div>
-    <div id="crt-progress-bar" style="display:none;padding:6px 20px;flex-shrink:0;background:var(--bg2);border-bottom:1px solid var(--border2)">
-      <div style="background:var(--bg4);border-radius:99px;height:4px;overflow:hidden;margin-bottom:4px">
-        <div id="crt-progress-fill" style="height:4px;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:99px;width:0%;transition:width .3s"></div>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3)">
-        <span id="crt-progress-text">Scanning...</span>
-        <span id="crt-progress-pct">0%</span>
-      </div>
-    </div>
-    <div class="scroll" style="padding:20px" id="crt-scroll">
-      <div id="crt-signals-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:12px">
-        <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text3)">
-          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:6px">CRT Scanner</div>
-          <div style="font-size:12px">Click ⚡ Scan ASX to scan all ASX stocks for CRT setups via the proxy</div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Hidden selects kept for JS compatibility -->
+  <select id="scan-market-filter" style="display:none"><option value="asx">ASX</option><option value="future">Futures</option></select>
+  <select id="scan-type-filter" style="display:none"><option value="all">All</option></select>
+  <select id="scan-dir-filter" style="display:none"><option value="all">All</option><option value="long">Long</option><option value="short">Short</option></select>
+  <select id="crt-dir-filter" style="display:none"><option value="all">Both</option><option value="LONG">Long</option><option value="SHORT">Short</option></select>
 </div>
 
 <!-- ═══════════════ PAGE: INTELLIGENCE ═══════════════ -->
@@ -3456,17 +3474,39 @@ function setTab(el) {
 // SECTORS
 // ═══════════════════════════════════════════════════════
 const SECTORS = [
-  {name:'Materials',   icon:'⛏', day:+2.8, week:+4.1, month:+7.2, flow:+2.4, rs:102.4, mom:101.8},
-  {name:'Financials',  icon:'🏦', day:+1.4, week:+2.8, month:+5.1, flow:+1.1, rs:101.8, mom:100.9},
-  {name:'Energy',      icon:'⚡', day:+0.6, week:+1.2, month:+2.3, flow:+0.3, rs:100.6, mom:100.2},
-  {name:'Healthcare',  icon:'💊', day:+0.3, week:-0.4, month:+1.1, flow:-0.1, rs:100.3, mom:99.8},
-  {name:'Cons Disc',   icon:'🛍', day:-0.2, week:+0.8, month:-0.5, flow:-0.2, rs:99.8,  mom:100.4},
-  {name:'Industrials', icon:'🏗', day:-0.5, week:-1.1, month:-0.8, flow:-0.4, rs:99.5,  mom:99.3},
-  {name:'IT / Tech',   icon:'💻', day:-0.8, week:+3.2, month:+9.4, flow:+0.8, rs:103.2, mom:102.1},
-  {name:'Real Estate', icon:'🏠', day:-1.2, week:-2.3, month:-3.1, flow:-1.3, rs:98.8,  mom:98.2},
-  {name:'Utilities',   icon:'💡', day:-1.6, week:-1.8, month:-2.4, flow:-1.5, rs:98.4,  mom:98.6},
-  {name:'Comm Svcs',   icon:'📡', day:-2.1, week:-3.4, month:-4.8, flow:-2.2, rs:97.9,  mom:97.4},
-  {name:'Cons Staples',icon:'🛒', day:-2.6, week:-0.9, month:-1.2, flow:-0.9, rs:99.1,  mom:98.5},
+  {name:'Materials',   icon:'⛏', day:+2.8, week:+4.1, month:+7.2, flow:+2.4,
+    rs:{  '1W':102.4,'1M':103.1,'3M':104.2,'6M':105.8,'1Y':107.2,'YTD':104.9},
+    mom:{ '1W':101.8,'1M':102.4,'3M':103.6,'6M':105.1,'1Y':106.8,'YTD':103.8}},
+  {name:'Financials',  icon:'🏦', day:+1.4, week:+2.8, month:+5.1, flow:+1.1,
+    rs:{  '1W':101.8,'1M':102.2,'3M':102.9,'6M':103.4,'1Y':104.1,'YTD':102.6},
+    mom:{ '1W':100.9,'1M':101.4,'3M':102.1,'6M':102.8,'1Y':103.6,'YTD':101.7}},
+  {name:'Energy',      icon:'⚡', day:+0.6, week:+1.2, month:+2.3, flow:+0.3,
+    rs:{  '1W':100.6,'1M':100.9,'3M':101.4,'6M':102.1,'1Y':101.8,'YTD':101.2},
+    mom:{ '1W':100.2,'1M':100.5,'3M':100.9,'6M':101.3,'1Y':100.8,'YTD':100.6}},
+  {name:'Healthcare',  icon:'💊', day:+0.3, week:-0.4, month:+1.1, flow:-0.1,
+    rs:{  '1W':100.3,'1M':99.8, '3M':100.2,'6M':100.8,'1Y':101.4,'YTD':100.1},
+    mom:{ '1W':99.8, '1M':99.4, '3M':99.9, '6M':100.3,'1Y':100.9,'YTD':99.7}},
+  {name:'Cons Disc',   icon:'🛍', day:-0.2, week:+0.8, month:-0.5, flow:-0.2,
+    rs:{  '1W':99.8, '1M':100.1,'3M':99.6, '6M':99.2, '1Y':98.8, 'YTD':99.4},
+    mom:{ '1W':100.4,'1M':100.6,'3M':100.1,'6M':99.8, '1Y':99.4, 'YTD':100.0}},
+  {name:'Industrials', icon:'🏗', day:-0.5, week:-1.1, month:-0.8, flow:-0.4,
+    rs:{  '1W':99.5, '1M':99.2, '3M':98.8, '6M':98.4, '1Y':97.9, 'YTD':98.6},
+    mom:{ '1W':99.3, '1M':99.0, '3M':98.6, '6M':98.1, '1Y':97.6, 'YTD':98.4}},
+  {name:'IT / Tech',   icon:'💻', day:-0.8, week:+3.2, month:+9.4, flow:+0.8,
+    rs:{  '1W':103.2,'1M':104.8,'3M':106.9,'6M':109.2,'1Y':112.4,'YTD':107.1},
+    mom:{ '1W':102.1,'1M':103.6,'3M':105.4,'6M':107.8,'1Y':110.9,'YTD':105.8}},
+  {name:'Real Estate', icon:'🏠', day:-1.2, week:-2.3, month:-3.1, flow:-1.3,
+    rs:{  '1W':98.8, '1M':98.2, '3M':97.4, '6M':96.8, '1Y':95.9, 'YTD':97.1},
+    mom:{ '1W':98.2, '1M':97.6, '3M':96.8, '6M':96.1, '1Y':95.2, 'YTD':96.4}},
+  {name:'Utilities',   icon:'💡', day:-1.6, week:-1.8, month:-2.4, flow:-1.5,
+    rs:{  '1W':98.4, '1M':98.0, '3M':97.3, '6M':96.6, '1Y':96.1, 'YTD':97.0},
+    mom:{ '1W':98.6, '1M':98.3, '3M':97.7, '6M':97.1, '1Y':96.7, 'YTD':97.4}},
+  {name:'Comm Svcs',   icon:'📡', day:-2.1, week:-3.4, month:-4.8, flow:-2.2,
+    rs:{  '1W':97.9, '1M':97.2, '3M':96.4, '6M':95.6, '1Y':94.8, 'YTD':96.1},
+    mom:{ '1W':97.4, '1M':96.8, '3M':95.9, '6M':95.1, '1Y':94.2, 'YTD':95.6}},
+  {name:'Cons Staples',icon:'🛒', day:-2.6, week:-0.9, month:-1.2, flow:-0.9,
+    rs:{  '1W':99.1, '1M':99.3, '3M':98.9, '6M':98.6, '1Y':98.2, 'YTD':98.8},
+    mom:{ '1W':98.5, '1M':98.7, '3M':98.3, '6M':97.9, '1Y':97.4, 'YTD':98.1}},
 ];
 const HOLDINGS = [
   {sym:'BHP.ASX', sector:'Materials',  stockDay:+1.22, rs:104.1, mom:103.2},
@@ -3615,8 +3655,14 @@ function renderRRG() {
     {x:0,y:cy,w:cx,h:cy,fill:'rgba(255,68,102,0.06)',label:'LAGGING',lx:10,ly:cy+18,col:'rgba(255,68,102,.5)'},
     {x:cx,y:cy,w:cx,h:cy,fill:'rgba(255,170,0,0.06)',label:'WEAKENING',lx:cx+10,ly:cy+18,col:'rgba(255,170,0,.6)'},
   ];
+  const tf = (typeof globalTF !== 'undefined') ? globalTF : '1W';
   const items = [
-    ...SECTORS.map(s=>({label:s.name.split(' ')[0],rs:s.rs,mom:s.mom,isSec:true,r:10})),
+    ...SECTORS.map(s=>({
+      label:s.name.split(' ')[0],
+      rs: (typeof s.rs === 'object') ? (s.rs[tf] ?? s.rs['1W']) : s.rs,
+      mom:(typeof s.mom === 'object') ? (s.mom[tf] ?? s.mom['1W']) : s.mom,
+      isSec:true, r:10
+    })),
     ...HOLDINGS.map(h=>({label:h.sym.replace('.ASX',''),rs:h.rs,mom:h.mom,isSec:false,r:8})),
   ];
   const trails = items.map(it => {
@@ -4690,63 +4736,127 @@ function setGlobalTF(tf, btn) {
   if (pid === 'page-scanner') filterScanner();
   if (pid === 'page-intel') runIntelAnalysis && runIntelAnalysis();
   if (pid === 'page-flow') refreshFlowData && refreshFlowData();
-  if (pid === 'page-sectors') refreshSectors && refreshSectors();
-  if (pid === 'page-sectors') refreshSectorData && refreshSectorData();
+  if (pid === 'page-sectors') { refreshSectors && refreshSectors(); renderRRG && renderRRG(); renderLeaderboard && renderLeaderboard(); }
+  if (pid === 'page-sectors') { refreshSectorData && refreshSectorData(); renderRRG && renderRRG(); }
   console.log('Global TF set to', tf);
 }
 
 // ═══════════════════════════════════════════════════════
-// SCAN PAGE: Market tab + CRT mode toggle
+// SCAN PAGE: Market tabs, View pills, Direction
 // ═══════════════════════════════════════════════════════
-let activeScanMarket = 'all';
-let crtModeActive = false;
+let activeScanMarket = 'asx';
+let activeScanView   = 'crt';   // 'crt' | 'bullish'
+let activeScanDir    = 'all';
 
 function setScanMarket(market) {
   activeScanMarket = market;
-  // Update tab styles
-  document.querySelectorAll('.scan-mkt-tab').forEach(b => {
+  document.querySelectorAll('.smkt').forEach(b => {
     b.classList.remove('active');
     b.style.color = 'var(--text3)';
     b.style.borderBottomColor = 'transparent';
   });
-  const active = document.getElementById('smkt-' + market);
-  if (active) {
-    active.classList.add('active');
-    active.style.color = 'var(--accent)';
-    active.style.borderBottomColor = 'var(--accent)';
-  }
-  // Exit CRT mode when switching market tabs
-  if (crtModeActive) toggleCrtMode();
-  filterScanner();
-}
-
-function toggleCrtMode() {
-  crtModeActive = !crtModeActive;
-  const normalView = document.getElementById('scan-normal-view');
-  const crtView    = document.getElementById('scan-crt-view');
-  const crtBtn     = document.getElementById('crt-mode-btn');
-  if (crtModeActive) {
-    if (normalView) normalView.style.display = 'none';
-    if (crtView)    { crtView.style.display = 'flex'; }
-    if (crtBtn)     { crtBtn.style.background = 'var(--accent2)'; crtBtn.style.color = 'var(--accent)'; crtBtn.style.borderColor = 'rgba(45,142,255,.35)'; }
-    // Show stat summary if there are results
-    const statSum = document.getElementById('crt-stat-summary');
-    if (statSum && typeof crtSignals !== 'undefined' && crtSignals.length > 0) statSum.style.display = 'block';
-  } else {
-    if (normalView) normalView.style.display = 'flex';
-    if (crtView)    crtView.style.display = 'none';
-    if (crtBtn)     { crtBtn.style.background = ''; crtBtn.style.color = ''; crtBtn.style.borderColor = ''; }
-  }
-}
-
-// Override filterScanner to also respect activeScanMarket tab
-const _origFilterScanner = typeof filterScanner === 'function' ? filterScanner : null;
-function filterScanner() {
-  // Update the hidden scan-market-filter select to match tab state, then call original
+  const el = document.getElementById('smkt-' + market);
+  if (el) { el.classList.add('active'); el.style.color='var(--accent)'; el.style.borderBottomColor='var(--accent)'; }
+  // Sync hidden select for existing filterScanner engine
   const sel = document.getElementById('scan-market-filter');
-  if (sel && activeScanMarket) sel.value = activeScanMarket;
-  if (_origFilterScanner) _origFilterScanner();
+  if (sel) sel.value = market;
+  if (activeScanView === 'bullish') filterBullish();
+  else filterScanner();
 }
+
+function setScanView(view) {
+  activeScanView = view;
+  document.querySelectorAll('.view-pill').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('view-' + view);
+  if (el) el.classList.add('active');
+
+  const crtV  = document.getElementById('scan-crt-view');
+  const bulV  = document.getElementById('scan-bullish-view');
+  const crtC  = document.getElementById('crt-controls');
+  const bulC  = document.getElementById('bullish-controls');
+  const statW = document.getElementById('crt-stat-wrap');
+
+  if (view === 'crt') {
+    if (crtV)  crtV.style.display  = 'flex';
+    if (bulV)  bulV.style.display  = 'none';
+    if (crtC)  crtC.style.display  = 'flex';
+    if (bulC)  bulC.style.display  = 'none';
+    if (statW) statW.style.display = 'inline';
+  } else {
+    if (crtV)  crtV.style.display  = 'none';
+    if (bulV)  bulV.style.display  = 'flex';
+    if (crtC)  crtC.style.display  = 'none';
+    if (bulC)  bulC.style.display  = 'flex';
+    if (statW) statW.style.display = 'none';
+    filterBullish();
+  }
+}
+
+function setScanDir(dir) {
+  activeScanDir = dir;
+  document.querySelectorAll('.dir-pill').forEach(b => b.classList.remove('active'));
+  const el = document.getElementById('dir-' + dir);
+  if (el) el.classList.add('active');
+  const sel = document.getElementById('scan-dir-filter');
+  if (sel) sel.value = dir;
+  if (activeScanView === 'bullish') filterBullish();
+  else filterScanner();
+}
+
+function filterBullish() {
+  // Filter strategy-signals-body rows by market + direction + min confidence
+  const minConf = parseInt(document.getElementById('bull-conf-filter')?.value || '60');
+  const rows = document.querySelectorAll('#strategy-signals-body [data-market],[data-sym]');
+  let shown = 0, longs = 0, shorts = 0;
+  rows.forEach(row => {
+    const mkt   = (row.dataset.market || '').toLowerCase();
+    const dir   = (row.dataset.dir   || '').toLowerCase();
+    const conf  = parseInt(row.dataset.conf || '0');
+    const bull  = (row.dataset.bull  || '0') === '1';
+
+    const mktMatch = activeScanMarket === 'asx'
+      ? mkt.includes('asx') || mkt.includes('au')
+      : mkt.includes('future') || mkt.includes('fut') || mkt.includes('commod');
+    const dirMatch = activeScanDir === 'all' || dir === activeScanDir;
+    const confMatch = conf >= minConf;
+    const bullMatch = bull || conf >= minConf; // show if bullish-tagged or high confidence
+
+    const visible = mktMatch && dirMatch && confMatch && bullMatch;
+    row.style.display = visible ? '' : 'none';
+    if (visible) {
+      shown++;
+      if (dir === 'long') longs++;
+      if (dir === 'short') shorts++;
+    }
+  });
+  const tot = document.getElementById('stat-total');
+  const lng = document.getElementById('stat-long');
+  const sht = document.getElementById('stat-short');
+  if (tot) tot.textContent = shown;
+  if (lng) lng.textContent = longs;
+  if (sht) sht.textContent = shorts;
+}
+
+function scanRefreshActive() {
+  if (activeScanView === 'crt') {
+    if (typeof crtScanning !== 'undefined' && !crtScanning) startCrtScan();
+  } else {
+    refreshPrices && refreshPrices();
+  }
+}
+
+// Shim for legacy filterScanner calls
+function filterScanner() {
+  const sel = document.getElementById('scan-market-filter');
+  if (sel) sel.value = activeScanMarket;
+  const dsel = document.getElementById('scan-dir-filter');
+  if (dsel) dsel.value = activeScanDir;
+  // Call original if it exists in outer scope (defined earlier in the file)
+  if (typeof _origFilterScanner === 'function') _origFilterScanner();
+}
+
+// Legacy toggleCrtMode shim
+function toggleCrtMode() { setScanView(activeScanView === 'crt' ? 'bullish' : 'crt'); }
 </script>
 
 </body>
