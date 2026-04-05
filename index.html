@@ -2537,7 +2537,10 @@ function nav(p) {
   const sb = document.getElementById('sb-' + p);
   if (pg) pg.classList.add('active');
   if (sb) sb.classList.add('active');
-  if (p === 'asx')     { updateAsxMomBar();  fetchAsxNews();  }
+  if (p === 'asx')     {
+    updateAsxMomBar(); fetchAsxNews();
+    if (typeof fundData !== 'undefined' && fundData.length === 0) setTimeout(runFundamentalsAgent, 800);
+  }
   if (p === 'futures') { updateFutMomBar();   fetchFutNews();  }
   if (p === 'dash') { if (typeof fetchOvernightData === 'function' && !Object.keys(overnightData||{}).length) fetchOvernightData(); }
   if (p === 'sector' || p === 'sectors') refreshSectorData();
@@ -5799,6 +5802,10 @@ function setAsxTab(tab) {
   const stats = document.getElementById('asx-stats');
   if (stats) stats.style.display = tab !== 'intel' ? 'flex' : 'none';
   updateAsxMomBar();
+  // Auto-run fundamentals on first Intel open
+  if (tab === 'intel' && typeof fundData !== 'undefined' && fundData.length === 0) {
+    setTimeout(runFundamentalsAgent, 400);
+  }
 }
 
 function updateAsxMomBar() {
@@ -6616,29 +6623,4 @@ function renderFundamentals() {
 
 // Auto-load when ASX intel tab opens
 const _origSetAsxTab = typeof setAsxTab === 'function' ? setAsxTab : null;
-function setAsxTab(tab) {
-  if (_origSetAsxTab) _origSetAsxTab(tab);
-  if (tab === 'intel' && fundData.length === 0) {
-    fetch(FUND_PROXY + '?action=get&limit=100').then(r => r.json()).then(d => {
-      if (d.results?.length > 0) {
-        fundData = d.results; renderFundamentals();
-        const s = document.getElementById('fund-status');
-        if (s) s.innerHTML = `<span style="color:var(--green)">✓</span> ${d.count} stocks · ${fundTimeSince(new Date(d.lastRun))}`;
-      } else { setTimeout(runFundamentalsAgent, 800); }
-    }).catch(() => {});
-  }
-}
-
-// Refresh every 6h while app is open
-setInterval(() => {
-  if (fundData.length > 0) {
-    fetch(FUND_PROXY + '?action=get&limit=100').then(r=>r.json()).then(d => {
-      if (d.results?.length > 0) { fundData = d.results; renderFundamentals(); }
-    }).catch(()=>{});
-  }
-}, 6 * 3600 * 1000);
-
-</script>
-
-</body>
-</html>
+>
