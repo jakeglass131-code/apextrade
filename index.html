@@ -1384,22 +1384,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <div class="ss-row" style="border:none;padding-top:12px"><div style="font-size:11px;color:var(--text3)">Keys saved locally in your browser</div><button class="btn g" onclick="saveNewsKey()">Connect news</button></div>
     </div>
     <div class="ss">
-      <div class="ss-t">Scanner parameters</div>
-      <div class="ss-row"><div><div class="ss-l">Minimum RVOL threshold</div><div class="ss-sub">Flag only when relative volume exceeds this</div></div><input class="ss-input" id="set-rvol" type="number" value="2" min="1" max="10" step="0.5" style="width:100px"></div>
-      <div class="ss-row"><div><div class="ss-l">MTF confluence required</div><div class="ss-sub">Minimum timeframes aligned before flagging</div></div><select class="ss-input" id="set-mtf" style="width:150px"><option value="2">2 of 4 TFs</option><option value="3" selected>3 of 4 TFs</option><option value="4">All 4 TFs</option></select></div>
-      <div class="ss-row"><div><div class="ss-l">Signal confidence threshold</div><div class="ss-sub">Minimum % before showing as high priority</div></div><input class="ss-input" id="set-conf" type="number" value="65" min="50" max="95" style="width:100px"></div>
-      <div class="ss-row"><div><div class="ss-l">CRT hook enabled</div><div class="ss-sub">Flag assets where candle range expands 1.5×+</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
-    </div>
-    <div class="ss">
-      <div class="ss-t">Risk parameters</div>
-      <div class="ss-row"><div><div class="ss-l">Account size</div><div class="ss-sub">Total capital for position sizing</div></div><input class="ss-input" id="set-account" type="text" value="80,000"></div>
-      <div class="ss-row"><div><div class="ss-l">Max risk per trade</div><div class="ss-sub">Percentage of account risked per position</div></div><input class="ss-input" id="set-risk" type="text" value="1%"></div>
-      <div class="ss-row"><div><div class="ss-l">Max drawdown limit</div><div class="ss-sub">Stop trading if drawdown exceeds this</div></div><input class="ss-input" id="set-dd" type="text" value="5%"></div>
-      <div class="ss-row"><div><div class="ss-l">Max correlated exposure</div><div class="ss-sub">Alert when correlated positions exceed this</div></div><input class="ss-input" id="set-corr" type="text" value="30%"></div>
-    </div>
-    <div class="ss">
       <div class="ss-t">Notifications & display</div>
-      <div class="ss-row"><div><div class="ss-l">Correlation warnings</div><div class="ss-sub">Alert when holdings are highly correlated</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
       <div class="ss-row"><div><div class="ss-l">ASX hours only</div><div class="ss-sub">Suppress ASX signals outside 10am–4pm AWST</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
       <div class="ss-row"><div><div class="ss-l">High-impact calendar alerts</div><div class="ss-sub">Warn before major news events</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
       <div class="ss-row"><div><div class="ss-l">Dark mode</div><div class="ss-sub">Always on — because 2am trading is real</div></div><div class="toggle on" style="opacity:.5;cursor:default"></div></div>
@@ -3393,34 +3378,6 @@ function saveSettings() {
   const k = document.getElementById('key-news')?.value.trim();
   if (k) { CFG.newsKey = k; localStorage.setItem('apex_news_key', k); }
 
-  // Persist scanner parameters
-  const rvol = parseFloat(document.getElementById('set-rvol')?.value);
-  if (rvol > 0) { CFG.strategy.rvolThreshold = rvol; localStorage.setItem('apex_rvol', rvol); }
-  const mtf = parseInt(document.getElementById('set-mtf')?.value);
-  if (mtf >= 2) { CFG.strategy.mtfRequired = mtf; localStorage.setItem('apex_mtf', mtf); }
-  const conf = parseInt(document.getElementById('set-conf')?.value);
-  if (conf >= 50) { CFG.strategy.minConfidence = conf; localStorage.setItem('apex_conf', conf); }
-
-  // Persist risk parameters
-  const acctVal = parseFloat((document.getElementById('set-account')?.value || '').replace(/[,$%]/g,''));
-  if (acctVal > 0) {
-    CFG.strategy.account = acctVal;
-    localStorage.setItem('apex_account', acctVal);
-    const rcAcct = document.getElementById('rc-account');
-    if (rcAcct) rcAcct.value = acctVal;
-  }
-  const riskVal = parseFloat((document.getElementById('set-risk')?.value || '').replace(/[%]/g,''));
-  if (riskVal > 0) {
-    CFG.strategy.riskPct = riskVal;
-    localStorage.setItem('apex_risk_pct', riskVal);
-    const rcRisk = document.getElementById('rc-risk');
-    if (rcRisk) rcRisk.value = riskVal;
-  }
-  const ddVal = parseFloat((document.getElementById('set-dd')?.value || '').replace(/[%]/g,''));
-  if (ddVal > 0) { CFG.strategy.maxDrawdown = ddVal; localStorage.setItem('apex_max_dd', ddVal); }
-  const corrVal = parseFloat((document.getElementById('set-corr')?.value || '').replace(/[%]/g,''));
-  if (corrVal > 0) { CFG.strategy.maxCorrelation = corrVal; localStorage.setItem('apex_max_corr', corrVal); }
-
   calcRisk();
   showToast('Settings Saved', 'All parameters updated · Live prices activating', 'success', 3000);
 }
@@ -4392,16 +4349,8 @@ if (ktd) ktd.value = localStorage.getItem('apex_td_key') || '';
 (function restoreSettingsUI() {
   const s = CFG.strategy;
   const el = id => document.getElementById(id);
-  if (el('set-rvol'))    el('set-rvol').value = s.rvolThreshold;
-  if (el('set-conf'))    el('set-conf').value = s.minConfidence;
-  if (el('set-account')) el('set-account').value = s.account.toLocaleString();
-  if (el('set-risk'))    el('set-risk').value = s.riskPct + '%';
-  if (el('set-dd'))      el('set-dd').value = (s.maxDrawdown || 5) + '%';
-  if (el('set-corr'))    el('set-corr').value = (s.maxCorrelation || 30) + '%';
   if (el('rc-account'))  el('rc-account').value = s.account;
   if (el('rc-risk'))     el('rc-risk').value = s.riskPct;
-  const mtfSel = el('set-mtf');
-  if (mtfSel) mtfSel.value = String(s.mtfRequired);
 })();
 
 // Close modal on background click
