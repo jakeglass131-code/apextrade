@@ -3737,14 +3737,14 @@ function highlightSector(name) { console.log('Sector:', name); }
 // ── LIVE SECTOR DATA ──────────────────────────────────
 // One representative stock per GICS sector (ASX)
 const SECTOR_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions';
-// ASX Sector ETFs + ASX200 benchmark
+// ASX Sector Indices (Yahoo format: ^AXEJ) + ASX200 benchmark
 const SECTOR_ETFS = {
-  'Materials':   'XMJ', 'Financials':  'XFJ', 'Energy':      'XEJ',
-  'Healthcare':  'XHJ', 'Cons Disc':   'XDJ', 'Industrials': 'XNJ',
-  'IT / Tech':   'XIJ', 'Real Estate': 'XRE', 'Utilities':   'XUJ',
-  'Comm Svcs':   'XTJ', 'Cons Staples':'XSJ',
+  'Materials':   '^AXMJ', 'Financials':  '^AXFJ', 'Energy':      '^AXEJ',
+  'Healthcare':  '^AXHJ', 'Cons Disc':   '^AXDJ', 'Industrials': '^AXNJ',
+  'IT / Tech':   '^AXIJ', 'Real Estate': '^AXRE', 'Utilities':   '^AXUJ',
+  'Comm Svcs':   '^AXTJ', 'Cons Staples':'^AXSJ',
 };
-const ASX_BENCHMARK = 'XJO'; // ASX200
+const ASX_BENCHMARK = '^AXJO'; // ASX200
 const SECTOR_STOCKS = {
   'Energy':      'WDS',   // Woodside — largest ASX energy stock
   'Materials':   'BHP',   // BHP

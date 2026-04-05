@@ -19,7 +19,7 @@ exports.handler = async (event) => {
   } catch(e){}
 
   // Step 2: Fall back to Yahoo
-  const sym = ticker.includes('.')?ticker:ticker+'.AX';
+  const sym = ticker.startsWith('^')?ticker:ticker.includes('.')?ticker:ticker+'.AX';
   const iv = interval||'1d';
   const rg = range||'2y';
   try{
