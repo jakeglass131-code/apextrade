@@ -44,10 +44,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .topbar{height:44px;background:var(--bg2);border-bottom:1px solid rgba(45,142,255,0.2);box-shadow:0 2px 20px rgba(45,142,255,0.04);display:flex;align-items:center;padding:0 14px;gap:0;flex-shrink:0;overflow:hidden}
 .logo{font-family:var(--fd);font-size:17px;font-weight:800;letter-spacing:-0.03em;flex-shrink:0;margin-right:18px}
 .logo em{color:var(--accent);font-style:normal}
-.ticker-wrap{flex:1;overflow:hidden;display:flex;align-items:center;height:100%}
-.ticker-track{display:flex;gap:24px;animation:ticker 50s linear infinite;white-space:nowrap}
-.ticker-track:hover{animation-play-state:paused}
-@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
 .tick{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);font-family:var(--fm)}
 .tick b{color:var(--text);font-weight:700;font-family:var(--fd)}
 .topbar-r{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:14px}
@@ -738,7 +735,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   .stat-value { font-size:22px; }
   .journal-stats-grid { grid-template-columns:repeat(2,1fr) !important; gap:8px !important; }
   .scroll > .panel { break-inside:avoid; }
-  .topbar .ticker-wrap { max-width:40vw; }
   #overnight-grid { grid-template-columns:repeat(auto-fill,minmax(130px,1fr)) !important; }
   .ph-t { font-size:15px; }
   .pred-verdict { grid-template-columns:1fr !important; gap:8px !important; }
@@ -886,7 +882,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">Apex<em>Trade</em></div>
-  <div class="ticker-wrap"><div class="ticker-track" id="ticker"></div></div>
   <div class="topbar-r">
     <div class="session-bar" id="session-bar">
       <span class="session-pill closed" id="sess-asx">ASX</span>
@@ -2887,10 +2882,6 @@ function buildTicker() {
     const flash = cur !== prev ? (cur > prev ? 'up' : 'dn') : '';
     return `<div class="tick"><b>${sym}</b><span class="mono ${flash}">${fmtPrice(sym,cur)}</span><span class="${up?'up':'dn'}" style="font-size:10px">${up?'+':''}${p.toFixed(2)}%</span></div>`;
   });
-  const el = document.getElementById('ticker');
-  if (el) el.innerHTML = items.join('');
-}
-
 function updatePriceEls() {
   const map = {
     'p-aud':'AUD/USD','p-eur':'EUR/USD','p-gold':'XAU/USD','p-bhp':'XAU/USD',
