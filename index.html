@@ -7116,7 +7116,7 @@ async function startSmtScan() {
   document.getElementById('smt-scan-btn').style.display = 'none';
   document.getElementById('smt-stop-btn').style.display = 'flex';
   document.getElementById('smt-progress').style.display = 'block';
-  document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div style="font-size:13px;color:var(--text2)">Scanning ' + SMT_ALL_PAIRS.length + ' pairs...</div></div>';
+  document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div id="smt-scan-counter" style="font-size:13px;color:var(--text2)">Scanning 0 / ' + SMT_ALL_PAIRS.length + ' pairs...</div></div>';
 
   const total = SMT_ALL_PAIRS.length;
   let scanned = 0, valid = 0, divs = 0, bull = 0, bear = 0;
@@ -7151,7 +7151,9 @@ async function startSmtScan() {
     scanned += batch.length;
     const pct = Math.round(scanned / total * 100);
     document.getElementById('smt-progress-fill').style.width = pct + '%';
-    document.getElementById('smt-progress-text').textContent = 'Scanning ' + scanned + '/' + total + ' · ' + valid + ' valid · ' + divs + ' divergences';
+    document.getElementById('smt-progress-text').textContent = 'Scanning ' + scanned + ' / ' + total + ' · ' + valid + ' valid · ' + divs + ' divergences';
+    const counter = document.getElementById('smt-scan-counter');
+    if (counter) counter.textContent = 'Scanning ' + scanned + ' / ' + total + ' pairs...';
     updateSmtKPIs(scanned, valid, divs, bull, bear);
     renderSmtResults();
     await new Promise(r => setTimeout(r, 100));
