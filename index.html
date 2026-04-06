@@ -403,9 +403,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .rs-val{font-size:11px;font-weight:700;min-width:52px;text-align:right}
 .rs-trend{font-size:9px;padding:1px 6px;border-radius:3px;font-weight:600;flex-shrink:0}
 /* RRG */
-.rrg-wrap{padding:16px;display:flex;gap:16px;align-items:flex-start}
-.rrg-chart{flex-shrink:0}
-.rrg-legend{flex:1}
+.rrg-wrap{padding:16px;display:flex;gap:16px;align-items:flex-start;flex-direction:column}
+.rrg-chart{flex-shrink:0;width:100%}
+.rrg-legend{width:100%}
 .rrg-quad-label{font-size:10px;font-weight:600;letter-spacing:.05em}
 .rrg-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
 .rrg-item:last-child{border-bottom:none}
@@ -1705,63 +1705,53 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <!-- populated by JS -->
     </div>
 
-    <!-- ── Leaderboard + RRG ── -->
-    <div style="display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:12px;margin-bottom:12px">
-
-      <!-- Leaderboard -->
-      <div class="panel">
-        <div class="phead">
-          <div class="ptitle">Sector leaderboard</div>
-          <div style="display:flex;gap:6px">
-            <button class="chip on" id="lb-day" onclick="setLbPeriod('day',this)">1D</button>
-            <button class="chip" id="lb-week" onclick="setLbPeriod('week',this)">1W</button>
-            <button class="chip" id="lb-month" onclick="setLbPeriod('month',this)">1M</button>
-          </div>
-        </div>
-        <div style="overflow-x:auto">
-          <table class="leaderboard" id="leaderboard-table">
-            <thead><tr><th style="width:32px">#</th><th>Sector</th><th>Change</th><th style="width:120px">Relative bar</th><th>RS vs ASX</th></tr></thead>
-            <tbody id="leaderboard-body"></tbody>
-          </table>
+    <!-- ── Leaderboard ── -->
+    <div class="panel" style="margin-bottom:12px">
+      <div class="phead">
+        <div class="ptitle">Sector leaderboard</div>
+        <div style="display:flex;gap:6px">
+          <button class="chip on" id="lb-day" onclick="setLbPeriod('day',this)">1D</button>
+          <button class="chip" id="lb-week" onclick="setLbPeriod('week',this)">1W</button>
+          <button class="chip" id="lb-month" onclick="setLbPeriod('month',this)">1M</button>
         </div>
       </div>
+      <div style="overflow-x:auto">
+        <table class="leaderboard" id="leaderboard-table">
+          <thead><tr><th style="width:32px">#</th><th>Sector</th><th>Change</th><th style="width:120px">Relative bar</th><th>RS vs ASX</th></tr></thead>
+          <tbody id="leaderboard-body"></tbody>
+        </table>
+      </div>
+    </div>
 
-      <!-- Commodity Rotation Graph -->
-      <div class="panel">
-        <div class="phead"><div class="ptitle">Commodity Rotation (RRG)</div><div class="pmeta">Multi-factor: RSI + Stoch + MACD + ADX + Volume</div></div>
-        <div class="rrg-wrap">
-          <div class="rrg-chart">
-            <svg id="rrg-svg" width="240" height="240" style="display:block">
-              <!-- Quadrant backgrounds -->
-              <rect x="0" y="0" width="120" height="120" fill="rgba(255,176,32,0.06)" rx="0"/>
-              <rect x="120" y="0" width="120" height="120" fill="rgba(0,232,150,0.08)" rx="0"/>
-              <rect x="0" y="120" width="120" height="120" fill="rgba(255,61,90,0.06)" rx="0"/>
-              <rect x="120" y="120" width="120" height="120" fill="rgba(255,176,32,0.05)" rx="0"/>
-              <!-- Axes -->
-              <line x1="120" y1="0" x2="120" y2="240" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-              <line x1="0" y1="120" x2="240" y2="120" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-              <!-- Quadrant labels -->
-              <text x="60" y="16" text-anchor="middle" font-size="9" fill="rgba(255,176,32,0.8)" font-weight="600" font-family="DM Mono">IMPROVING</text>
-              <text x="180" y="16" text-anchor="middle" font-size="9" fill="rgba(0,232,150,0.9)" font-weight="600" font-family="DM Mono">LEADING</text>
-              <text x="60" y="236" text-anchor="middle" font-size="9" fill="rgba(255,61,90,0.8)" font-weight="600" font-family="DM Mono">LAGGING</text>
-              <text x="180" y="236" text-anchor="middle" font-size="9" fill="rgba(255,176,32,0.7)" font-weight="600" font-family="DM Mono">WEAKENING</text>
-              <!-- Axis labels -->
-              <text x="120" y="234" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.3)" font-family="DM Mono">RS-Ratio →</text>
-              <text x="8" y="120" text-anchor="middle" font-size="8" fill="rgba(255,255,255,0.3)" font-family="DM Mono" transform="rotate(-90,8,120)">Momentum ↑</text>
-              <!-- Sector dots — plotted by JS -->
-              <g id="rrg-dots"></g>
-            </svg>
+    <!-- ── Commodity Rotation Graph — Full Width ── -->
+    <div class="panel" style="margin-bottom:12px">
+      <div class="phead">
+        <div class="ptitle">Commodity Rotation (RRG)</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="display:flex;gap:4px" id="com-tf-bar">
+            <button class="chip" data-ctf="1D" onclick="setCommodityTF('1D',this)">1D</button>
+            <button class="chip on" data-ctf="1W" onclick="setCommodityTF('1W',this)">1W</button>
+            <button class="chip" data-ctf="1M" onclick="setCommodityTF('1M',this)">1M</button>
+            <button class="chip" data-ctf="3M" onclick="setCommodityTF('3M',this)">3M</button>
+            <button class="chip" data-ctf="6M" onclick="setCommodityTF('6M',this)">6M</button>
+            <button class="chip" data-ctf="1Y" onclick="setCommodityTF('1Y',this)">1Y</button>
+            <button class="chip" data-ctf="YTD" onclick="setCommodityTF('YTD',this)">YTD</button>
           </div>
-          <div class="rrg-legend">
-            <div id="rrg-legend-items"></div>
-          </div>
+          <div class="pmeta">Multi-factor + Broker Flow Analysis</div>
         </div>
-        <div style="padding:0 16px 12px;font-size:10px;color:var(--text3);line-height:1.6">
-          <span style="color:var(--green);font-weight:600">Leading:</span> ride · &nbsp;
-          <span style="color:var(--amber);font-weight:600">Weakening:</span> tighten stops · &nbsp;
-          <span style="color:var(--red);font-weight:600">Lagging:</span> avoid · &nbsp;
-          <span style="color:var(--blue);font-weight:600">Improving:</span> watch for reversal
-        </div>
+      </div>
+      <div style="padding:16px 16px 8px">
+        <svg id="rrg-svg" viewBox="0 0 900 520" style="width:100%;height:auto;display:block;min-height:420px"></svg>
+      </div>
+      <div style="padding:0 16px 6px">
+        <div id="rrg-legend-items"></div>
+      </div>
+      <div style="padding:4px 16px 12px;font-size:10px;color:var(--text3);line-height:1.6;display:flex;gap:16px;flex-wrap:wrap">
+        <span><span style="color:var(--green);font-weight:600">Leading:</span> ride</span>
+        <span><span style="color:var(--amber);font-weight:600">Weakening:</span> tighten stops</span>
+        <span><span style="color:var(--red);font-weight:600">Lagging:</span> avoid</span>
+        <span><span style="color:var(--blue);font-weight:600">Improving:</span> watch for reversal</span>
+        <span style="margin-left:auto;color:var(--text4)">Dot size = broker volume flow | Ring = institutional activity</span>
       </div>
     </div>
 
@@ -4095,6 +4085,7 @@ function highlightSector(name) { console.log('Sector:', name); }
 
 var COMMODITY_GROUPS = [
   {name:'Gold',      icon:'🥇', tickers:['NST','EVN','NEM','RMS','DEG','WAF','GOR','RSG','SBM','PRU','RRL','CMR','SLR','BGL','GCY','RED']},
+  {name:'Silver',    icon:'🥈', tickers:['SVL','SI6','AUZ','GGG','GSM','KNM','AKM','THR','MAG']},
   {name:'Iron Ore',  icon:'⛰',  tickers:['BHP','RIO','FMG','MIN','CIA','GRR','CZR','MGX','SHV']},
   {name:'Lithium',   icon:'🔋', tickers:['PLS','LTR','CXO','AKE','IGO','LKE','SYR','NMT','GL1','TLX']},
   {name:'Copper',    icon:'🔶', tickers:['SFR','OZL','29M','AIS','REZ','CYM','HCH']},
@@ -4109,10 +4100,12 @@ var COMMODITY_GROUPS = [
   {name:'Potash',    icon:'🌾', tickers:['AGY','SO4','KLL','IPL','NUF']},
 ];
 
+var commodityTF = '1W'; // independent TF for commodity RRG
 var COMMODITIES = COMMODITY_GROUPS.map(function(g) {
   return { name:g.name, icon:g.icon, tickers:g.tickers,
     rs:{}, mom:{}, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     metrics:{avgRSI:50,avgStochK:50,avgStochD:50,macdHist:0,avgADX:15,diPlus:0,diMinus:0,volRatio:1,emaScore:0.5,tvRec:0,tickerCount:0},
+    brokerFlow:{score:0,instBuyers:0,instSellers:0,retailOnly:0,label:'',color:'var(--text3)',totalFlow:0},
     signal:null, signalLabel:'', _data:[] };
 });
 
@@ -4122,9 +4115,11 @@ async function fetchCommodityData() {
     COMMODITY_GROUPS.forEach(function(g){g.tickers.forEach(function(t){allTickers.push('ASX:'+t);});});
     allTickers=[...new Set(allTickers)];
     allTickers.push('ASX:XSO');
+    // 26 columns — includes open/high/low + relative_volume for broker flow detection
     var columns=['close','change','Perf.W','Perf.1M','Perf.3M','Perf.6M','Perf.Y','Perf.YTD',
       'volume','average_volume_30d_calc','RSI','Stoch.K','Stoch.D','MACD.macd','MACD.signal',
-      'ADX','ADX+DI','ADX-DI','EMA50','EMA200','market_cap_basic','Mom','Recommend.All'];
+      'ADX','ADX+DI','ADX-DI','EMA50','EMA200','market_cap_basic','Mom','Recommend.All',
+      'open','relative_volume_10d_calc','average_volume_60d_calc'];
     var data=await fetchTvScan('australia',allTickers,columns);
     if(!data||!data.data) return;
     var lookup={}; data.data.forEach(function(row){lookup[row.s]=row.d;});
@@ -4142,102 +4137,210 @@ async function fetchCommodityData() {
       var emaS=rows.map(function(r){var c=r.d[0]||0,e5=r.d[18],e2=r.d[19];if(!e5||!e2||!c)return 0.5;return((c>e5?1:0)+(c>e2?1:0))/2;});
       var aES=emaS.reduce(function(a,b){return a+b;},0)/emaS.length;
       com.metrics={avgRSI:+aRSI.toFixed(1),avgStochK:+aStK.toFixed(1),avgStochD:+aStD.toFixed(1),macdHist:+(aMACD-aSig).toFixed(3),avgADX:+aADX.toFixed(1),diPlus:+aDIp.toFixed(1),diMinus:+aDIm.toFixed(1),volRatio:+aVR.toFixed(2),emaScore:+aES.toFixed(2),momentum:+aMom.toFixed(2),tvRec:+aRec.toFixed(2),tickerCount:rows.length};
-      // ═ MULTI-FACTOR RS (X): Perf×Volume×Trend×DI×EMA ═
+
+      // ═══════════════════════════════════════════════════
+      // BROKER FLOW ANALYSIS — Cross-reference institutional vs retail
+      // Volume-Price Analysis (VPA): high vol + up = inst buying, high vol + down = inst selling
+      // Relative volume spikes across group = coordinated inst activity
+      // Close vs Open spread = intraday buying/selling pressure
+      // ═══════════════════════════════════════════════════
+      var instBuyers=0, instSellers=0, retailOnly=0, totalFlowScore=0;
+      rows.forEach(function(r){
+        var close=r.d[0]||0, chg=r.d[1]||0, vol=r.d[8]||0, avgVol30=r.d[9]||vol||1;
+        var open=r.d[23]||close, relVol10=r.d[24]||1, avgVol60=r.d[25]||avgVol30;
+        var volRatio=vol/Math.max(avgVol30,1);
+        var relVol=Math.max(relVol10, volRatio);
+        var intraDaySpread=(close-open)/Math.max(open,0.01)*100; // % intraday move
+        var mcW=(r.mcap||1)/totM; // market cap weight
+
+        // INSTITUTIONAL DETECTION LOGIC:
+        // High volume (>1.5x avg) + positive price = institutional buying
+        // High volume (>1.5x avg) + negative price = institutional selling
+        // Very high volume (>2.5x avg) = strong institutional activity
+        // Close > Open on high vol = buy-side dominance (block trades)
+        // Close < Open on high vol = sell-side dominance (distribution)
+        if(relVol>1.5){
+          var strength=Math.min(3,relVol/1.5); // 1-3x multiplier
+          if(chg>0.3||intraDaySpread>0.5){
+            instBuyers++; totalFlowScore+=strength*mcW*100;
+          } else if(chg<-0.3||intraDaySpread<-0.5){
+            instSellers++; totalFlowScore-=strength*mcW*100;
+          } else {
+            // High vol but flat price = accumulation/positioning
+            if(close>=open){instBuyers++; totalFlowScore+=strength*mcW*40;}
+            else{instSellers++; totalFlowScore-=strength*mcW*40;}
+          }
+        } else {
+          retailOnly++;
+          // Low vol moves are retail noise — small weight
+          totalFlowScore+=(chg>0?1:-1)*mcW*10;
+        }
+      });
+      // Normalize flow score to -100 to +100
+      var flowNorm=Math.max(-100,Math.min(100,totalFlowScore));
+      var flowLabel='', flowColor='var(--text3)';
+      if(flowNorm>40){flowLabel='INST BUY'; flowColor='#00e896';}
+      else if(flowNorm>15){flowLabel='Smart $$'; flowColor='rgba(0,232,150,.7)';}
+      else if(flowNorm>5){flowLabel='Mild Buy'; flowColor='rgba(0,232,150,.4)';}
+      else if(flowNorm<-40){flowLabel='INST SELL'; flowColor='#ff4466';}
+      else if(flowNorm<-15){flowLabel='Dist'; flowColor='rgba(255,68,102,.7)';}
+      else if(flowNorm<-5){flowLabel='Mild Sell'; flowColor='rgba(255,68,102,.4)';}
+      else{flowLabel='Neutral'; flowColor='var(--text4)';}
+      com.brokerFlow={score:+flowNorm.toFixed(1),instBuyers:instBuyers,instSellers:instSellers,retailOnly:retailOnly,label:flowLabel,color:flowColor,totalFlow:+totalFlowScore.toFixed(1)};
+
+      // ═ MULTI-FACTOR RS (X): Perf×Volume×Trend×DI×EMA×BrokerFlow ═
       ['1D','1W','1M','3M','6M','1Y','YTD'].forEach(function(tf){
         var pd=(com.perf[tf]||0)-(bp[tf]||0);
         var vC=1+Math.max(-0.5,Math.min(0.5,(aVR-1)*0.5));
         var tQ=1+Math.max(-0.3,Math.min(0.3,(aADX-20)/60));
         var dD=aDIp>aDIm?1.05:0.95;
         var eB=1+(aES-0.5)*0.2;
-        com.rs[tf]=+(100+pd*vC*tQ*dD*eB*0.8).toFixed(1);
+        // Broker flow amplifier: institutional buying boosts RS, selling dampens
+        var bF=1+Math.max(-0.15,Math.min(0.15,flowNorm/400));
+        com.rs[tf]=+(100+pd*vC*tQ*dD*eB*bF*0.8).toFixed(1);
       });
-      // ═ MULTI-FACTOR MOMENTUM (Y): Accel×Stoch×MACD×Volume ═
+      // ═ MULTI-FACTOR MOMENTUM (Y): Accel×Stoch×MACD×Volume×BrokerFlow ═
       ['1D','1W','1M','3M','6M','1Y','YTD'].forEach(function(tf){
         var tp={'1D':['1D','1W'],'1W':['1W','1M'],'1M':['1M','3M'],'3M':['3M','6M'],'6M':['6M','1Y'],'1Y':['1Y','1Y'],'YTD':['YTD','1Y']};
         var p=tp[tf]; var rA=(com.perf[p[0]]||0)-(com.perf[p[1]]||0)*0.5;
         var sF=((aStK||50)-50)/25; var mF=Math.max(-2,Math.min(2,(aMACD-aSig)*20));
         var vS=(aVR>1.5&&com.perf['1D']>0)?0.5:(aVR>1.5&&com.perf['1D']<0)?-0.3:0;
         var moF=Math.max(-1,Math.min(1,(aMom||0)*0.02));
-        com.mom[tf]=+(100+rA*0.25+sF*0.25+mF*0.2+vS*0.15+moF*0.15).toFixed(1);
+        // Broker flow momentum boost
+        var bM=flowNorm/500;
+        com.mom[tf]=+(100+rA*0.22+sF*0.22+mF*0.18+vS*0.15+moF*0.12+bM*0.11).toFixed(1);
       });
-      // ═ CYCLE SIGNALS ═
+      // ═ CYCLE SIGNALS (enhanced with broker flow) ═
+      var ctf=commodityTF||'1W';
       var sig=null,sigL='';
-      if(aStK<20&&aStK>aStD){sig='bull_cycle';sigL='Bull Cycle ⭐';}
+      if(flowNorm>35&&aStK<30){sig='inst_accumulation';sigL='Inst Accum 🏦';}
+      else if(flowNorm<-35&&aStK>70){sig='inst_distribution';sigL='Inst Dist 🏦';}
+      else if(aStK<20&&aStK>aStD){sig='bull_cycle';sigL='Bull Cycle ⭐';}
       else if(aStK>80&&aStK<aStD){sig='cycle_top';sigL='Cycle Top ⚠';}
-      else if(aVR>2&&com.rs[globalTF||'1W']>102){sig='vol_breakout';sigL='Breakout 🔥';}
+      else if(aVR>2&&com.rs[ctf]>102){sig='vol_breakout';sigL='Breakout 🔥';}
       else if(aRSI<35&&aVR>1.3){sig='accumulation';sigL='Accumulating 📈';}
-      else if(aRSI>70&&com.mom[globalTF||'1W']<99){sig='distribution';sigL='Distribution 📉';}
-      else if(aADX>30&&aDIp>aDIm&&com.rs[globalTF||'1W']>101){sig='strong_trend';sigL='Strong Trend 💪';}
+      else if(aRSI>70&&com.mom[ctf]<99){sig='distribution';sigL='Distribution 📉';}
+      else if(aADX>30&&aDIp>aDIm&&com.rs[ctf]>101){sig='strong_trend';sigL='Strong Trend 💪';}
+      else if(flowNorm>25&&com.rs[ctf]>100.5){sig='smart_money';sigL='Smart Money 💰';}
       else if(aRSI<30){sig='oversold';sigL='Oversold 🟢';}
       else if(aRSI>75){sig='overbought';sigL='Overbought 🔴';}
       com.signal=sig; com.signalLabel=sigL;
     });
-    console.log('Commodity RRG updated:',COMMODITIES.filter(function(c){return c._data.length>0;}).length,'groups');
+    console.log('Commodity RRG updated:',COMMODITIES.filter(function(c){return c._data.length>0;}).length,'groups with broker flow');
   } catch(e){console.warn('fetchCommodityData:',e.message);}
+}
+
+function setCommodityTF(tf,btn){
+  commodityTF=tf;
+  var bar=document.getElementById('com-tf-bar');
+  if(bar){bar.querySelectorAll('.chip').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-ctf')===tf);});}
+  renderCommodityRRG();
 }
 
 function comQuadColor(rs,mom){if(rs>100&&mom>100)return'#00d4a8';if(rs<100&&mom>100)return'#2d8eff';if(rs<100&&mom<100)return'#ff4466';return'#ffaa00';}
 
 function renderCommodityRRG(){
   var svg=document.getElementById('rrg-svg');if(!svg)return;
-  var W=680,H=420,cx=W/2,cy=H/2;
-  svg.setAttribute('viewBox','0 0 '+W+' '+H); svg.style.width='100%'; svg.style.height='auto';
-  var tf=(typeof globalTF!=='undefined')?globalTF:'1W';
+  var W=900,H=520,cx=W/2,cy=H/2;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);
+  var tf=commodityTF||'1W';
   var items=COMMODITIES.filter(function(c){return c._data.length>0;}).map(function(c){
-    return{label:c.name.length>9?c.name.substring(0,8):c.name,full:c.name,icon:c.icon,
+    var bf=c.brokerFlow||{score:0,label:'',color:'#888'};
+    // Dot radius scales with broker flow intensity (bigger = more institutional activity)
+    var flowAbs=Math.abs(bf.score||0);
+    var r=Math.max(10,Math.min(22,10+flowAbs*0.12));
+    return{label:c.name.length>10?c.name.substring(0,9):c.name,full:c.name,icon:c.icon,
       rs:(c.rs&&c.rs[tf])?c.rs[tf]:100,mom:(c.mom&&c.mom[tf])?c.mom[tf]:100,
-      sig:c.signal,sigL:c.signalLabel,m:c.metrics,perf:c.perf,r:13};
+      sig:c.signal,sigL:c.signalLabel,m:c.metrics,perf:c.perf,bf:bf,r:r};
   });
   if(items.length===0)return;
   var rsMax=Math.max(3,...items.map(function(i){return Math.abs(i.rs-100);}));
   var momMax=Math.max(3,...items.map(function(i){return Math.abs(i.mom-100);}));
-  var sc=Math.min(150,(W/2-50)/Math.max(rsMax,momMax,1));
+  var sc=Math.min(180,(W/2-60)/Math.max(rsMax,momMax,1));
+  // Grid lines for reference
+  var gridLines='';
+  [-2,-1,1,2].forEach(function(n){
+    var gx=cx+n*(W/2-60)/3, gy=cy-n*(H/2-40)/3;
+    gridLines+='<line x1="'+gx+'" y1="30" x2="'+gx+'" y2="'+(H-20)+'" stroke="rgba(255,255,255,.04)" stroke-width="1"/>';
+    gridLines+='<line x1="20" y1="'+gy+'" x2="'+(W-20)+'" y2="'+gy+'" stroke="rgba(255,255,255,.04)" stroke-width="1"/>';
+  });
   var quads=[
-    {x:cx,y:0,w:cx,h:cy,fill:'rgba(0,212,168,0.07)',label:'LEADING',lx:cx+10,ly:18,col:'rgba(0,212,168,.6)'},
-    {x:0,y:0,w:cx,h:cy,fill:'rgba(45,142,255,0.07)',label:'IMPROVING',lx:10,ly:18,col:'rgba(45,142,255,.6)'},
-    {x:0,y:cy,w:cx,h:cy,fill:'rgba(255,68,102,0.06)',label:'LAGGING',lx:10,ly:cy+18,col:'rgba(255,68,102,.5)'},
-    {x:cx,y:cy,w:cx,h:cy,fill:'rgba(255,170,0,0.06)',label:'WEAKENING',lx:cx+10,ly:cy+18,col:'rgba(255,170,0,.6)'}];
+    {x:cx,y:0,w:cx,h:cy,fill:'rgba(0,212,168,0.07)',label:'LEADING',lx:W-80,ly:22,col:'rgba(0,212,168,.5)'},
+    {x:0,y:0,w:cx,h:cy,fill:'rgba(45,142,255,0.07)',label:'IMPROVING',lx:14,ly:22,col:'rgba(45,142,255,.5)'},
+    {x:0,y:cy,w:cx,h:cy,fill:'rgba(255,68,102,0.05)',label:'LAGGING',lx:14,ly:cy+22,col:'rgba(255,68,102,.4)'},
+    {x:cx,y:cy,w:cx,h:cy,fill:'rgba(255,170,0,0.05)',label:'WEAKENING',lx:W-100,ly:cy+22,col:'rgba(255,170,0,.5)'}];
   var trails=items.map(function(it){
-    var x=Math.max(20,Math.min(W-20,cx+(it.rs-100)*sc)),y=Math.max(20,Math.min(H-20,cy-(it.mom-100)*sc));
-    var tx=x-(it.rs-100)*sc*0.25,ty=y+(it.mom-100)*sc*0.25;
+    var x=Math.max(30,Math.min(W-30,cx+(it.rs-100)*sc)),y=Math.max(30,Math.min(H-30,cy-(it.mom-100)*sc));
+    var tx=x-(it.rs-100)*sc*0.3,ty=y+(it.mom-100)*sc*0.3;
     var col=comQuadColor(it.rs,it.mom);
-    return'<path d="M'+tx.toFixed(1)+','+ty.toFixed(1)+' Q'+((tx+x)/2+6).toFixed(1)+','+((ty+y)/2).toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1)+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-dasharray="4 3" opacity="0.5"/>';
+    return'<path d="M'+tx.toFixed(1)+','+ty.toFixed(1)+' Q'+((tx+x)/2+8).toFixed(1)+','+((ty+y)/2).toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1)+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-dasharray="5 4" opacity="0.45"/>';
   }).join('');
   var dots=items.map(function(it){
-    var x=Math.max(20,Math.min(W-20,cx+(it.rs-100)*sc)),y=Math.max(20,Math.min(H-20,cy-(it.mom-100)*sc));
+    var x=Math.max(30,Math.min(W-30,cx+(it.rs-100)*sc)),y=Math.max(30,Math.min(H-30,cy-(it.mom-100)*sc));
     var col=comQuadColor(it.rs,it.mom);
-    var tip=it.full+'\nRS:'+it.rs.toFixed(1)+' Mom:'+it.mom.toFixed(1)+'\nRSI:'+it.m.avgRSI+' Stoch:'+it.m.avgStochK+'\nADX:'+it.m.avgADX+' Vol:'+it.m.volRatio+'x';
-    if(it.sigL)tip+='\n'+it.sigL;
+    var tip=it.full+' ('+tf+')\nRS: '+it.rs.toFixed(1)+' | Mom: '+it.mom.toFixed(1)+'\nRSI: '+it.m.avgRSI+' | Stoch: '+it.m.avgStochK+'/'+it.m.avgStochD+'\nADX: '+it.m.avgADX+' | Vol: '+it.m.volRatio+'x'+'\nBroker Flow: '+it.bf.label+' ('+it.bf.score+')'+'\nInst Buyers: '+it.bf.instBuyers+' | Inst Sellers: '+it.bf.instSellers+' | Retail: '+it.bf.retailOnly;
+    if(it.sigL)tip+='\nSignal: '+it.sigL;
+    // Outer ring = institutional activity strength
+    var ring='';
+    if(Math.abs(it.bf.score)>15){
+      var ringCol=it.bf.score>0?'rgba(0,232,150,.4)':'rgba(255,68,102,.4)';
+      var ringR=it.r+4;
+      ring='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+ringR+'" fill="none" stroke="'+ringCol+'" stroke-width="2" stroke-dasharray="3 2" opacity="0.7"/>';
+    }
+    // Signal label below dot
     var sm='';
-    if(it.sig==='bull_cycle')sm='<text x="'+x.toFixed(1)+'" y="'+(y+it.r+13).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#FFD700" font-weight="700" font-family="Inter,sans-serif">\u2B50 BULL</text>';
-    else if(it.sig==='vol_breakout')sm='<text x="'+x.toFixed(1)+'" y="'+(y+it.r+13).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#FF6F00" font-weight="700" font-family="Inter,sans-serif">\uD83D\uDD25 BRK</text>';
-    else if(it.sig==='cycle_top')sm='<text x="'+x.toFixed(1)+'" y="'+(y+it.r+13).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#FF4466" font-weight="700" font-family="Inter,sans-serif">\u26A0 TOP</text>';
-    else if(it.sig==='accumulation')sm='<text x="'+x.toFixed(1)+'" y="'+(y+it.r+13).toFixed(1)+'" text-anchor="middle" font-size="8" fill="#2d8eff" font-family="Inter,sans-serif">ACC</text>';
-    return'<g style="cursor:pointer"><circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+it.r+'" fill="'+col+'" opacity="0.85" stroke="'+col+'" stroke-width="1.5"><title>'+tip+'</title></circle>'
-      +'<text x="'+x.toFixed(1)+'" y="'+(y-it.r-5).toFixed(1)+'" text-anchor="middle" font-size="10" font-weight="700" fill="'+col+'" font-family="Inter,sans-serif">'+it.icon+' '+it.label+'</text>'+sm+'</g>';
+    var sigMap={'bull_cycle':['BULL','#FFD700'],'inst_accumulation':['INST BUY','#00e896'],'inst_distribution':['INST SELL','#ff4466'],
+      'vol_breakout':['BRK','#FF6F00'],'cycle_top':['TOP','#FF4466'],'accumulation':['ACC','#2d8eff'],
+      'smart_money':['SMART $$','#00e896'],'distribution':['DIST','#ff4466'],'strong_trend':['TREND','#00d4a8'],
+      'oversold':['OVERSOLD','#00e896'],'overbought':['OVERBOUGHT','#ff4466']};
+    var sInfo=sigMap[it.sig];
+    if(sInfo)sm='<text x="'+x.toFixed(1)+'" y="'+(y+it.r+14).toFixed(1)+'" text-anchor="middle" font-size="9" fill="'+sInfo[1]+'" font-weight="700" font-family="Inter,sans-serif">'+sInfo[0]+'</text>';
+    // Broker flow badge below signal
+    var bfBadge='';
+    if(Math.abs(it.bf.score)>10){
+      var by=sInfo?(y+it.r+26):(y+it.r+14);
+      bfBadge='<text x="'+x.toFixed(1)+'" y="'+by.toFixed(1)+'" text-anchor="middle" font-size="8" fill="'+it.bf.color+'" font-family="Inter,sans-serif">'+it.bf.label+'</text>';
+    }
+    return'<g style="cursor:pointer">'+ring
+      +'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+it.r+'" fill="'+col+'" opacity="0.8" stroke="'+col+'" stroke-width="2"><title>'+tip+'</title></circle>'
+      +'<text x="'+x.toFixed(1)+'" y="'+(y-it.r-7).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="700" fill="'+col+'" font-family="Inter,sans-serif">'+it.icon+' '+it.label+'</text>'
+      +sm+bfBadge+'</g>';
   }).join('');
-  svg.innerHTML=quads.map(function(q){return'<rect x="'+q.x+'" y="'+q.y+'" width="'+q.w+'" height="'+q.h+'" fill="'+q.fill+'"/><text x="'+q.lx+'" y="'+q.ly+'" font-size="10" font-weight="700" fill="'+q.col+'" font-family="Inter,sans-serif" letter-spacing="1">'+q.label+'</text>';}).join('')
-    +'<line x1="'+cx+'" y1="0" x2="'+cx+'" y2="'+H+'" stroke="rgba(100,160,255,.15)" stroke-width="1"/>'
-    +'<line x1="0" y1="'+cy+'" x2="'+W+'" y2="'+cy+'" stroke="rgba(100,160,255,.15)" stroke-width="1"/>'
-    +'<text x="'+W/2+'" y="'+(H-6)+'" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.25)" font-family="Inter,sans-serif">\u2190 Lagging  RS-Ratio  Leading \u2192</text>'
-    +'<text x="6" y="'+H/2+'" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.25)" font-family="Inter,sans-serif" transform="rotate(-90,6,'+H/2+')">\u2190 Weakening  Momentum  Improving \u2192</text>'
+  svg.innerHTML=quads.map(function(q){return'<rect x="'+q.x+'" y="'+q.y+'" width="'+q.w+'" height="'+q.h+'" fill="'+q.fill+'"/><text x="'+q.lx+'" y="'+q.ly+'" font-size="11" font-weight="700" fill="'+q.col+'" font-family="Inter,sans-serif" letter-spacing="1.5">'+q.label+'</text>';}).join('')
+    +gridLines
+    +'<line x1="'+cx+'" y1="0" x2="'+cx+'" y2="'+H+'" stroke="rgba(100,160,255,.12)" stroke-width="1"/>'
+    +'<line x1="0" y1="'+cy+'" x2="'+W+'" y2="'+cy+'" stroke="rgba(100,160,255,.12)" stroke-width="1"/>'
+    +'<text x="'+W/2+'" y="'+(H-8)+'" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.2)" font-family="Inter,sans-serif" letter-spacing="1">\u2190 Lagging  RS-Ratio  Leading \u2192</text>'
+    +'<text x="8" y="'+H/2+'" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.2)" font-family="Inter,sans-serif" transform="rotate(-90,8,'+H/2+')" letter-spacing="1">\u2190 Weakening  Momentum  Improving \u2192</text>'
     +trails+dots;
   renderCommodityLegend();
 }
 
 function renderCommodityLegend(){
   var el=document.getElementById('rrg-legend-items');if(!el)return;
-  var tf=(typeof globalTF!=='undefined')?globalTF:'1W';
+  var tf=commodityTF||'1W';
   var sorted=COMMODITIES.filter(function(c){return c._data.length>0;}).sort(function(a,b){return(b.rs[tf]||100)-(a.rs[tf]||100);});
+  el.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px';
   el.innerHTML=sorted.map(function(c){
     var rs=c.rs[tf]||100,mom=c.mom[tf]||100,col=comQuadColor(rs,mom),pv=c.perf[tf]||0;
-    return'<div style="display:flex;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid var(--border2);font-size:10px">'
-      +'<span style="color:'+col+';font-size:12px">'+c.icon+'</span>'
-      +'<span style="color:var(--text);font-weight:600;min-width:65px">'+c.name+'</span>'
-      +'<span style="color:'+col+';font-family:var(--fm);font-weight:600;min-width:50px">'+(pv>=0?'+':'')+pv+'%</span>'
-      +'<span style="font-family:var(--fm);font-size:9px;color:var(--text3)">RSI:'+c.metrics.avgRSI+'</span>'
-      +'<span style="font-family:var(--fm);font-size:9px;color:var(--text3)">St:'+c.metrics.avgStochK+'</span>'
-      +(c.signalLabel?'<span style="font-size:9px;color:'+col+';font-weight:600">'+c.signalLabel+'</span>':'')+'</div>';
+    var bf=c.brokerFlow||{score:0,label:'Neutral',color:'var(--text4)',instBuyers:0,instSellers:0};
+    // Broker flow bar: visual bar from -100 to +100
+    var barW=Math.min(40,Math.abs(bf.score)*0.4);
+    var barDir=bf.score>=0?'right':'left';
+    var barCol=bf.score>0?'rgba(0,232,150,.5)':'rgba(255,68,102,.5)';
+    var flowBar='<div style="position:relative;width:80px;height:6px;background:var(--bg5);border-radius:3px;overflow:hidden">'
+      +'<div style="position:absolute;'+(barDir==='right'?'left:50%':'right:50%')+';top:0;height:100%;width:'+barW+'px;background:'+barCol+';border-radius:3px"></div>'
+      +'<div style="position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(255,255,255,.15)"></div></div>';
+    return'<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg4);border-radius:6px;font-size:10px">'
+      +'<span style="color:'+col+';font-size:13px;flex-shrink:0">'+c.icon+'</span>'
+      +'<span style="color:var(--text);font-weight:600;min-width:70px;flex-shrink:0">'+c.name+'</span>'
+      +'<span style="color:'+col+';font-family:var(--fm);font-weight:700;min-width:48px">'+(pv>=0?'+':'')+pv+'%</span>'
+      +'<span style="font-family:var(--fm);font-size:9px;color:var(--text3);min-width:40px">RS:'+rs.toFixed(0)+'</span>'
+      +flowBar
+      +'<span style="font-size:9px;font-weight:600;color:'+bf.color+';min-width:55px">'+bf.label+'</span>'
+      +'<span style="font-family:var(--fm);font-size:9px;color:var(--text4)">'+bf.instBuyers+'B/'+bf.instSellers+'S</span>'
+      +(c.signalLabel?'<span style="font-size:9px;color:'+col+';font-weight:600;margin-left:auto;flex-shrink:0">'+c.signalLabel+'</span>':'')
+      +'</div>';
   }).join('');
 }
 
@@ -5946,7 +6049,7 @@ function setGlobalTF(tf, btn) {
   if (pid === 'page-flow') refreshFlowData && refreshFlowData();
   if (pid === 'page-sectors') {
     // Re-render all sector components with new TF (data already fetched with all TFs)
-    renderHeatmap(); renderLeaderboard(); renderMoneyFlow(); renderRS(); renderCommodityRRG(); renderOutperformers(); renderSectorPulse(); renderCommodityLegend();
+    renderHeatmap(); renderLeaderboard(); renderMoneyFlow(); renderRS(); renderOutperformers(); renderSectorPulse();
   }
   console.log('Global TF set to', tf);
 }
