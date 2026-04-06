@@ -1705,24 +1705,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <!-- populated by JS -->
     </div>
 
-    <!-- ── Leaderboard ── -->
-    <div class="panel" style="margin-bottom:12px">
-      <div class="phead">
-        <div class="ptitle">Sector leaderboard</div>
-        <div style="display:flex;gap:6px">
-          <button class="chip on" id="lb-day" onclick="setLbPeriod('day',this)">1D</button>
-          <button class="chip" id="lb-week" onclick="setLbPeriod('week',this)">1W</button>
-          <button class="chip" id="lb-month" onclick="setLbPeriod('month',this)">1M</button>
-        </div>
-      </div>
-      <div style="overflow-x:auto">
-        <table class="leaderboard" id="leaderboard-table">
-          <thead><tr><th style="width:32px">#</th><th>Sector</th><th>Change</th><th style="width:120px">Relative bar</th><th>RS vs ASX</th></tr></thead>
-          <tbody id="leaderboard-body"></tbody>
-        </table>
-      </div>
-    </div>
-
     <!-- ── Sector Rotation Graph — Full Width ── -->
     <div class="panel" style="margin-bottom:12px">
       <div class="phead">
@@ -3900,11 +3882,14 @@ function renderHeatmap() {
     const bw = Math.min(Math.abs(val)/3*100,100);
     const c1 = (s.perf && s.perf[ctx1] != null) ? +s.perf[ctx1] : s.day;
     const c2 = (s.perf && s.perf[ctx2] != null) ? +s.perf[ctx2] : s.month;
+    const rsVal = (s.rs && s.rs[tf]) ? +(s.rs[tf] - 100).toFixed(1) : 0;
+    const rsCol = rsVal >= 0 ? 'var(--green)' : 'var(--red)';
     return `<div class="sh-card ${cls}" onclick="highlightSector('${s.name}')">
       <div class="sh-icon">${s.icon}</div>
       <div class="sh-name">${s.name}</div>
       <div class="sh-chg" style="color:${col}">${val>=0?'+':''}${val.toFixed(2)}%</div>
       <div class="sh-week">${ctx1}: <span style="color:${c1>=0?'var(--green)':'var(--red)'}">${c1>=0?'+':''}${c1.toFixed(1)}%</span> ${ctx2}: <span style="color:${c2>=0?'var(--green)':'var(--red)'}">${c2>=0?'+':''}${c2.toFixed(1)}%</span></div>
+      <div style="font-size:10px;margin-top:3px;font-family:var(--fm);font-weight:700;color:${rsCol}">RS: ${rsVal>=0?'+':''}${rsVal}%</div>
       <div class="sh-bar" style="width:${bw}%;background:${col};opacity:.6"></div>
     </div>`;
   }).join('');
@@ -3918,7 +3903,8 @@ function setLbPeriod(p, btn) {
 }
 
 function renderLeaderboard() {
-  // Try both possible element IDs (sectors page has leaderboard-body, flow page had sector-leaderboard)
+  // Leaderboard removed — RS now shown in heatmap cards
+  return;
   const el = document.getElementById('leaderboard-body') || document.getElementById('sector-leaderboard');
   if (!el) return;
   const tf = (typeof globalTF !== 'undefined') ? globalTF : '1W';
