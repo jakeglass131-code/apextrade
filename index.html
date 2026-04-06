@@ -1273,6 +1273,34 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <button class="btn" onclick="runFutIntelAll()" id="fut-run-all" style="font-size:10px;padding:4px 10px;opacity:.7" title="Manual refresh">↻</button>
     </div>
 
+    <!-- TradingView live ticker tape — real-time streaming prices -->
+    <div style="border-bottom:1px solid var(--border2);overflow:hidden;height:46px;flex-shrink:0">
+      <div class="tradingview-widget-container">
+        <div class="tradingview-widget-container__widget"></div>
+        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+        {
+          "symbols": [
+            {"proName":"CME_MINI:NQ1!","title":"NAS100"},
+            {"proName":"CME_MINI:ES1!","title":"SPX500"},
+            {"proName":"CBOT_MINI:YM1!","title":"DOW"},
+            {"proName":"COMEX:GC1!","title":"GOLD"},
+            {"proName":"COMEX:SI1!","title":"SILVER"},
+            {"proName":"FX:AUDUSD","title":"AUD/USD"},
+            {"proName":"FX:EURUSD","title":"EUR/USD"},
+            {"proName":"FX:GBPUSD","title":"GBP/USD"},
+            {"proName":"FX:USDJPY","title":"USD/JPY"},
+            {"proName":"TVC:DXY","title":"DXY"}
+          ],
+          "showSymbolLogo":true,
+          "colorTheme":"dark",
+          "isTransparent":true,
+          "displayMode":"adaptive",
+          "locale":"en"
+        }
+        </script>
+      </div>
+    </div>
+
     <div class="scroll" style="padding:16px 20px">
 
       <!-- Live pair cards grid — Dovvy style -->
@@ -2620,7 +2648,6 @@ function nav(p) {
   // Stop futures auto-refresh when leaving futures page
   if (p !== 'futures') {
     if (typeof futIntelTimer !== 'undefined' && futIntelTimer) { clearInterval(futIntelTimer); futIntelTimer = null; }
-    if (typeof futPriceTimer !== 'undefined' && futPriceTimer) { clearInterval(futPriceTimer); futPriceTimer = null; }
   }
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('.sbb').forEach(x => x.classList.remove('active'));
@@ -2634,15 +2661,12 @@ function nav(p) {
   }
   if (p === 'futures') {
     updateFutMomBar(); fetchFutNews();
-    // Auto-start intel scoring + price refresh timers
+    // Auto-start intel scoring (live prices from TradingView widgets)
     setTimeout(() => {
       const panel = document.getElementById('fut-panel-intel');
-      if (panel && panel.style.display !== 'none' && !futIntelRunning) runFutIntelAll();
-      if (!futPriceTimer) {
-        futPriceTimer = setInterval(() => {
-          const pg = document.getElementById('page-futures');
-          if (pg && pg.classList.contains('active')) refreshFutPrices();
-        }, 10000);
+      if (panel && panel.style.display !== 'none') {
+        if (!futCardsBuilt) buildFutIntelCards();
+        if (!futIntelRunning) runFutIntelAll();
       }
       if (!futIntelTimer) {
         futIntelTimer = setInterval(() => {
@@ -6134,16 +6158,10 @@ function setFutTab(tab) {
   updateFutMomBar();
   if (tab === 'intel') {
     setTimeout(() => {
-      if (typeof renderFutIntelCards === 'function') renderFutIntelCards(null);
-      // Auto-run immediately
+      if (!futCardsBuilt) buildFutIntelCards();
+      else updateFutIntelCards();
       if (!futIntelRunning) runFutIntelAll();
-      // Price-only refresh every 10s (single lightweight batch request)
-      if (futPriceTimer) clearInterval(futPriceTimer);
-      futPriceTimer = setInterval(() => {
-        const page = document.getElementById('page-futures');
-        if (page && page.classList.contains('active')) refreshFutPrices();
-      }, 10000);
-      // Full re-score every 60s
+      // Full re-score every 60s (live prices handled by TradingView widgets)
       if (futIntelTimer) clearInterval(futIntelTimer);
       futIntelTimer = setInterval(() => {
         const page = document.getElementById('page-futures');
@@ -6152,7 +6170,6 @@ function setFutTab(tab) {
     }, 150);
   } else {
     if (futIntelTimer) { clearInterval(futIntelTimer); futIntelTimer = null; }
-    if (futPriceTimer) { clearInterval(futPriceTimer); futPriceTimer = null; }
   }
 }
 
@@ -8135,17 +8152,19 @@ async function checkCustomSmtPair() {
 // ══════════════════════════════════════════════════════════════════
 
 const FUT_INSTRUMENTS = [
-  { sym:'NAS100',  yahoo:'NQ=F',      name:'NAS100',   cat:'US Index'   },
-  { sym:'SPX500',  yahoo:'ES=F',      name:'SPX500',   cat:'US Index'   },
-  { sym:'US30',    yahoo:'YM=F',      name:'DOW',      cat:'US Index'   },
-  { sym:'XAU/USD', yahoo:'GC=F',      name:'Gold',     cat:'Commodity'  },
-  { sym:'XAG/USD', yahoo:'SI=F',      name:'Silver',   cat:'Commodity'  },
-  { sym:'AUD/USD', yahoo:'AUDUSD=X',  name:'AUD/USD',  cat:'FX Major'   },
-  { sym:'EUR/USD', yahoo:'EURUSD=X',  name:'EUR/USD',  cat:'FX Major'   },
-  { sym:'GBP/USD', yahoo:'GBPUSD=X',  name:'GBP/USD',  cat:'FX Major'   },
-  { sym:'USD/JPY', yahoo:'USDJPY=X',  name:'USD/JPY',  cat:'FX Major'   },
-  { sym:'DXY',     yahoo:'DX-Y.NYB',  name:'DXY',      cat:'USD Index'  },
+  { sym:'NAS100',  yahoo:'NQ=F',      name:'NAS100',   cat:'US Index',   tv:'CME_MINI:NQ1!'  },
+  { sym:'SPX500',  yahoo:'ES=F',      name:'SPX500',   cat:'US Index',   tv:'CME_MINI:ES1!'  },
+  { sym:'US30',    yahoo:'YM=F',      name:'DOW',      cat:'US Index',   tv:'CBOT_MINI:YM1!' },
+  { sym:'XAU/USD', yahoo:'GC=F',      name:'Gold',     cat:'Commodity',  tv:'COMEX:GC1!'     },
+  { sym:'XAG/USD', yahoo:'SI=F',      name:'Silver',   cat:'Commodity',  tv:'COMEX:SI1!'     },
+  { sym:'AUD/USD', yahoo:'AUDUSD=X',  name:'AUD/USD',  cat:'FX Major',   tv:'FX:AUDUSD'      },
+  { sym:'EUR/USD', yahoo:'EURUSD=X',  name:'EUR/USD',  cat:'FX Major',   tv:'FX:EURUSD'      },
+  { sym:'GBP/USD', yahoo:'GBPUSD=X',  name:'GBP/USD',  cat:'FX Major',   tv:'FX:GBPUSD'      },
+  { sym:'USD/JPY', yahoo:'USDJPY=X',  name:'USD/JPY',  cat:'FX Major',   tv:'FX:USDJPY'      },
+  { sym:'DXY',     yahoo:'DX-Y.NYB',  name:'DXY',      cat:'USD Index',  tv:'TVC:DXY'        },
 ];
+// Map TF selector to TradingView intervals
+const FUT_TV_INTERVAL = { 'W':'1W', 'D':'1D', '4H':'4h', '1H':'1h', '15m':'15m', '5m':'5m' };
 
 let futIntelTF   = 'D';
 let futIntelData = {}; // cache: sym -> { bull, bear, conf, dir, signals, lastFetch }
@@ -8302,97 +8321,84 @@ async function fetchFutChart(yahoo, tf) {
   throw lastErr || new Error('all proxies failed');
 }
 
-// ── Render all cards ──────────────────────────────────────────────
-function renderFutIntelCards(overrideMap) {
+// ── Build cards once (with TradingView widget containers) ─────────
+let futCardsBuilt = false;
+function buildFutIntelCards() {
   const grid = document.getElementById('fut-pair-grid');
   if (!grid) return;
-
+  const tvInt = FUT_TV_INTERVAL[futIntelTF] || '1D';
   grid.innerHTML = FUT_INSTRUMENTS.map(inst => {
-    const cached = futIntelData[inst.sym];
-    const ov     = overrideMap?.[inst.sym];
-    const d      = ov || cached;
-
-    // Price from live prices object or cache
-    const livePrice = typeof prices !== 'undefined' ? prices[inst.sym] : null;
-    const liveChg   = typeof pctChange === 'function' ? pctChange(inst.sym) : 0;
-    const priceDisp = livePrice != null
-      ? (typeof fmtPrice === 'function' ? fmtPrice(inst.sym, livePrice) : livePrice.toFixed(2))
-      : (d?.price ? d.price.toFixed(2) : '—');
-    const chgDisp   = livePrice != null ? liveChg : (d?.pct || 0);
-    const chgUp     = chgDisp >= 0;
-
-    if (!d) {
-      // Not yet scored — show loading card
-      return `<div class="pc2" data-sym="${inst.sym}" style="opacity:.6">
-        <div class="pc2-head">
-          <div><div class="pc2-name">${inst.name}</div><div style="font-size:9px;color:var(--text3);margin-top:1px">${inst.cat}</div></div>
-          <span class="sent sneut">Loading</span>
-        </div>
-        <div style="font-size:11px;color:var(--text3);min-height:44px;display:flex;align-items:center">Fetching indicators...</div>
-        <div style="background:var(--bg5);border-radius:2px;height:4px;margin-top:12px">
-          <div class="lpulse" style="height:4px;width:60%;background:var(--bg4);border-radius:2px"></div>
-        </div>
-      </div>`;
-    }
-
-    const isBull = d.dir === 'bull';
-    const isBear = d.dir === 'bear';
-    const sentLabel = isBull ? 'Bullish' : isBear ? 'Bearish' : 'Neutral';
-    const sentCls   = isBull ? 'sbull' : isBear ? 'sbear' : 'sneut';
-    const confCol   = d.conf >= 75 ? 'var(--green)' : d.conf >= 55 ? 'var(--accent)' : 'var(--amber)';
-    const borderCol = isBull
-      ? 'rgba(0,212,168,.35)'
-      : isBear ? 'rgba(255,68,102,.3)' : 'var(--border2)';
-
-    const topSig = (d.signals || []).slice(0, 2).join(' · ');
-
-    return `<div class="pc2" data-sym="${inst.sym}" style="border-color:${borderCol}">
+    const sid = inst.sym.replace(/[/]/g,'');
+    return `<div class="pc2" data-sym="${inst.sym}" id="fc-${sid}" style="opacity:.6">
       <div class="pc2-head">
-        <div>
-          <div class="pc2-name">${inst.name}</div>
-          <div style="font-size:9px;color:var(--text3);margin-top:1px;font-weight:600;letter-spacing:.04em">${inst.cat}</div>
-        </div>
-        <span class="sent ${sentCls}">${sentLabel}</span>
+        <div><div class="pc2-name">${inst.name}</div><div style="font-size:9px;color:var(--text3);margin-top:1px;font-weight:600;letter-spacing:.04em">${inst.cat}</div></div>
+        <span class="sent sneut" id="fc-sent-${sid}">Loading</span>
       </div>
-
-      <div style="font-size:11px;color:var(--text2);line-height:1.5;min-height:32px;margin:6px 0">${topSig || 'Indicators calculated'}</div>
-
-      <!-- Bull / Bear scores -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+      <div id="fc-sig-${sid}" style="font-size:11px;color:var(--text2);line-height:1.5;min-height:24px;margin:4px 0">Fetching indicators...</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
         <div>
-          <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--green);margin-bottom:3px">
-            <span>BULLISH</span><span>${d.bull}/100</span>
-          </div>
-          <div style="background:var(--bg5);border-radius:2px;height:5px">
-            <div style="width:${d.bull}%;height:5px;border-radius:2px;background:var(--green);transition:width .8s ease;opacity:.85"></div>
-          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--green);margin-bottom:2px"><span>BULLISH</span><span id="fc-bv-${sid}">—</span></div>
+          <div style="background:var(--bg5);border-radius:2px;height:5px"><div id="fc-bb-${sid}" style="width:0%;height:5px;border-radius:2px;background:var(--green);transition:width .6s;opacity:.85"></div></div>
         </div>
         <div>
-          <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--red);margin-bottom:3px">
-            <span>BEARISH</span><span>${d.bear}/100</span>
-          </div>
-          <div style="background:var(--bg5);border-radius:2px;height:5px">
-            <div style="width:${d.bear}%;height:5px;border-radius:2px;background:var(--red);transition:width .8s ease;opacity:.85"></div>
-          </div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--red);margin-bottom:2px"><span>BEARISH</span><span id="fc-ev-${sid}">—</span></div>
+          <div style="background:var(--bg5);border-radius:2px;height:5px"><div id="fc-eb-${sid}" style="width:0%;height:5px;border-radius:2px;background:var(--red);transition:width .6s;opacity:.85"></div></div>
         </div>
       </div>
-
-      <!-- Confidence -->
-      <div style="font-size:9px;color:var(--text3);display:flex;justify-content:space-between;margin-bottom:3px">
-        <span>CONFIDENCE</span>
-        <span style="color:${confCol};font-weight:800">${d.conf}%</span>
-      </div>
-      <div style="background:var(--bg5);border-radius:2px;height:4px;margin-bottom:8px">
-        <div style="width:${d.conf}%;height:4px;border-radius:2px;background:${confCol};transition:width .8s ease"></div>
-      </div>
-
-      <!-- Price row -->
-      <div class="pc2-bot">
-        <div class="pc2-price ${chgUp?'up':'dn'}">${priceDisp}</div>
-        <div style="font-size:10px;color:${chgUp?'var(--green)':'var(--red)'};font-weight:600">${chgUp?'+':''}${chgDisp.toFixed(2)}%</div>
-      </div>
+      <div style="font-size:9px;color:var(--text3);display:flex;justify-content:space-between;margin-bottom:2px"><span>CONFIDENCE</span><span id="fc-cv-${sid}" style="font-weight:800">—</span></div>
+      <div style="background:var(--bg5);border-radius:2px;height:4px;margin-bottom:4px"><div id="fc-cb-${sid}" style="width:0%;height:4px;border-radius:2px;transition:width .6s"></div></div>
+      <div id="tv-${sid}" style="height:50px;overflow:hidden;border-radius:4px;margin-top:2px"></div>
     </div>`;
   }).join('');
+  // Inject TradingView Technical Analysis mini widgets
+  FUT_INSTRUMENTS.forEach(inst => {
+    const sid = inst.sym.replace(/[/]/g,'');
+    const el = document.getElementById('tv-' + sid);
+    if (!el) return;
+    const w = document.createElement('div');
+    w.className = 'tradingview-widget-container';
+    const inner = document.createElement('div');
+    inner.className = 'tradingview-widget-container__widget';
+    w.appendChild(inner);
+    const s = document.createElement('script');
+    s.type = 'text/javascript';
+    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
+    s.textContent = JSON.stringify({interval:tvInt,width:'100%',isTransparent:true,height:46,symbol:inst.tv,showIntervalTabs:false,colorTheme:'dark',locale:'en'});
+    w.appendChild(s);
+    el.appendChild(w);
+  });
+  futCardsBuilt = true;
+}
+
+// ── Update scores in existing cards (no iframe rebuild) ───────────
+function updateFutIntelCards() {
+  FUT_INSTRUMENTS.forEach(inst => {
+    const d = futIntelData[inst.sym];
+    if (!d) return;
+    const sid = inst.sym.replace(/[/]/g,'');
+    const card = document.getElementById('fc-' + sid);
+    if (!card) return;
+    const isBull = d.dir === 'bull', isBear = d.dir === 'bear';
+    const confCol = d.conf >= 75 ? 'var(--green)' : d.conf >= 55 ? 'var(--accent)' : 'var(--amber)';
+    card.style.borderColor = isBull ? 'rgba(0,212,168,.35)' : isBear ? 'rgba(255,68,102,.3)' : 'var(--border2)';
+    card.style.opacity = '1';
+    const sent = document.getElementById('fc-sent-' + sid);
+    if (sent) { sent.textContent = isBull ? 'Bullish' : isBear ? 'Bearish' : 'Neutral'; sent.className = 'sent ' + (isBull?'sbull':isBear?'sbear':'sneut'); }
+    const sig = document.getElementById('fc-sig-' + sid);
+    if (sig) sig.textContent = (d.signals||[]).slice(0,2).join(' · ') || 'Calculated';
+    const bv = document.getElementById('fc-bv-' + sid); if (bv) bv.textContent = d.bull+'/100';
+    const bb = document.getElementById('fc-bb-' + sid); if (bb) bb.style.width = d.bull+'%';
+    const ev = document.getElementById('fc-ev-' + sid); if (ev) ev.textContent = d.bear+'/100';
+    const eb = document.getElementById('fc-eb-' + sid); if (eb) eb.style.width = d.bear+'%';
+    const cv = document.getElementById('fc-cv-' + sid); if (cv) { cv.textContent = d.conf+'%'; cv.style.color = confCol; }
+    const cb = document.getElementById('fc-cb-' + sid); if (cb) { cb.style.width = d.conf+'%'; cb.style.background = confCol; }
+  });
+}
+
+// ── Compat wrapper: build once, update after ──────────────────────
+function renderFutIntelCards(overrideMap) {
+  if (!futCardsBuilt) { buildFutIntelCards(); return; }
+  updateFutIntelCards();
 }
 
 // ── Run all instruments (concurrent, auto-refresh ready) ──────────
@@ -8451,47 +8457,15 @@ async function runFutIntelAll() {
 function setFutTF(tf, btn) {
   futIntelTF = tf;
   futIntelData = {}; // clear cache — new TF needs fresh data
+  futCardsBuilt = false; // rebuild cards for new TV interval
   document.querySelectorAll('[id^="fut-tf-"]').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
-  renderFutIntelCards(null);
+  buildFutIntelCards();
   runFutIntelAll();
 }
 
 
-// ── Fast price-only refresh (single batch request for all 10) ────
-let futPriceTimer = null;
-async function refreshFutPrices() {
-  const syms = FUT_INSTRUMENTS.map(i => i.yahoo).join(',');
-  const yf = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${syms}&_t=${Date.now()}`;
-  const proxies = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(yf)}`,
-    `https://corsproxy.io/?${encodeURIComponent(yf)}`,
-  ];
-  for (const url of proxies) {
-    try {
-      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      if (!r.ok) continue;
-      const d = await r.json();
-      const results = d?.quoteResponse?.result || [];
-      let changed = false;
-      results.forEach(q => {
-        const inst = FUT_INSTRUMENTS.find(i => i.yahoo === q.symbol);
-        if (!inst || !futIntelData[inst.sym]) return;
-        const newPrice = q.regularMarketPrice;
-        const newPct = q.regularMarketChangePercent;
-        if (newPrice != null && newPrice !== futIntelData[inst.sym].price) {
-          futIntelData[inst.sym].price = newPrice;
-          futIntelData[inst.sym].pct = newPct || 0;
-          changed = true;
-        }
-      });
-      if (changed) renderFutIntelCards(null);
-      const last = document.getElementById('fut-intel-last');
-      if (last) last.textContent = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Australia/Perth'}) + ' AWST';
-      return; // success
-    } catch(e) { /* try next proxy */ }
-  }
-}
+// Live prices handled by TradingView ticker tape + TA widgets (no Yahoo polling needed)
 
 </script>
 
