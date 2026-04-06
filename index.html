@@ -4101,6 +4101,54 @@ var COMMODITY_GROUPS = [
 ];
 
 var commodityTF = '1W'; // independent TF for commodity RRG
+
+// ═══════════════════════════════════════════════════════
+// MARKETLENS BROKER DATA — Net Top IB vs Net Retail (date: 2026-03-30)
+// Source: app.marketlens.com.au — Broker Groups view
+// netIB = Net Top Investment Banks ($), netRetail = Net Retail ($)
+// Positive = net buying, Negative = net selling
+// ═══════════════════════════════════════════════════════
+window._mlBrokerData = {
+  _date: '2026-03-30',
+  // Gold — NST: IBs net selling -$20.3M, retail also selling
+  'NST': {netIB:-20313846, netRetail:-2340581},
+  'EVN': {netIB:-20313846, netRetail:-2340581}, // proxy from NST
+  // Iron Ore — RIO: IBs accumulating +$22.1M
+  'RIO': {netIB:22100946, netRetail:-7472134},
+  'BHP': {netIB:35403058, netRetail:-18354779}, // from initial BHP query
+  'FMG': {netIB:22100946, netRetail:-7472134},  // proxy from RIO
+  'MIN': {netIB:22100946, netRetail:-7472134},
+  // Lithium — PLS: Massive IB buying +$85M, retail dumping -$57M
+  'PLS': {netIB:85020019, netRetail:-56958948},
+  'LTR': {netIB:85020019, netRetail:-56958948}, // proxy from PLS
+  'CXO': {netIB:85020019, netRetail:-56958948},
+  'AKE': {netIB:85020019, netRetail:-56958948},
+  // Copper — SFR: mild IB buying +$3.7M
+  'SFR': {netIB:3677280, netRetail:134199},
+  'OZL': {netIB:3677280, netRetail:134199},
+  // Coal — WHC: IBs buying +$9.7M, retail selling
+  'WHC': {netIB:9664401, netRetail:-10342713},
+  'NHC': {netIB:9664401, netRetail:-10342713},
+  // Uranium — PDN: mild IB buying +$1.2M
+  'PDN': {netIB:1226569, netRetail:-295390},
+  'BOE': {netIB:1226569, netRetail:-295390},
+  // Rare Earth — LYC: IBs flat, retail buying +$1.8M
+  'LYC': {netIB:-81168, netRetail:1771600},
+  'ILU': {netIB:-1525698, netRetail:-284017},
+  // Nickel — IGO: mild IB buying
+  'IGO': {netIB:765888, netRetail:-696886},
+  // Oil & Gas — STO: Strong IB buying +$34.1M
+  'STO': {netIB:34076788, netRetail:-7290489},
+  'WDS': {netIB:34076788, netRetail:-7290489}, // proxy from STO
+  // Base Metal — S32: IB buying +$32.6M
+  'S32': {netIB:32626860, netRetail:-15899242},
+  // Graphite — SYR: mild IB buying
+  'SYR': {netIB:406320, netRetail:-172470},
+  // Potash — IPL: proxy from sector avg
+  'IPL': {netIB:0, netRetail:0},
+  // Silver — SVL: proxy
+  'SVL': {netIB:0, netRetail:0},
+};
 var COMMODITIES = COMMODITY_GROUPS.map(function(g) {
   return { name:g.name, icon:g.icon, tickers:g.tickers,
     rs:{}, mom:{}, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
@@ -4113,6 +4161,7 @@ async function fetchCommodityData() {
   try {
     var allTickers = [];
     COMMODITY_GROUPS.forEach(function(g){g.tickers.forEach(function(t){allTickers.push('ASX:'+t);});});
+    var rawTickers=[...new Set(allTickers)].map(function(t){return t.replace('ASX:','');});
     allTickers=[...new Set(allTickers)];
     allTickers.push('ASX:XSO');
     // 26 columns — includes open/high/low + relative_volume for broker flow detection
@@ -4120,8 +4169,20 @@ async function fetchCommodityData() {
       'volume','average_volume_30d_calc','RSI','Stoch.K','Stoch.D','MACD.macd','MACD.signal',
       'ADX','ADX+DI','ADX-DI','EMA50','EMA200','market_cap_basic','Mom','Recommend.All',
       'open','relative_volume_10d_calc','average_volume_60d_calc'];
-    var data=await fetchTvScan('australia',allTickers,columns);
+    // Fetch TradingView scanner + ASIC short interest in parallel
+    var [data, asicData] = await Promise.all([
+      fetchTvScan('australia',allTickers,columns),
+      fetch('https://apextrade-proxy.netlify.app/.netlify/functions/asic-shorts?tickers='+rawTickers.join(','))
+        .then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+    ]);
     if(!data||!data.data) return;
+    var shortLookup={}; // ASIC institutional short positions
+    var asicDate='';
+    if(asicData&&asicData.positions){
+      shortLookup=asicData.positions;
+      asicDate=asicData.date||'';
+      console.log('ASIC shorts loaded:',asicData.count,'positions, date:',asicDate);
+    }
     var lookup={}; data.data.forEach(function(row){lookup[row.s]=row.d;});
     var bench=lookup['ASX:XSO']||[];
     var bp={'1D':bench[1]||0,'1W':bench[2]||0,'1M':bench[3]||0,'3M':bench[4]||0,'6M':bench[5]||0,'1Y':bench[6]||0,'YTD':bench[7]||0};
@@ -4140,40 +4201,68 @@ async function fetchCommodityData() {
 
       // ═══════════════════════════════════════════════════
       // BROKER FLOW ANALYSIS — Cross-reference institutional vs retail
-      // Volume-Price Analysis (VPA): high vol + up = inst buying, high vol + down = inst selling
-      // Relative volume spikes across group = coordinated inst activity
-      // Close vs Open spread = intraday buying/selling pressure
+      // Layer 1: Volume-Price Analysis (VPA) — high vol + price direction
+      // Layer 2: ASIC Short Interest — official institutional short positions
+      // Layer 3: MarketLens data — net IB vs net retail (when available)
       // ═══════════════════════════════════════════════════
       var instBuyers=0, instSellers=0, retailOnly=0, totalFlowScore=0;
+      var groupShortPct=0, shortCount=0;
       rows.forEach(function(r){
         var close=r.d[0]||0, chg=r.d[1]||0, vol=r.d[8]||0, avgVol30=r.d[9]||vol||1;
         var open=r.d[23]||close, relVol10=r.d[24]||1, avgVol60=r.d[25]||avgVol30;
         var volRatio=vol/Math.max(avgVol30,1);
         var relVol=Math.max(relVol10, volRatio);
-        var intraDaySpread=(close-open)/Math.max(open,0.01)*100; // % intraday move
-        var mcW=(r.mcap||1)/totM; // market cap weight
+        var intraDaySpread=(close-open)/Math.max(open,0.01)*100;
+        var mcW=(r.mcap||1)/totM;
 
-        // INSTITUTIONAL DETECTION LOGIC:
-        // High volume (>1.5x avg) + positive price = institutional buying
-        // High volume (>1.5x avg) + negative price = institutional selling
-        // Very high volume (>2.5x avg) = strong institutional activity
-        // Close > Open on high vol = buy-side dominance (block trades)
-        // Close < Open on high vol = sell-side dominance (distribution)
+        // ASIC short interest for this ticker
+        var si=shortLookup[r.ticker];
+        if(si&&si.pct>0){groupShortPct+=si.pct*mcW; shortCount++;}
+        // Short interest context: >5% = heavily shorted by institutions
+        var shortBias=0;
+        if(si){
+          if(si.pct>8) shortBias=-15;      // very heavily shorted — inst bearish
+          else if(si.pct>5) shortBias=-8;   // heavily shorted
+          else if(si.pct>2) shortBias=-3;   // moderate short interest
+          else if(si.pct<0.5) shortBias=3;  // very low shorts — inst not bearish
+        }
+
+        // VPA: high volume = institutional, low volume = retail
         if(relVol>1.5){
-          var strength=Math.min(3,relVol/1.5); // 1-3x multiplier
+          var strength=Math.min(3,relVol/1.5);
           if(chg>0.3||intraDaySpread>0.5){
             instBuyers++; totalFlowScore+=strength*mcW*100;
           } else if(chg<-0.3||intraDaySpread<-0.5){
             instSellers++; totalFlowScore-=strength*mcW*100;
           } else {
-            // High vol but flat price = accumulation/positioning
             if(close>=open){instBuyers++; totalFlowScore+=strength*mcW*40;}
             else{instSellers++; totalFlowScore-=strength*mcW*40;}
           }
         } else {
           retailOnly++;
-          // Low vol moves are retail noise — small weight
           totalFlowScore+=(chg>0?1:-1)*mcW*10;
+        }
+
+        // Apply ASIC short bias to flow score
+        totalFlowScore+=shortBias*mcW;
+
+        // MarketLens data overlay (if loaded)
+        var ml=window._mlBrokerData&&window._mlBrokerData[r.ticker];
+        if(ml){
+          // ml.netIB = net institutional broker figure (positive=buying)
+          // ml.netRetail = net retail broker figure
+          var ibSignal=(ml.netIB||0)>0?1:-1;
+          var retailSignal=(ml.netRetail||0)>0?1:-1;
+          // IB vs Retail divergence = strongest signal
+          if(ibSignal>0&&retailSignal<0){
+            // IBs buying while retail sells = smart money accumulation
+            instBuyers++; totalFlowScore+=mcW*60;
+          } else if(ibSignal<0&&retailSignal>0){
+            // IBs selling while retail buys = distribution
+            instSellers++; totalFlowScore-=mcW*60;
+          } else {
+            totalFlowScore+=ibSignal*mcW*30; // aligned flow, moderate weight
+          }
         }
       });
       // Normalize flow score to -100 to +100
@@ -4186,7 +4275,10 @@ async function fetchCommodityData() {
       else if(flowNorm<-15){flowLabel='Dist'; flowColor='rgba(255,68,102,.7)';}
       else if(flowNorm<-5){flowLabel='Mild Sell'; flowColor='rgba(255,68,102,.4)';}
       else{flowLabel='Neutral'; flowColor='var(--text4)';}
-      com.brokerFlow={score:+flowNorm.toFixed(1),instBuyers:instBuyers,instSellers:instSellers,retailOnly:retailOnly,label:flowLabel,color:flowColor,totalFlow:+totalFlowScore.toFixed(1)};
+      com.brokerFlow={score:+flowNorm.toFixed(1),instBuyers:instBuyers,instSellers:instSellers,retailOnly:retailOnly,
+        label:flowLabel,color:flowColor,totalFlow:+totalFlowScore.toFixed(1),
+        shortPct:+groupShortPct.toFixed(2),asicDate:asicDate,
+        mlAvail:!!(window._mlBrokerData)};
 
       // ═ MULTI-FACTOR RS (X): Perf×Volume×Trend×DI×EMA×BrokerFlow ═
       ['1D','1W','1M','3M','6M','1Y','YTD'].forEach(function(tf){
@@ -4331,6 +4423,9 @@ function renderCommodityLegend(){
     var flowBar='<div style="position:relative;width:80px;height:6px;background:var(--bg5);border-radius:3px;overflow:hidden">'
       +'<div style="position:absolute;'+(barDir==='right'?'left:50%':'right:50%')+';top:0;height:100%;width:'+barW+'px;background:'+barCol+';border-radius:3px"></div>'
       +'<div style="position:absolute;left:50%;top:0;width:1px;height:100%;background:rgba(255,255,255,.15)"></div></div>';
+    // Short interest color
+    var siPct=bf.shortPct||0;
+    var siCol=siPct>5?'var(--red)':siPct>2?'var(--amber)':'var(--text4)';
     return'<div style="display:flex;align-items:center;gap:8px;padding:5px 8px;background:var(--bg4);border-radius:6px;font-size:10px">'
       +'<span style="color:'+col+';font-size:13px;flex-shrink:0">'+c.icon+'</span>'
       +'<span style="color:var(--text);font-weight:600;min-width:70px;flex-shrink:0">'+c.name+'</span>'
@@ -4339,6 +4434,7 @@ function renderCommodityLegend(){
       +flowBar
       +'<span style="font-size:9px;font-weight:600;color:'+bf.color+';min-width:55px">'+bf.label+'</span>'
       +'<span style="font-family:var(--fm);font-size:9px;color:var(--text4)">'+bf.instBuyers+'B/'+bf.instSellers+'S</span>'
+      +'<span style="font-family:var(--fm);font-size:9px;color:'+siCol+'" title="ASIC Short Interest %">SI:'+siPct.toFixed(1)+'%</span>'
       +(c.signalLabel?'<span style="font-size:9px;color:'+col+';font-weight:600;margin-left:auto;flex-shrink:0">'+c.signalLabel+'</span>':'')
       +'</div>';
   }).join('');
