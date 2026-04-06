@@ -9190,16 +9190,51 @@ async function startSmtScan() {
   }
 
   if (nonAsxList.length > 0 && !smtAbort) {
-    for (var i = 0; i < nonAsxList.length; i += 500) {
-      if (smtAbort) break;
-      var batch = nonAsxList.slice(i, i + 500);
-      try {
-        var r = await fetch(TV_SCAN + '?market=america', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbols:{tickers:batch},columns:TV_COLS}), signal:AbortSignal.timeout(15000) });
-        parseTVBatch(await r.json(), false);
-      } catch(e) {}
-      fetched += batch.length;
-      document.getElementById('smt-progress-fill').style.width = Math.round(fetched / (asxList.length + nonAsxList.length) * 40) + '%';
+    // Split non-ASX by likely exchange
+    var ukTickers = [], usTickers = [];
+    nonAsxList.forEach(function(t) {
+      if (/\.L$/.test(t)) ukTickers.push(t);
+      else usTickers.push(t);
+    });
+
+    // US tickers: try NASDAQ then NYSE prefixes
+    var exchanges = ['NASDAQ','NYSE','AMEX'];
+    for (var ex = 0; ex < exchanges.length && !smtAbort; ex++) {
+      // Only fetch tickers not yet loaded
+      var need = usTickers.filter(function(t) { return !tvData[t]; });
+      if (need.length === 0) break;
+      for (var i = 0; i < need.length; i += 500) {
+        if (smtAbort) break;
+        var batch = need.slice(i, i + 500).map(function(t) { return exchanges[ex] + ':' + t; });
+        try {
+          var r = await fetch(TV_SCAN + '?market=america', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbols:{tickers:batch},columns:TV_COLS}), signal:AbortSignal.timeout(15000) });
+          parseTVBatch(await r.json(), true);
+        } catch(e) {}
+      }
+      document.getElementById('smt-progress-text').textContent = 'TradingView: ' + Object.keys(tvData).length + ' tickers loaded (' + exchanges[ex] + ')...';
     }
+
+    // UK tickers: LSE prefix
+    if (ukTickers.length > 0 && !smtAbort) {
+      for (var i = 0; i < ukTickers.length; i += 500) {
+        if (smtAbort) break;
+        var batch = ukTickers.slice(i, i + 500).map(function(t) { return 'LSE:' + t.replace('.L',''); });
+        try {
+          var r = await fetch(TV_SCAN + '?market=uk', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbols:{tickers:batch},columns:TV_COLS}), signal:AbortSignal.timeout(15000) });
+          // Map back: LSE:BHP -> BHP.L
+          var data = await r.json();
+          if (data && data.data) {
+            data.data.forEach(function(item) {
+              var tk = item.s.replace(/^LSE:/, '') + '.L';
+              var d = item.d;
+              if (d[0] != null) tvData[tk] = { close:d[0], open:d[1], high:d[2], low:d[3], vol:d[4], chg:d[5], chg1:d[6], chg5:d[7], perfW:d[8], perf1M:d[9], perf3M:d[10], perf6M:d[11], perfY:d[12] };
+            });
+          }
+        } catch(e) {}
+      }
+    }
+    fetched = asxList.length + nonAsxList.length;
+    document.getElementById('smt-progress-fill').style.width = '40%';
   }
 
   var loadedCount = Object.keys(tvData).length;
