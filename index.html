@@ -8127,7 +8127,7 @@ const FUT_INSTRUMENTS = [
   { sym:'AUD/USD', yahoo:'AUDUSD=X',  name:'AUD/USD',  cat:'FX Major'   },
   { sym:'EUR/USD', yahoo:'EURUSD=X',  name:'EUR/USD',  cat:'FX Major'   },
   { sym:'GBP/USD', yahoo:'GBPUSD=X',  name:'GBP/USD',  cat:'FX Major'   },
-  { sym:'USD/JPY', yahoo:'JPY=X',     name:'USD/JPY',  cat:'FX Major'   },
+  { sym:'USD/JPY', yahoo:'USDJPY=X',  name:'USD/JPY',  cat:'FX Major'   },
   { sym:'DXY',     yahoo:'DX-Y.NYB',  name:'DXY',      cat:'USD Index'  },
 ];
 
@@ -8137,11 +8137,11 @@ let futIntelRunning = false;
 let futIntelTimer = null;
 const FUT_TF_MAP = {
   'W':   { interval:'1wk', range:'2y' },
-  'D':   { interval:'1d',  range:'1y' },
-  '4H':  { interval:'1h',  range:'60d', agg:4 },
-  '1H':  { interval:'1h',  range:'30d' },
-  '15m': { interval:'15m', range:'10d' },
-  '5m':  { interval:'5m',  range:'5d'  },
+  'D':   { interval:'1d',  range:'6mo' },
+  '4H':  { interval:'1h',  range:'21d', agg:4 },
+  '1H':  { interval:'1h',  range:'7d' },
+  '15m': { interval:'15m', range:'3d' },
+  '5m':  { interval:'5m',  range:'1d'  },
 };
 
 // ── Indicator math ────────────────────────────────────────────────
@@ -8248,36 +8248,42 @@ function scoreFutInstrument(closes, highs, lows, price) {
   return { bull: bullPct, bear: bearPct, conf, dir, signals };
 }
 
-// ── Fetch chart data via allorigins (browser IP, no proxy) ────────
+// ── Fetch chart data — dual CORS proxy with fallback ─────────────
 async function fetchFutChart(yahoo, tf) {
   const cfg = FUT_TF_MAP[tf || futIntelTF] || FUT_TF_MAP['D'];
   const yf  = `https://query1.finance.yahoo.com/v8/finance/chart/${yahoo}?interval=${cfg.interval}&range=${cfg.range}`;
-  const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(yf)}`;
-  const r   = await fetch(url, { signal: AbortSignal.timeout(12000) });
-  if (!r.ok) throw new Error(r.status);
-  const d   = await r.json();
-  const res = d?.chart?.result?.[0];
-  if (!res) throw new Error('no data');
-  const q = res.indicators?.quote?.[0] || {};
-  let closes = (q.close || []).filter(v => v != null);
-  let highs  = (q.high  || []).filter(v => v != null);
-  let lows   = (q.low   || []).filter(v => v != null);
-  // Aggregate for 4H: group every 4 hourly candles
-  if (cfg.agg && cfg.agg > 1) {
-    const n = cfg.agg, ac = [], ah = [], al = [];
-    for (let i = 0; i < closes.length; i += n) {
-      const sc = closes.slice(i, i + n), sh = highs.slice(i, i + n), sl = lows.slice(i, i + n);
-      ac.push(sc[sc.length - 1]);
-      ah.push(Math.max(...sh));
-      al.push(Math.min(...sl.filter(v => v > 0)));
-    }
-    closes = ac; highs = ah; lows = al;
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(yf)}`,
+    `https://corsproxy.io/?${encodeURIComponent(yf)}`,
+  ];
+  let lastErr;
+  for (const url of proxies) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (!r.ok) { lastErr = new Error(r.status); continue; }
+      const d = await r.json();
+      const res = d?.chart?.result?.[0];
+      if (!res) { lastErr = new Error('no data'); continue; }
+      const q = res.indicators?.quote?.[0] || {};
+      let closes = (q.close || []).filter(v => v != null);
+      let highs  = (q.high  || []).filter(v => v != null);
+      let lows   = (q.low   || []).filter(v => v != null);
+      if (closes.length < 10) { lastErr = new Error('insufficient data'); continue; }
+      // Aggregate for 4H: group every 4 hourly candles
+      if (cfg.agg && cfg.agg > 1) {
+        const n = cfg.agg, ac = [], ah = [], al = [];
+        for (let i = 0; i < closes.length; i += n) {
+          const sc = closes.slice(i, i + n), sh = highs.slice(i, i + n), sl = lows.slice(i, i + n);
+          ac.push(sc[sc.length - 1]);
+          ah.push(Math.max(...sh));
+          al.push(Math.min(...sl.filter(v => v > 0)));
+        }
+        closes = ac; highs = ah; lows = al;
+      }
+      return { closes, highs, lows, price: res.meta?.regularMarketPrice || 0, pct: res.meta?.regularMarketChangePercent || 0 };
+    } catch(e) { lastErr = e; }
   }
-  return {
-    closes, highs, lows,
-    price: res.meta?.regularMarketPrice || 0,
-    pct:   res.meta?.regularMarketChangePercent || 0,
-  };
+  throw lastErr || new Error('all proxies failed');
 }
 
 // ── Render all cards ──────────────────────────────────────────────
@@ -8387,8 +8393,9 @@ async function runFutIntelAll() {
     // First load: show loading cards
     if (Object.keys(futIntelData).length === 0) renderFutIntelCards(null);
 
-    // Concurrent: 3 at a time (fast, avoids rate limits)
-    const CONC = 3;
+    // Concurrent: 5 at a time for speed
+    const CONC = 5;
+    const failed = [];
     for (let i = 0; i < FUT_INSTRUMENTS.length; i += CONC) {
       const batch = FUT_INSTRUMENTS.slice(i, i + CONC);
       await Promise.all(batch.map(async inst => {
@@ -8397,7 +8404,21 @@ async function runFutIntelAll() {
           futIntelData[inst.sym] = { ...scoreFutInstrument(closes, highs, lows, price), price, pct };
         } catch(e) {
           console.warn('Fut intel:', inst.sym, e.message);
-          if (!futIntelData[inst.sym]) futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['Data unavailable'], price:0, pct:0 };
+          failed.push(inst);
+          if (!futIntelData[inst.sym]) futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['Retrying...'], price:0, pct:0 };
+        }
+      }));
+      try { renderFutIntelCards(null); } catch(e) {}
+    }
+    // Retry failed instruments once
+    if (failed.length > 0) {
+      await Promise.all(failed.map(async inst => {
+        try {
+          const { closes, highs, lows, price, pct } = await fetchFutChart(inst.yahoo);
+          futIntelData[inst.sym] = { ...scoreFutInstrument(closes, highs, lows, price), price, pct };
+        } catch(e) {
+          console.warn('Fut intel retry fail:', inst.sym, e.message);
+          futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['Data unavailable — retrying next cycle'], price: futIntelData[inst.sym]?.price || 0, pct: futIntelData[inst.sym]?.pct || 0 };
         }
       }));
       try { renderFutIntelCards(null); } catch(e) {}
