@@ -3439,7 +3439,7 @@ const TV_SYMBOL_MAP = {
 let chartModal = null;
 
 function openChart(sym) {
-  const tvSym = TV_SYMBOL_MAP[sym] || sym;
+  const tvSym = TV_SYMBOL_MAP[sym] || (sym.includes(':') || sym.includes('.') ? sym : 'ASX:' + sym);
   const existing = document.getElementById('chart-modal');
   if (existing) existing.remove();
 
