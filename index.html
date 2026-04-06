@@ -2910,45 +2910,47 @@ async function loadAsxTickerList() {
   console.log('ASX list fallback:', asxAllTickers.length, 'stocks');
 }
 
-// Fetch a batch of ASX prices from Yahoo
+// Fetch a batch of ASX prices from TradingView Scanner API
 async function fetchAsxBatch(tickers) {
-  const yahooSyms = tickers.map(t => t + '.AX').join(',');
-  const yf = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${yahooSyms}&_t=${Date.now()}`;
-  const proxies = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(yf)}`,
-    `https://corsproxy.io/?${encodeURIComponent(yf)}`,
-  ];
-  for (const url of proxies) {
-    try {
-      const r = await fetch(url, {signal: AbortSignal.timeout(15000)});
-      if (!r.ok) continue;
-      const d = await r.json();
-      const results = d?.quoteResponse?.result || [];
-      results.forEach(q => {
-        const t = q.symbol?.replace('.AX','');
-        if (!t || q.regularMarketPrice == null) return;
-        asxPriceCache[t] = {
-          price: q.regularMarketPrice,
-          pct: q.regularMarketChangePercent || 0,
-          prevClose: q.regularMarketPreviousClose || 0,
-          vol: q.regularMarketVolume || 0,
-          high: q.regularMarketDayHigh || 0,
-          low: q.regularMarketDayLow || 0,
-          ts: Date.now(),
-        };
-      });
-      return results.length;
-    } catch(e) {}
+  const tvTickers = tickers.map(t => 'ASX:' + t);
+  const columns = ['close', 'change', 'open', 'high', 'low', 'volume', 'prev_close_price'];
+  try {
+    const r = await fetch(TV_SCAN_URL + '?market=australia', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbols: { tickers: tvTickers }, columns }),
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!r.ok) throw new Error('TV ' + r.status);
+    const d = await r.json();
+    if (!d.data) return 0;
+    d.data.forEach(row => {
+      const t = row.s?.replace('ASX:', '');
+      const [price, pct, open, high, low, vol, prevClose] = row.d || [];
+      if (!t || price == null) return;
+      asxPriceCache[t] = {
+        price,
+        pct: pct || 0,
+        prevClose: prevClose || 0,
+        vol: vol || 0,
+        high: high || 0,
+        low: low || 0,
+        ts: Date.now(),
+      };
+    });
+    return d.data.length;
+  } catch(e) {
+    console.warn('ASX TV scan error:', e.message);
+    return 0;
   }
-  return 0;
 }
 
-// Full background refresh: all ASX tickers in concurrent batches
+// Full background refresh: all ASX tickers via TradingView Scanner (500 per batch)
 async function refreshAllAsxPrices() {
   if (asxPriceLoading) return;
   asxPriceLoading = true;
   if (asxAllTickers.length === 0) await loadAsxTickerList();
-  const BATCH = 150, CONC = 5;
+  const BATCH = 500, CONC = 3;
   let total = 0;
   for (let i = 0; i < asxAllTickers.length; i += BATCH * CONC) {
     const promises = [];
@@ -2961,9 +2963,8 @@ async function refreshAllAsxPrices() {
     total += results.reduce((a,b) => a + (b||0), 0);
   }
   asxPriceCount = Object.keys(asxPriceCache).length;
-  // Sync to app's prices object for watchlist stocks
   syncAsxPricesToApp();
-  console.log('ASX prices refreshed:', asxPriceCount, '/', asxAllTickers.length);
+  console.log('ASX prices refreshed (TV Scanner):', asxPriceCount, '/', asxAllTickers.length);
   asxPriceLoading = false;
 }
 
@@ -4938,6 +4939,7 @@ function updateTopMovers() {
 journalTrades.forEach(t => addJournalRow(t));
 (function(){try{var s=localStorage.getItem('apex_ml_screener');if(s){var d=JSON.parse(s);if(Array.isArray(d)&&d.length)processMlScreener(d);}}catch(e){}})();
 var PROXY='https://apextrade-proxy.netlify.app/.netlify/functions';
+var TV_SCAN_URL = PROXY + '/tv-scan';
 var crtSignals=[],crtScanning=false,crtAbort=false;
 
 // ── Favourites system ──
@@ -8289,178 +8291,144 @@ async function checkCustomSmtPair() {
 // ══════════════════════════════════════════════════════════
 
 // ══════════════════════════════════════════════════════════════════
-// FUTURES / FX INTELLIGENCE — Dovvy hybrid trading style
-// Real indicators computed client-side from Yahoo monthly candles
-// Bullish score + Bearish score out of 100, confidence bar
-// No proxy needed — fetches via allorigins from browser
+// FUTURES / FX INTELLIGENCE — powered by TradingView Scanner API
+// Exact TradingView indicators: RSI, EMA, MACD, Recommendations
+// Multi-timeframe: 5m, 15m, 1H, 4H, Daily, Weekly
 // ══════════════════════════════════════════════════════════════════
 
 const FUT_INSTRUMENTS = [
-  { sym:'NAS100',  yahoo:'NQ=F',      name:'NAS100',   cat:'US Index',   tv:'FXCM:NAS100'  },
-  { sym:'SPX500',  yahoo:'ES=F',      name:'SPX500',   cat:'US Index',   tv:'FXCM:SPX500'  },
-  { sym:'US30',    yahoo:'YM=F',      name:'DOW',      cat:'US Index',   tv:'FXCM:US30'    },
-  { sym:'XAU/USD', yahoo:'GC=F',      name:'Gold',     cat:'Commodity',  tv:'FXCM:XAUUSD'  },
-  { sym:'XAG/USD', yahoo:'SI=F',      name:'Silver',   cat:'Commodity',  tv:'FXCM:XAGUSD'  },
-  { sym:'AUD/USD', yahoo:'AUDUSD=X',  name:'AUD/USD',  cat:'FX Major',   tv:'FXCM:AUDUSD'  },
-  { sym:'EUR/USD', yahoo:'EURUSD=X',  name:'EUR/USD',  cat:'FX Major',   tv:'FXCM:EURUSD'  },
-  { sym:'GBP/USD', yahoo:'GBPUSD=X',  name:'GBP/USD',  cat:'FX Major',   tv:'FXCM:GBPUSD'  },
-  { sym:'USD/JPY', yahoo:'USDJPY=X',  name:'USD/JPY',  cat:'FX Major',   tv:'FXCM:USDJPY'  },
-  { sym:'DXY',     yahoo:'DX-Y.NYB',  name:'DXY',      cat:'USD Index',  tv:'TVC:DXY'      },
+  { sym:'NAS100',  yahoo:'NQ=F',      name:'NAS100',   cat:'US Index',   tv:'FXCM:NAS100',  tvMarket:'cfd'   },
+  { sym:'SPX500',  yahoo:'ES=F',      name:'SPX500',   cat:'US Index',   tv:'FXCM:SPX500',  tvMarket:'cfd'   },
+  { sym:'US30',    yahoo:'YM=F',      name:'DOW',      cat:'US Index',   tv:'FXCM:US30',    tvMarket:'cfd'   },
+  { sym:'XAU/USD', yahoo:'GC=F',      name:'Gold',     cat:'Commodity',  tv:'FXCM:XAUUSD',  tvMarket:'cfd'   },
+  { sym:'XAG/USD', yahoo:'SI=F',      name:'Silver',   cat:'Commodity',  tv:'FXCM:XAGUSD',  tvMarket:'cfd'   },
+  { sym:'AUD/USD', yahoo:'AUDUSD=X',  name:'AUD/USD',  cat:'FX Major',   tv:'FXCM:AUDUSD',  tvMarket:'forex' },
+  { sym:'EUR/USD', yahoo:'EURUSD=X',  name:'EUR/USD',  cat:'FX Major',   tv:'FXCM:EURUSD',  tvMarket:'forex' },
+  { sym:'GBP/USD', yahoo:'GBPUSD=X',  name:'GBP/USD',  cat:'FX Major',   tv:'FXCM:GBPUSD',  tvMarket:'forex' },
+  { sym:'USD/JPY', yahoo:'USDJPY=X',  name:'USD/JPY',  cat:'FX Major',   tv:'FXCM:USDJPY',  tvMarket:'forex' },
+  { sym:'DXY',     yahoo:'DX-Y.NYB',  name:'DXY',      cat:'USD Index',  tv:'TVC:DXY',       tvMarket:'cfd'   },
 ];
 
 let futIntelTF   = 'D';
-let futIntelData = {}; // cache: sym -> { bull, bear, conf, dir, signals, lastFetch }
+let futIntelData = {}; // cache: sym -> { bull, bear, conf, dir, signals, price, pct }
 let futIntelRunning = false;
 let futIntelTimer = null;
-const FUT_TF_MAP = {
-  'W':   { interval:'1wk', range:'2y' },
-  'D':   { interval:'1d',  range:'6mo' },
-  '4H':  { interval:'1h',  range:'21d', agg:4 },
-  '1H':  { interval:'1h',  range:'7d' },
-  '15m': { interval:'15m', range:'3d' },
-  '5m':  { interval:'5m',  range:'1d'  },
-};
 
-// ── Indicator math ────────────────────────────────────────────────
-function calcRSI(closes, period=14) {
-  if (closes.length < period + 1) return 50;
-  let gains = 0, losses = 0;
-  for (let i = closes.length - period; i < closes.length; i++) {
-    const d = closes[i] - closes[i-1];
-    if (d > 0) gains += d; else losses -= d;
-  }
-  const rs = gains / (losses || 0.001);
-  return 100 - 100 / (1 + rs);
+const TV_TF_SUFFIX = { 'W':'|1W', 'D':'', '4H':'|240', '1H':'|60', '15m':'|15', '5m':'|5' };
+
+// ── Build TradingView scanner column list for selected timeframe ──
+function getTvScanColumns(tf) {
+  const s = TV_TF_SUFFIX[tf] || '';
+  return [
+    'close', 'change',                            // 0,1 — current price & daily change %
+    'RSI' + s,                                     // 2 — RSI on selected TF
+    'EMA20' + s, 'EMA50' + s,                     // 3,4 — EMAs on selected TF
+    'MACD.macd' + s, 'MACD.signal' + s,           // 5,6 — MACD on selected TF
+    'Recommend.All' + s,                           // 7 — overall TV recommendation
+    'Recommend.MA' + s,                            // 8 — MA recommendation
+    'Recommend.Other' + s,                         // 9 — oscillator recommendation
+    'price_52_week_high', 'price_52_week_low',     // 10,11 — 52-week range
+    'Perf.3M', 'Perf.Y',                          // 12,13 — performance
+    'ADX' + s, 'ATR' + s,                         // 14,15 — extra indicators
+  ];
 }
 
-function calcEMA(closes, period) {
-  const k = 2 / (period + 1);
-  let ema = closes[0];
-  for (let i = 1; i < closes.length; i++) ema = closes[i] * k + ema * (1 - k);
-  return ema;
-}
+// ── Score TradingView indicator values → bull/bear/conf ──────────
+function scoreTvIndicators(vals) {
+  const [price, changePct, rsi, ema20, ema50, macdLine, macdSig,
+         recAll, recMA, recOther, high52, low52, perf3m, perfY, adx, atr] = vals;
 
-function calcMACD(closes) {
-  if (closes.length < 26) return { macd: 0, signal: 0, hist: 0 };
-  const ema12 = calcEMA(closes.slice(-26), 12);
-  const ema26 = calcEMA(closes.slice(-26), 26);
-  const macd  = ema12 - ema26;
-  // Signal = 9-period EMA of MACD (approximate with last value)
-  return { macd, signal: macd * 0.85, hist: macd * 0.15 };
-}
-
-// ── Score engine: returns { bull:0-100, bear:0-100, conf:0-100, dir, signals } ──
-function scoreFutInstrument(closes, highs, lows, price) {
-  if (closes.length < 6) return { bull:50, bear:50, conf:40, dir:'neut', signals:[] };
-
-  const rsi    = calcRSI(closes, Math.min(14, closes.length - 1));
-  const ema20  = calcEMA(closes.slice(-20), Math.min(20, closes.length));
-  const ema50  = calcEMA(closes.slice(-50), Math.min(50, closes.length));
-  const macd   = calcMACD(closes);
-
-  const w52h   = Math.max(...highs);
-  const w52l   = Math.min(...lows.filter(v => v > 0));
-  const w52pos = w52h > w52l ? (price - w52l) / (w52h - w52l) : 0.5;
-
-  // 3-month and 6-month momentum
-  const mo3  = closes.length >= 4  ? (price / closes[closes.length - 4]  - 1) : 0;
-  const mo6  = closes.length >= 7  ? (price / closes[closes.length - 7]  - 1) : 0;
-  const mo12 = closes.length >= 13 ? (price / closes[closes.length - 13] - 1) : 0;
-
-  // Monthly consistency
-  const last = closes.slice(-7);
-  const upMonths = last.filter((c, i, a) => i > 0 && c > a[i-1]).length;
+  if (price == null || isNaN(price)) return { bull:50, bear:50, conf:40, dir:'neut', signals:['No data'], price:0, pct:0 };
 
   let bull = 0, bear = 0;
   const signals = [];
 
-  // RSI ── bulls want 40-70, bears want 30-60
-  if      (rsi > 60)  { bull += 18; signals.push(`RSI ${rsi.toFixed(0)} — momentum`); }
-  else if (rsi > 50)  { bull += 10; signals.push(`RSI ${rsi.toFixed(0)} — bullish bias`); }
-  else if (rsi < 40)  { bear += 18; signals.push(`RSI ${rsi.toFixed(0)} — oversold/bearish`); }
-  else if (rsi < 50)  { bear += 10; signals.push(`RSI ${rsi.toFixed(0)} — bearish bias`); }
-  else                { bull += 5; bear += 5; }
+  // RSI (14)
+  if (rsi != null && !isNaN(rsi)) {
+    if      (rsi > 60) { bull += 18; signals.push('RSI ' + rsi.toFixed(0) + ' — momentum'); }
+    else if (rsi > 50) { bull += 10; signals.push('RSI ' + rsi.toFixed(0) + ' — bullish bias'); }
+    else if (rsi < 40) { bear += 18; signals.push('RSI ' + rsi.toFixed(0) + ' — oversold/bearish'); }
+    else if (rsi < 50) { bear += 10; signals.push('RSI ' + rsi.toFixed(0) + ' — bearish bias'); }
+    else               { bull += 5; bear += 5; }
+  }
 
-  // EMA cross
-  if (ema20 > ema50)  { bull += 20; signals.push('EMA 20 > 50 — bullish structure'); }
-  else                { bear += 20; signals.push('EMA 20 < 50 — bearish structure'); }
+  // EMA 20 vs 50 cross
+  if (ema20 != null && ema50 != null && !isNaN(ema20) && !isNaN(ema50)) {
+    if (ema20 > ema50) { bull += 20; signals.push('EMA 20 > 50 — bullish structure'); }
+    else               { bear += 20; signals.push('EMA 20 < 50 — bearish structure'); }
+  }
 
   // Price vs EMA20
-  if (price > ema20)  { bull += 12; signals.push('Price above EMA20'); }
-  else                { bear += 12; signals.push('Price below EMA20'); }
+  if (ema20 != null && !isNaN(ema20)) {
+    if (price > ema20) { bull += 12; signals.push('Price above EMA20'); }
+    else               { bear += 12; signals.push('Price below EMA20'); }
+  }
 
-  // MACD
-  if (macd.hist > 0)  { bull += 12; signals.push('MACD bullish histogram'); }
-  else                { bear += 12; signals.push('MACD bearish histogram'); }
+  // MACD histogram
+  if (macdLine != null && macdSig != null && !isNaN(macdLine) && !isNaN(macdSig)) {
+    const hist = macdLine - macdSig;
+    if (hist > 0) { bull += 12; signals.push('MACD bullish histogram'); }
+    else          { bear += 12; signals.push('MACD bearish histogram'); }
+  }
 
   // 52-week position
-  if      (w52pos > 0.75) { bull += 10; signals.push(`Near 52w high (${(w52pos*100).toFixed(0)}%) — trend strength`); }
-  else if (w52pos < 0.25) { bear += 10; signals.push(`Near 52w low (${(w52pos*100).toFixed(0)}%) — weakness`); }
-  else if (w52pos > 0.5)  { bull += 5; }
-  else                    { bear += 5; }
+  if (high52 != null && low52 != null && high52 > low52) {
+    const w52pos = (price - low52) / (high52 - low52);
+    if      (w52pos > 0.75) { bull += 10; signals.push('Near 52w high (' + (w52pos*100).toFixed(0) + '%)'); }
+    else if (w52pos < 0.25) { bear += 10; signals.push('Near 52w low (' + (w52pos*100).toFixed(0) + '%)'); }
+    else if (w52pos > 0.5)  { bull += 5; }
+    else                    { bear += 5; }
+  }
 
-  // 3-month momentum
-  if      (mo3 > 0.05)  { bull += 10; signals.push(`3mo momentum +${(mo3*100).toFixed(1)}%`); }
-  else if (mo3 < -0.05) { bear += 10; signals.push(`3mo decline ${(mo3*100).toFixed(1)}%`); }
+  // TradingView recommendation (-1 to 1 scale)
+  if (recAll != null && !isNaN(recAll)) {
+    if      (recAll > 0.3)  { bull += 14; signals.push('TV: Strong Buy'); }
+    else if (recAll > 0.1)  { bull += 8;  signals.push('TV: Buy'); }
+    else if (recAll < -0.3) { bear += 14; signals.push('TV: Strong Sell'); }
+    else if (recAll < -0.1) { bear += 8;  signals.push('TV: Sell'); }
+    else                    { bull += 4; bear += 4; }
+  }
+
+  // 3-month performance (fraction: 0.05 = 5%)
+  if (perf3m != null && !isNaN(perf3m)) {
+    const p3 = perf3m * 100;
+    if      (p3 > 5)  { bull += 10; signals.push('3mo +' + p3.toFixed(1) + '%'); }
+    else if (p3 < -5) { bear += 10; signals.push('3mo ' + p3.toFixed(1) + '%'); }
+  }
 
   // 12-month trend
-  if      (mo12 > 0.15) { bull += 8; signals.push(`Strong 12mo trend +${(mo12*100).toFixed(0)}%`); }
-  else if (mo12 < -0.1) { bear += 8; signals.push(`Yearly downtrend ${(mo12*100).toFixed(0)}%`); }
+  if (perfY != null && !isNaN(perfY)) {
+    const pY = perfY * 100;
+    if      (pY > 15)  { bull += 8; signals.push('12mo +' + pY.toFixed(0) + '%'); }
+    else if (pY < -10) { bear += 8; signals.push('12mo ' + pY.toFixed(0) + '%'); }
+  }
 
-  // Monthly consistency
-  if      (upMonths >= 5) { bull += 10; signals.push(`${upMonths}/6 months up — consistent`); }
-  else if (upMonths <= 1) { bear += 10; signals.push(`Only ${upMonths}/6 months up — weak`); }
+  // ADX — trend strength
+  if (adx != null && !isNaN(adx)) {
+    if (adx > 25) { const top = bull >= bear ? 'bull' : 'bear'; if (top === 'bull') bull += 6; else bear += 6; signals.push('ADX ' + adx.toFixed(0) + ' — trending'); }
+  }
 
-  // Normalise to 0-100
+  // Normalise
   const total = bull + bear || 1;
   const bullPct = Math.min(Math.round(bull / total * 100), 98);
   const bearPct = Math.min(Math.round(bear / total * 100), 98);
-
-  // Confidence = how decisive the gap is
   const gap  = Math.abs(bull - bear);
   const conf = Math.min(Math.round(40 + gap * 1.2), 98);
+  const dir  = bull > bear + 10 ? 'bull' : bear > bull + 10 ? 'bear' : 'neut';
 
-  const dir = bull > bear + 10 ? 'bull' : bear > bull + 10 ? 'bear' : 'neut';
-
-  return { bull: bullPct, bear: bearPct, conf, dir, signals };
+  return { bull: bullPct, bear: bearPct, conf, dir, signals, price, pct: changePct || 0 };
 }
 
-// ── Fetch chart data — dual CORS proxy with fallback ─────────────
-async function fetchFutChart(yahoo, tf) {
-  const cfg = FUT_TF_MAP[tf || futIntelTF] || FUT_TF_MAP['D'];
-  const yf  = `https://query1.finance.yahoo.com/v8/finance/chart/${yahoo}?interval=${cfg.interval}&range=${cfg.range}&_t=${Date.now()}`;
-  const proxies = [
-    `https://api.allorigins.win/raw?url=${encodeURIComponent(yf)}`,
-    `https://corsproxy.io/?${encodeURIComponent(yf)}`,
-  ];
-  let lastErr;
-  for (const url of proxies) {
-    try {
-      const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
-      if (!r.ok) { lastErr = new Error(r.status); continue; }
-      const d = await r.json();
-      const res = d?.chart?.result?.[0];
-      if (!res) { lastErr = new Error('no data'); continue; }
-      const q = res.indicators?.quote?.[0] || {};
-      let closes = (q.close || []).filter(v => v != null);
-      let highs  = (q.high  || []).filter(v => v != null);
-      let lows   = (q.low   || []).filter(v => v != null);
-      if (closes.length < 10) { lastErr = new Error('insufficient data'); continue; }
-      // Aggregate for 4H: group every 4 hourly candles
-      if (cfg.agg && cfg.agg > 1) {
-        const n = cfg.agg, ac = [], ah = [], al = [];
-        for (let i = 0; i < closes.length; i += n) {
-          const sc = closes.slice(i, i + n), sh = highs.slice(i, i + n), sl = lows.slice(i, i + n);
-          ac.push(sc[sc.length - 1]);
-          ah.push(Math.max(...sh));
-          al.push(Math.min(...sl.filter(v => v > 0)));
-        }
-        closes = ac; highs = ah; lows = al;
-      }
-      return { closes, highs, lows, price: res.meta?.regularMarketPrice || 0, pct: res.meta?.regularMarketChangePercent || 0 };
-    } catch(e) { lastErr = e; }
-  }
-  throw lastErr || new Error('all proxies failed');
+// ── Fetch from TradingView Scanner API via Netlify proxy ─────────
+async function fetchTvScan(market, tickers, columns) {
+  const r = await fetch(TV_SCAN_URL + '?market=' + market, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ symbols: { tickers }, columns }),
+    signal: AbortSignal.timeout(12000),
+  });
+  if (!r.ok) throw new Error('TV scan ' + r.status);
+  return r.json();
 }
 
 // ── Build cards (lightweight, no iframes) ─────────────────────────
@@ -8530,7 +8498,7 @@ function renderFutIntelCards(overrideMap) {
   updateFutIntelCards();
 }
 
-// ── Run all instruments (concurrent, auto-refresh ready) ──────────
+// ── Run all instruments via TradingView Scanner API ──────────────
 async function runFutIntelAll() {
   if (futIntelRunning) return;
   futIntelRunning = true;
@@ -8541,39 +8509,49 @@ async function runFutIntelAll() {
   if (badge) { badge.textContent = '⏳ UPDATING'; badge.style.background = 'rgba(255,179,71,.15)'; badge.style.color = 'var(--amber)'; }
 
   try {
-    // First load: show loading cards
     if (Object.keys(futIntelData).length === 0) renderFutIntelCards(null);
 
-    // Concurrent: 5 at a time for speed
-    const CONC = 5;
-    const failed = [];
-    for (let i = 0; i < FUT_INSTRUMENTS.length; i += CONC) {
-      const batch = FUT_INSTRUMENTS.slice(i, i + CONC);
-      await Promise.all(batch.map(async inst => {
-        try {
-          const { closes, highs, lows, price, pct } = await fetchFutChart(inst.yahoo);
-          futIntelData[inst.sym] = { ...scoreFutInstrument(closes, highs, lows, price), price, pct };
-        } catch(e) {
-          console.warn('Fut intel:', inst.sym, e.message);
-          failed.push(inst);
-          if (!futIntelData[inst.sym]) futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['Retrying...'], price:0, pct:0 };
-        }
-      }));
-      try { renderFutIntelCards(null); } catch(e) {}
-    }
-    // Retry failed instruments once
-    if (failed.length > 0) {
-      await Promise.all(failed.map(async inst => {
-        try {
-          const { closes, highs, lows, price, pct } = await fetchFutChart(inst.yahoo);
-          futIntelData[inst.sym] = { ...scoreFutInstrument(closes, highs, lows, price), price, pct };
-        } catch(e) {
-          console.warn('Fut intel retry fail:', inst.sym, e.message);
-          futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['Data unavailable — retrying next cycle'], price: futIntelData[inst.sym]?.price || 0, pct: futIntelData[inst.sym]?.pct || 0 };
-        }
-      }));
-      try { renderFutIntelCards(null); } catch(e) {}
-    }
+    const columns = getTvScanColumns(futIntelTF);
+
+    // Group instruments by TradingView market
+    const groups = {};
+    FUT_INSTRUMENTS.forEach(inst => {
+      const m = inst.tvMarket || 'cfd';
+      if (!groups[m]) groups[m] = [];
+      groups[m].push(inst);
+    });
+
+    // Fetch all market groups concurrently (2 requests: cfd + forex)
+    const groupEntries = Object.entries(groups);
+    const results = await Promise.allSettled(groupEntries.map(([market, insts]) =>
+      fetchTvScan(market, insts.map(i => i.tv), columns)
+    ));
+
+    // Map results back to instruments
+    results.forEach((res, idx) => {
+      const [market, insts] = groupEntries[idx];
+      if (res.status === 'fulfilled' && res.value?.data) {
+        // Build lookup: tv ticker → data array
+        const lookup = {};
+        res.value.data.forEach(row => { lookup[row.s] = row.d; });
+        insts.forEach(inst => {
+          const vals = lookup[inst.tv];
+          if (vals) {
+            futIntelData[inst.sym] = scoreTvIndicators(vals);
+          } else {
+            console.warn('TV scan: no data for', inst.tv);
+            if (!futIntelData[inst.sym]) futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['No TV data — retrying'], price:0, pct:0 };
+          }
+        });
+      } else {
+        console.warn('TV scan failed for market', market, res.reason?.message || res.reason);
+        insts.forEach(inst => {
+          if (!futIntelData[inst.sym]) futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['Scanner unavailable — retrying'], price:0, pct:0 };
+        });
+      }
+    });
+
+    renderFutIntelCards(null);
   } finally {
     futIntelRunning = false;
     if (btn) btn.style.opacity = '.7';
@@ -8585,16 +8563,15 @@ async function runFutIntelAll() {
 
 function setFutTF(tf, btn) {
   futIntelTF = tf;
-  futIntelData = {}; // clear cache — new TF needs fresh data
-  futCardsBuilt = false; // rebuild cards for new TV interval
+  futIntelData = {};
+  futCardsBuilt = false;
   document.querySelectorAll('[id^="fut-tf-"]').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   buildFutIntelCards();
   runFutIntelAll();
 }
 
-
-// Live prices handled by TradingView ticker tape + TA widgets (no Yahoo polling needed)
+// Live prices handled by TradingView ticker tape + Scanner API
 
 </script>
 
