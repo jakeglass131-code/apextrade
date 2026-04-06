@@ -2913,7 +2913,7 @@ async function loadAsxTickerList() {
 // Fetch a batch of ASX prices from TradingView Scanner API
 async function fetchAsxBatch(tickers) {
   const tvTickers = tickers.map(t => 'ASX:' + t);
-  const columns = ['close', 'change', 'open', 'high', 'low', 'volume', 'prev_close_price'];
+  const columns = ['close', 'change', 'open', 'high', 'low', 'volume', 'change_abs'];
   try {
     const r = await fetch(TV_SCAN_URL + '?market=australia', {
       method: 'POST',
@@ -2926,12 +2926,12 @@ async function fetchAsxBatch(tickers) {
     if (!d.data) return 0;
     d.data.forEach(row => {
       const t = row.s?.replace('ASX:', '');
-      const [price, pct, open, high, low, vol, prevClose] = row.d || [];
+      const [price, pct, open, high, low, vol, chgAbs] = row.d || [];
       if (!t || price == null) return;
       asxPriceCache[t] = {
         price,
         pct: pct || 0,
-        prevClose: prevClose || 0,
+        prevClose: chgAbs != null ? price - chgAbs : 0,
         vol: vol || 0,
         high: high || 0,
         low: low || 0,
@@ -8297,16 +8297,16 @@ async function checkCustomSmtPair() {
 // ══════════════════════════════════════════════════════════════════
 
 const FUT_INSTRUMENTS = [
-  { sym:'NAS100',  yahoo:'NQ=F',      name:'NAS100',   cat:'US Index',   tv:'FXCM:NAS100',  tvMarket:'cfd'   },
-  { sym:'SPX500',  yahoo:'ES=F',      name:'SPX500',   cat:'US Index',   tv:'FXCM:SPX500',  tvMarket:'cfd'   },
-  { sym:'US30',    yahoo:'YM=F',      name:'DOW',      cat:'US Index',   tv:'FXCM:US30',    tvMarket:'cfd'   },
-  { sym:'XAU/USD', yahoo:'GC=F',      name:'Gold',     cat:'Commodity',  tv:'FXCM:XAUUSD',  tvMarket:'cfd'   },
-  { sym:'XAG/USD', yahoo:'SI=F',      name:'Silver',   cat:'Commodity',  tv:'FXCM:XAGUSD',  tvMarket:'cfd'   },
-  { sym:'AUD/USD', yahoo:'AUDUSD=X',  name:'AUD/USD',  cat:'FX Major',   tv:'FXCM:AUDUSD',  tvMarket:'forex' },
-  { sym:'EUR/USD', yahoo:'EURUSD=X',  name:'EUR/USD',  cat:'FX Major',   tv:'FXCM:EURUSD',  tvMarket:'forex' },
-  { sym:'GBP/USD', yahoo:'GBPUSD=X',  name:'GBP/USD',  cat:'FX Major',   tv:'FXCM:GBPUSD',  tvMarket:'forex' },
-  { sym:'USD/JPY', yahoo:'USDJPY=X',  name:'USD/JPY',  cat:'FX Major',   tv:'FXCM:USDJPY',  tvMarket:'forex' },
-  { sym:'DXY',     yahoo:'DX-Y.NYB',  name:'DXY',      cat:'USD Index',  tv:'TVC:DXY',       tvMarket:'cfd'   },
+  { sym:'NAS100',  name:'NAS100',   cat:'US Index',   tv:'FXCM:NAS100',  tvScan:'NASDAQ:NDX',       tvMarket:'america' },
+  { sym:'SPX500',  name:'SPX500',   cat:'US Index',   tv:'FXCM:SPX500',  tvScan:'SP:SPX',           tvMarket:'cfd'     },
+  { sym:'US30',    name:'DOW',      cat:'US Index',   tv:'FXCM:US30',    tvScan:'TVC:DJI',          tvMarket:'cfd'     },
+  { sym:'XAU/USD', name:'Gold',     cat:'Commodity',  tv:'FXCM:XAUUSD',  tvScan:'TVC:GOLD',         tvMarket:'cfd'     },
+  { sym:'XAG/USD', name:'Silver',   cat:'Commodity',  tv:'FXCM:XAGUSD',  tvScan:'TVC:SILVER',       tvMarket:'cfd'     },
+  { sym:'AUD/USD', name:'AUD/USD',  cat:'FX Major',   tv:'FXCM:AUDUSD',  tvScan:'FX:AUDUSD',        tvMarket:'forex'   },
+  { sym:'EUR/USD', name:'EUR/USD',  cat:'FX Major',   tv:'FXCM:EURUSD',  tvScan:'FX:EURUSD',        tvMarket:'forex'   },
+  { sym:'GBP/USD', name:'GBP/USD',  cat:'FX Major',   tv:'FXCM:GBPUSD',  tvScan:'FX:GBPUSD',        tvMarket:'forex'   },
+  { sym:'USD/JPY', name:'USD/JPY',  cat:'FX Major',   tv:'FXCM:USDJPY',  tvScan:'FX:USDJPY',        tvMarket:'forex'   },
+  { sym:'DXY',     name:'DXY',      cat:'USD Index',  tv:'TVC:DXY',       tvScan:'TVC:DXY',          tvMarket:'cfd'     },
 ];
 
 let futIntelTF   = 'D';
@@ -8521,25 +8521,25 @@ async function runFutIntelAll() {
       groups[m].push(inst);
     });
 
-    // Fetch all market groups concurrently (2 requests: cfd + forex)
+    // Fetch all market groups concurrently (cfd + forex + america)
     const groupEntries = Object.entries(groups);
     const results = await Promise.allSettled(groupEntries.map(([market, insts]) =>
-      fetchTvScan(market, insts.map(i => i.tv), columns)
+      fetchTvScan(market, insts.map(i => i.tvScan), columns)
     ));
 
     // Map results back to instruments
     results.forEach((res, idx) => {
       const [market, insts] = groupEntries[idx];
       if (res.status === 'fulfilled' && res.value?.data) {
-        // Build lookup: tv ticker → data array
+        // Build lookup: scanner ticker → data array
         const lookup = {};
         res.value.data.forEach(row => { lookup[row.s] = row.d; });
         insts.forEach(inst => {
-          const vals = lookup[inst.tv];
+          const vals = lookup[inst.tvScan];
           if (vals) {
             futIntelData[inst.sym] = scoreTvIndicators(vals);
           } else {
-            console.warn('TV scan: no data for', inst.tv);
+            console.warn('TV scan: no data for', inst.tvScan);
             if (!futIntelData[inst.sym]) futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['No TV data — retrying'], price:0, pct:0 };
           }
         });
