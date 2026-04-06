@@ -1280,15 +1280,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
         {
           "symbols": [
-            {"proName":"CME_MINI:NQ1!","title":"NAS100"},
-            {"proName":"CME_MINI:ES1!","title":"SPX500"},
-            {"proName":"CBOT_MINI:YM1!","title":"DOW"},
-            {"proName":"COMEX:GC1!","title":"GOLD"},
-            {"proName":"COMEX:SI1!","title":"SILVER"},
-            {"proName":"FX:AUDUSD","title":"AUD/USD"},
-            {"proName":"FX:EURUSD","title":"EUR/USD"},
-            {"proName":"FX:GBPUSD","title":"GBP/USD"},
-            {"proName":"FX:USDJPY","title":"USD/JPY"},
+            {"proName":"FXCM:NAS100","title":"NAS100"},
+            {"proName":"FXCM:SPX500","title":"SPX500"},
+            {"proName":"FXCM:US30","title":"DOW"},
+            {"proName":"FXCM:XAUUSD","title":"GOLD"},
+            {"proName":"FXCM:XAGUSD","title":"SILVER"},
+            {"proName":"FXCM:AUDUSD","title":"AUD/USD"},
+            {"proName":"FXCM:EURUSD","title":"EUR/USD"},
+            {"proName":"FXCM:GBPUSD","title":"GBP/USD"},
+            {"proName":"FXCM:USDJPY","title":"USD/JPY"},
             {"proName":"TVC:DXY","title":"DXY"}
           ],
           "showSymbolLogo":true,
@@ -2672,7 +2672,7 @@ function nav(p) {
         futIntelTimer = setInterval(() => {
           const pg = document.getElementById('page-futures');
           if (pg && pg.classList.contains('active') && !futIntelRunning) runFutIntelAll();
-        }, 60000);
+        }, 20000);
       }
     }, 200);
   }
@@ -6161,12 +6161,12 @@ function setFutTab(tab) {
       if (!futCardsBuilt) buildFutIntelCards();
       else updateFutIntelCards();
       if (!futIntelRunning) runFutIntelAll();
-      // Full re-score every 60s (live prices handled by TradingView widgets)
+      // Re-score every 20s
       if (futIntelTimer) clearInterval(futIntelTimer);
       futIntelTimer = setInterval(() => {
         const page = document.getElementById('page-futures');
         if (page && page.classList.contains('active') && !futIntelRunning) runFutIntelAll();
-      }, 60000);
+      }, 20000);
     }, 150);
   } else {
     if (futIntelTimer) { clearInterval(futIntelTimer); futIntelTimer = null; }
@@ -8152,19 +8152,17 @@ async function checkCustomSmtPair() {
 // ══════════════════════════════════════════════════════════════════
 
 const FUT_INSTRUMENTS = [
-  { sym:'NAS100',  yahoo:'NQ=F',      name:'NAS100',   cat:'US Index',   tv:'CME_MINI:NQ1!'  },
-  { sym:'SPX500',  yahoo:'ES=F',      name:'SPX500',   cat:'US Index',   tv:'CME_MINI:ES1!'  },
-  { sym:'US30',    yahoo:'YM=F',      name:'DOW',      cat:'US Index',   tv:'CBOT_MINI:YM1!' },
-  { sym:'XAU/USD', yahoo:'GC=F',      name:'Gold',     cat:'Commodity',  tv:'COMEX:GC1!'     },
-  { sym:'XAG/USD', yahoo:'SI=F',      name:'Silver',   cat:'Commodity',  tv:'COMEX:SI1!'     },
-  { sym:'AUD/USD', yahoo:'AUDUSD=X',  name:'AUD/USD',  cat:'FX Major',   tv:'FX:AUDUSD'      },
-  { sym:'EUR/USD', yahoo:'EURUSD=X',  name:'EUR/USD',  cat:'FX Major',   tv:'FX:EURUSD'      },
-  { sym:'GBP/USD', yahoo:'GBPUSD=X',  name:'GBP/USD',  cat:'FX Major',   tv:'FX:GBPUSD'      },
-  { sym:'USD/JPY', yahoo:'USDJPY=X',  name:'USD/JPY',  cat:'FX Major',   tv:'FX:USDJPY'      },
-  { sym:'DXY',     yahoo:'DX-Y.NYB',  name:'DXY',      cat:'USD Index',  tv:'TVC:DXY'        },
+  { sym:'NAS100',  yahoo:'NQ=F',      name:'NAS100',   cat:'US Index',   tv:'FXCM:NAS100'  },
+  { sym:'SPX500',  yahoo:'ES=F',      name:'SPX500',   cat:'US Index',   tv:'FXCM:SPX500'  },
+  { sym:'US30',    yahoo:'YM=F',      name:'DOW',      cat:'US Index',   tv:'FXCM:US30'    },
+  { sym:'XAU/USD', yahoo:'GC=F',      name:'Gold',     cat:'Commodity',  tv:'FXCM:XAUUSD'  },
+  { sym:'XAG/USD', yahoo:'SI=F',      name:'Silver',   cat:'Commodity',  tv:'FXCM:XAGUSD'  },
+  { sym:'AUD/USD', yahoo:'AUDUSD=X',  name:'AUD/USD',  cat:'FX Major',   tv:'FXCM:AUDUSD'  },
+  { sym:'EUR/USD', yahoo:'EURUSD=X',  name:'EUR/USD',  cat:'FX Major',   tv:'FXCM:EURUSD'  },
+  { sym:'GBP/USD', yahoo:'GBPUSD=X',  name:'GBP/USD',  cat:'FX Major',   tv:'FXCM:GBPUSD'  },
+  { sym:'USD/JPY', yahoo:'USDJPY=X',  name:'USD/JPY',  cat:'FX Major',   tv:'FXCM:USDJPY'  },
+  { sym:'DXY',     yahoo:'DX-Y.NYB',  name:'DXY',      cat:'USD Index',  tv:'TVC:DXY'      },
 ];
-// Map TF selector to TradingView intervals
-const FUT_TV_INTERVAL = { 'W':'1W', 'D':'1D', '4H':'4h', '1H':'1h', '15m':'15m', '5m':'5m' };
 
 let futIntelTF   = 'D';
 let futIntelData = {}; // cache: sym -> { bull, bear, conf, dir, signals, lastFetch }
@@ -8321,12 +8319,11 @@ async function fetchFutChart(yahoo, tf) {
   throw lastErr || new Error('all proxies failed');
 }
 
-// ── Build cards once (with TradingView widget containers) ─────────
+// ── Build cards (lightweight, no iframes) ─────────────────────────
 let futCardsBuilt = false;
 function buildFutIntelCards() {
   const grid = document.getElementById('fut-pair-grid');
   if (!grid) return;
-  const tvInt = FUT_TV_INTERVAL[futIntelTF] || '1D';
   grid.innerHTML = FUT_INSTRUMENTS.map(inst => {
     const sid = inst.sym.replace(/[/]/g,'');
     return `<div class="pc2" data-sym="${inst.sym}" id="fc-${sid}" style="opacity:.6">
@@ -8334,43 +8331,26 @@ function buildFutIntelCards() {
         <div><div class="pc2-name">${inst.name}</div><div style="font-size:9px;color:var(--text3);margin-top:1px;font-weight:600;letter-spacing:.04em">${inst.cat}</div></div>
         <span class="sent sneut" id="fc-sent-${sid}">Loading</span>
       </div>
-      <div id="fc-sig-${sid}" style="font-size:11px;color:var(--text2);line-height:1.5;min-height:24px;margin:4px 0">Fetching indicators...</div>
+      <div id="fc-price-${sid}" style="font-size:16px;font-weight:800;color:#fff;margin:4px 0">—</div>
+      <div id="fc-sig-${sid}" style="font-size:10px;color:var(--text2);line-height:1.4;min-height:20px;margin-bottom:6px">Fetching...</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px">
         <div>
-          <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--green);margin-bottom:2px"><span>BULLISH</span><span id="fc-bv-${sid}">—</span></div>
-          <div style="background:var(--bg5);border-radius:2px;height:5px"><div id="fc-bb-${sid}" style="width:0%;height:5px;border-radius:2px;background:var(--green);transition:width .6s;opacity:.85"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--green);margin-bottom:2px"><span>BULL</span><span id="fc-bv-${sid}">—</span></div>
+          <div style="background:var(--bg5);border-radius:2px;height:5px"><div id="fc-bb-${sid}" style="width:0%;height:5px;border-radius:2px;background:var(--green);transition:width .3s;opacity:.85"></div></div>
         </div>
         <div>
-          <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--red);margin-bottom:2px"><span>BEARISH</span><span id="fc-ev-${sid}">—</span></div>
-          <div style="background:var(--bg5);border-radius:2px;height:5px"><div id="fc-eb-${sid}" style="width:0%;height:5px;border-radius:2px;background:var(--red);transition:width .6s;opacity:.85"></div></div>
+          <div style="display:flex;justify-content:space-between;font-size:9px;font-weight:700;color:var(--red);margin-bottom:2px"><span>BEAR</span><span id="fc-ev-${sid}">—</span></div>
+          <div style="background:var(--bg5);border-radius:2px;height:5px"><div id="fc-eb-${sid}" style="width:0%;height:5px;border-radius:2px;background:var(--red);transition:width .3s;opacity:.85"></div></div>
         </div>
       </div>
       <div style="font-size:9px;color:var(--text3);display:flex;justify-content:space-between;margin-bottom:2px"><span>CONFIDENCE</span><span id="fc-cv-${sid}" style="font-weight:800">—</span></div>
-      <div style="background:var(--bg5);border-radius:2px;height:4px;margin-bottom:4px"><div id="fc-cb-${sid}" style="width:0%;height:4px;border-radius:2px;transition:width .6s"></div></div>
-      <div id="tv-${sid}" style="height:50px;overflow:hidden;border-radius:4px;margin-top:2px"></div>
+      <div style="background:var(--bg5);border-radius:2px;height:4px"><div id="fc-cb-${sid}" style="width:0%;height:4px;border-radius:2px;transition:width .3s"></div></div>
     </div>`;
   }).join('');
-  // Inject TradingView Technical Analysis mini widgets
-  FUT_INSTRUMENTS.forEach(inst => {
-    const sid = inst.sym.replace(/[/]/g,'');
-    const el = document.getElementById('tv-' + sid);
-    if (!el) return;
-    const w = document.createElement('div');
-    w.className = 'tradingview-widget-container';
-    const inner = document.createElement('div');
-    inner.className = 'tradingview-widget-container__widget';
-    w.appendChild(inner);
-    const s = document.createElement('script');
-    s.type = 'text/javascript';
-    s.src = 'https://s3.tradingview.com/external-embedding/embed-widget-technical-analysis.js';
-    s.textContent = JSON.stringify({interval:tvInt,width:'100%',isTransparent:true,height:46,symbol:inst.tv,showIntervalTabs:false,colorTheme:'dark',locale:'en'});
-    w.appendChild(s);
-    el.appendChild(w);
-  });
   futCardsBuilt = true;
 }
 
-// ── Update scores in existing cards (no iframe rebuild) ───────────
+// ── Update scores + prices in existing cards ──────────────────────
 function updateFutIntelCards() {
   FUT_INSTRUMENTS.forEach(inst => {
     const d = futIntelData[inst.sym];
@@ -8384,6 +8364,11 @@ function updateFutIntelCards() {
     card.style.opacity = '1';
     const sent = document.getElementById('fc-sent-' + sid);
     if (sent) { sent.textContent = isBull ? 'Bullish' : isBear ? 'Bearish' : 'Neutral'; sent.className = 'sent ' + (isBull?'sbull':isBear?'sbear':'sneut'); }
+    const pr = document.getElementById('fc-price-' + sid);
+    if (pr && d.price) {
+      const chgUp = (d.pct||0) >= 0;
+      pr.innerHTML = '<span style="color:'+(chgUp?'var(--green)':'var(--red)')+'">'+d.price.toFixed(d.price>100?0:d.price>10?2:5)+'</span> <span style="font-size:11px;font-weight:600;color:'+(chgUp?'var(--green)':'var(--red)')+'">'+(chgUp?'+':'')+((d.pct||0).toFixed(2))+'%</span>';
+    }
     const sig = document.getElementById('fc-sig-' + sid);
     if (sig) sig.textContent = (d.signals||[]).slice(0,2).join(' · ') || 'Calculated';
     const bv = document.getElementById('fc-bv-' + sid); if (bv) bv.textContent = d.bull+'/100';
