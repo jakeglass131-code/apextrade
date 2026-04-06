@@ -77,38 +77,70 @@ exports.handler = async function(event) {
   }
 };
 
-// ── Fetch candles from Yahoo Finance ──
+// ── Fetch candles — TradingView first (full ASX coverage), Yahoo fallback ──
+var TV_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  'Accept': 'application/json', 'Referer': 'https://www.tradingview.com/', 'Origin': 'https://www.tradingview.com'
+};
+
+function parseTVCandles(d) {
+  if (!d || d.s !== 'ok' || !d.t || !d.t.length) return null;
+  var candles = [];
+  for (var i = 0; i < d.t.length; i++) {
+    if (d.c[i] != null && d.o[i] != null) {
+      candles.push({ t: d.t[i]*1000, date: new Date(d.t[i]*1000).toISOString().slice(0,10), o: d.o[i], h: d.h[i], l: d.l[i], c: d.c[i], v: d.v ? d.v[i] : 0 });
+    }
+  }
+  return candles.length >= 60 ? candles : null;
+}
+
+function parseYahooCandles(d) {
+  var res = d && d.chart && d.chart.result && d.chart.result[0];
+  if (!res) return null;
+  var ts = res.timestamp || [], q = res.indicators && res.indicators.quote && res.indicators.quote[0] || {};
+  var candles = [];
+  for (var i = 0; i < ts.length; i++) {
+    if (q.close && q.close[i] != null && q.open && q.open[i] != null) {
+      candles.push({ t: ts[i]*1000, date: new Date(ts[i]*1000).toISOString().slice(0,10), o: q.open[i], h: q.high[i], l: q.low[i], c: q.close[i], v: q.volume && q.volume[i] || 0 });
+    }
+  }
+  return candles.length >= 60 ? candles : null;
+}
+
 async function fetchCandles(ticker) {
   var key = ticker + '_1d_2y';
   if (dataCache[key] && Date.now() - dataCache[key].ts < CACHE_TTL) return dataCache[key].data;
 
-  var sym = ticker.includes('.') ? ticker : ticker + '.AX';
-  try {
-    var r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=1d&range=2y', {
-      headers: { 'User-Agent': 'Mozilla/5.0' }
-    });
-    if (!r.ok) throw new Error('Yahoo ' + r.status);
-    var d = await r.json();
-    var res = d.chart && d.chart.result && d.chart.result[0];
-    if (!res) throw new Error('no data');
-    var ts = res.timestamp || [];
-    var q = res.indicators && res.indicators.quote && res.indicators.quote[0] || {};
-    var candles = [];
-    for (var i = 0; i < ts.length; i++) {
-      if (q.close && q.close[i] != null && q.open && q.open[i] != null) {
-        candles.push({
-          t: ts[i] * 1000,
-          date: new Date(ts[i] * 1000).toISOString().slice(0, 10),
-          o: q.open[i], h: q.high[i], l: q.low[i], c: q.close[i],
-          v: q.volume && q.volume[i] || 0
-        });
-      }
-    }
-    dataCache[key] = { data: candles, ts: Date.now() };
-    return candles;
-  } catch (e) {
-    return null;
+  var from = Math.floor(Date.now()/1000) - (2*365*24*3600);
+  var to = Math.floor(Date.now()/1000);
+  var candles = null;
+
+  // 1) TradingView — try ASX:TICKER for tickers without dots
+  if (!ticker.includes('.')) {
+    try {
+      var r = await fetch('https://data.tradingview.com/history?symbol=' + encodeURIComponent('ASX:'+ticker) + '&resolution=D&from='+from+'&to='+to, { headers: TV_HEADERS });
+      if (r.ok) candles = parseTVCandles(await r.json());
+    } catch(e) {}
   }
+
+  // 2) Yahoo with .AX suffix (ASX tickers)
+  if (!candles && !ticker.includes('.')) {
+    try {
+      var r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'.AX?interval=1d&range=2y', { headers: {'User-Agent':'Mozilla/5.0'} });
+      if (r.ok) candles = parseYahooCandles(await r.json());
+    } catch(e) {}
+  }
+
+  // 3) Yahoo with ticker as-is (non-ASX: US stocks, BHP.L, etc.)
+  if (!candles) {
+    try {
+      var r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/'+ticker+'?interval=1d&range=2y', { headers: {'User-Agent':'Mozilla/5.0'} });
+      if (r.ok) candles = parseYahooCandles(await r.json());
+    } catch(e) {}
+  }
+
+  if (candles) { dataCache[key] = { data: candles, ts: Date.now() }; }
+  return candles;
 }
 
 // ── Compute correlation between two price series ──
