@@ -3,8 +3,13 @@
 // Query: ?market=cfd|forex|australia|america|crypto
 // Returns TradingView's exact indicator values for any symbols and timeframes
 exports.handler = async (event) => {
-  const H = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers: H, body: '' };
+  const H = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Content-Type': 'application/json',
+  };
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: H, body: '' };
 
   const params = event.queryStringParameters || {};
   const market = (params.market || 'cfd').replace(/[^a-z]/gi, '');
