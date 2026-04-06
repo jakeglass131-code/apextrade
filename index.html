@@ -2677,7 +2677,7 @@ function nav(p) {
         futIntelTimer = setInterval(() => {
           const pg = document.getElementById('page-futures');
           if (pg && pg.classList.contains('active') && !futIntelRunning) runFutIntelAll();
-        }, 20000);
+        }, 10000);
       }
     }, 200);
   }
@@ -6280,12 +6280,12 @@ function setFutTab(tab) {
       if (!futCardsBuilt) buildFutIntelCards();
       else updateFutIntelCards();
       if (!futIntelRunning) runFutIntelAll();
-      // Re-score every 20s
+      // Re-score every 10s
       if (futIntelTimer) clearInterval(futIntelTimer);
       futIntelTimer = setInterval(() => {
         const page = document.getElementById('page-futures');
         if (page && page.classList.contains('active') && !futIntelRunning) runFutIntelAll();
-      }, 20000);
+      }, 10000);
     }, 150);
   } else {
     if (futIntelTimer) { clearInterval(futIntelTimer); futIntelTimer = null; }
@@ -8280,6 +8280,7 @@ const FUT_INSTRUMENTS = [
   { sym:'EUR/USD', name:'EUR/USD',  cat:'FXCM',  tv:'FXCM:EURUSD',  tvScan:'FX:EURUSD',       tvMarket:'forex'   },
   { sym:'USD/JPY', name:'USD/JPY',  cat:'FXCM',  tv:'FXCM:USDJPY',  tvScan:'FX:USDJPY',       tvMarket:'forex'   },
   { sym:'DXY',     name:'DXY',      cat:'TVC',   tv:'TVC:DXY',      tvScan:'TVC:DXY',         tvMarket:'cfd'     },
+  { sym:'USOIL',   name:'USOIL',    cat:'TVC',   tv:'TVC:USOIL',    tvScan:'FX:USOIL',        tvMarket:'cfd'     },
 ];
 
 let futIntelTF   = 'D';
