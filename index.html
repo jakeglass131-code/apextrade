@@ -1383,6 +1383,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 
   <!-- Filters -->
   <div style="display:flex;align-items:center;gap:8px;padding:10px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0;flex-wrap:wrap">
+    <div style="position:relative;flex-shrink:0">
+      <input id="smt-ticker-search" type="text" placeholder="Search ticker..." oninput="filterSmtByTicker(this.value)" style="width:120px;padding:5px 10px 5px 28px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;color:#fff;font-size:11px;font-family:var(--fm);text-transform:uppercase">
+      <span style="position:absolute;left:9px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text4);pointer-events:none">🔍</span>
+    </div>
+    <div style="width:1px;height:18px;background:var(--border2);margin:0 2px"></div>
     <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em">FILTER</span>
     <button class="btn smt-filter active" data-filter="all" onclick="filterSmtResults('all',this)" style="font-size:10px;padding:4px 12px">All Pairs</button>
     <button class="btn smt-filter" data-filter="divergence" onclick="filterSmtResults('divergence',this)" style="font-size:10px;padding:4px 12px">Active Divergences</button>
@@ -8877,6 +8882,7 @@ function renderSmtResults() {
   // Filter — only show divergences from meaningfully correlated pairs (Pearson ≥ 0.50)
   const MIN_DIV_CORR = 0.70;
   let filtered = smtResults.filter(r => {
+    if (smtTickerSearch && !(r.t1 || '').includes(smtTickerSearch) && !(r.t2 || '').includes(smtTickerSearch)) return false;
     var tfMatch = smtTfFilter === 'all' || (r.activeDivergence && r.activeDivergence.tf === smtTfFilter);
     const meaningfulDiv = r.activeDivergence && (r.pearson || 0) >= MIN_DIV_CORR && tfMatch;
     if (filter === 'all') return r.isValid || meaningfulDiv;
@@ -9000,6 +9006,11 @@ function renderSmtResults() {
 }
 
 var smtTfFilter = 'all';
+var smtTickerSearch = '';
+function filterSmtByTicker(val) {
+  smtTickerSearch = (val || '').trim().toUpperCase();
+  renderSmtResults();
+}
 function filterSmtTF(tf, el) {
   smtTfFilter = tf;
   document.querySelectorAll('.smt-tf').forEach(function(b) { b.classList.remove('active'); });
