@@ -1607,6 +1607,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <!-- Global timeframe selector -->
   <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
     <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
+    <button class="tf-btn"        data-tf="1D"  onclick="setGlobalTF('1D',this)">1D</button>
     <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
     <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
     <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
@@ -1690,6 +1691,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <!-- Global timeframe selector -->
   <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
     <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
+    <button class="tf-btn"        data-tf="1D"  onclick="setGlobalTF('1D',this)">1D</button>
     <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
     <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
     <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
@@ -1807,6 +1809,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <!-- Global timeframe selector -->
   <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
     <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
+    <button class="tf-btn"        data-tf="1D"  onclick="setGlobalTF('1D',this)">1D</button>
     <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
     <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
     <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
@@ -3817,37 +3820,37 @@ function setTab(el) {
 // SECTORS
 // ═══════════════════════════════════════════════════════
 const SECTORS = [
-  {name:'Materials',   icon:'⛏', day:0, week:0, month:0, flow:0,
+  {name:'Materials',   icon:'⛏', day:0, week:0, month:0, flow:0, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     rs:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100},
     mom:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100}},
-  {name:'Financials',  icon:'🏦', day:0, week:0, month:0, flow:0,
+  {name:'Financials',  icon:'🏦', day:0, week:0, month:0, flow:0, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     rs:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100},
     mom:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100}},
-  {name:'Energy',      icon:'⚡', day:0, week:0, month:0, flow:0,
+  {name:'Energy',      icon:'⚡', day:0, week:0, month:0, flow:0, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     rs:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100},
     mom:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100}},
-  {name:'Healthcare',  icon:'💊', day:0, week:0, month:0, flow:0,
+  {name:'Healthcare',  icon:'💊', day:0, week:0, month:0, flow:0, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     rs:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100},
     mom:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100}},
-  {name:'Cons Disc',   icon:'🛍', day:0, week:0, month:0, flow:0,
+  {name:'Cons Disc',   icon:'🛍', day:0, week:0, month:0, flow:0, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     rs:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100},
     mom:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100}},
-  {name:'Industrials', icon:'🏗', day:0, week:0, month:0, flow:0,
+  {name:'Industrials', icon:'🏗', day:0, week:0, month:0, flow:0, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     rs:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100},
     mom:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100}},
-  {name:'IT / Tech',   icon:'💻', day:0, week:0, month:0, flow:0,
+  {name:'IT / Tech',   icon:'💻', day:0, week:0, month:0, flow:0, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     rs:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100},
     mom:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100}},
-  {name:'Real Estate', icon:'🏠', day:0, week:0, month:0, flow:0,
+  {name:'Real Estate', icon:'🏠', day:0, week:0, month:0, flow:0, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     rs:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100},
     mom:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100}},
-  {name:'Utilities',   icon:'💡', day:0, week:0, month:0, flow:0,
+  {name:'Utilities',   icon:'💡', day:0, week:0, month:0, flow:0, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     rs:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100},
     mom:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100}},
-  {name:'Comm Svcs',   icon:'📡', day:0, week:0, month:0, flow:0,
+  {name:'Comm Svcs',   icon:'📡', day:0, week:0, month:0, flow:0, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     rs:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100},
     mom:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100}},
-  {name:'Cons Staples',icon:'🛒', day:0, week:0, month:0, flow:0,
+  {name:'Cons Staples',icon:'🛒', day:0, week:0, month:0, flow:0, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
     rs:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100},
     mom:{'1W':100,'1M':100,'3M':100,'6M':100,'1Y':100,'YTD':100}},
 ];
@@ -3869,73 +3872,69 @@ let lbPeriod = 'd';
 
 function renderHeatmap() {
   const el = document.getElementById('sector-heatmap'); if (!el) return;
-  const sorted = [...SECTORS].sort((a,b) => b.day - a.day);
+  const tf = (typeof globalTF !== 'undefined') ? globalTF : '1W';
+  const getVal = s => (s.perf && s.perf[tf] != null) ? +s.perf[tf] : s.day;
+  const sorted = [...SECTORS].sort((a,b) => getVal(b) - getVal(a));
+  // Pick two context TFs different from selected
+  const ctx1 = tf === '1D' ? '1W' : '1D';
+  const ctx2 = (tf === '1W' || tf === '1D') ? '1M' : '1W';
   el.innerHTML = sorted.map(s => {
-    const cls = s.day>=2?'lead':s.day>=0.5?'pos':s.day>=-0.5?'flat':s.day>=-2?'neg':'lag';
-    const col = s.day>=0?'var(--green)':'var(--red)';
-    const bw = Math.min(Math.abs(s.day)/3*100,100);
+    const val = getVal(s);
+    const cls = val>=2?'lead':val>=0.5?'pos':val>=-0.5?'flat':val>=-2?'neg':'lag';
+    const col = val>=0?'var(--green)':'var(--red)';
+    const bw = Math.min(Math.abs(val)/3*100,100);
+    const c1 = (s.perf && s.perf[ctx1] != null) ? +s.perf[ctx1] : s.day;
+    const c2 = (s.perf && s.perf[ctx2] != null) ? +s.perf[ctx2] : s.month;
     return `<div class="sh-card ${cls}" onclick="highlightSector('${s.name}')">
       <div class="sh-icon">${s.icon}</div>
       <div class="sh-name">${s.name}</div>
-      <div class="sh-chg" style="color:${col}">${s.day>=0?'+':''}${s.day.toFixed(2)}%</div>
-      <div class="sh-week">Wk: <span style="color:${s.week>=0?'var(--green)':'var(--red)'}">${s.week>=0?'+':''}${s.week.toFixed(1)}%</span> Mo: <span style="color:${s.month>=0?'var(--green)':'var(--red)'}">${s.month>=0?'+':''}${s.month.toFixed(1)}%</span></div>
+      <div class="sh-chg" style="color:${col}">${val>=0?'+':''}${val.toFixed(2)}%</div>
+      <div class="sh-week">${ctx1}: <span style="color:${c1>=0?'var(--green)':'var(--red)'}">${c1>=0?'+':''}${c1.toFixed(1)}%</span> ${ctx2}: <span style="color:${c2>=0?'var(--green)':'var(--red)'}">${c2>=0?'+':''}${c2.toFixed(1)}%</span></div>
       <div class="sh-bar" style="width:${bw}%;background:${col};opacity:.6"></div>
     </div>`;
   }).join('');
 }
 
 function setLbPeriod(p, btn) {
-  // p can be 'day'|'week'|'month' (from HTML) or 'd'|'w'|'m' (legacy)
-  const map = {day:'d', week:'w', month:'m', d:'d', w:'w', m:'m'};
-  lbPeriod = map[p] || p;
-  // Highlight the clicked tab
-  ['lb-day','lb-week','lb-month','lb-tab-d','lb-tab-w','lb-tab-m'].forEach(id => {
-    const el = document.getElementById(id); if (!el) return;
-    el.classList.remove('on');
-    el.style.background = 'transparent';
-    el.style.color = 'var(--text2)';
-    el.style.borderColor = 'var(--border2)';
-  });
-  if (btn) {
-    btn.classList.add('on');
-    btn.style.background = 'var(--accent2)';
-    btn.style.color = 'var(--accent)';
-    btn.style.borderColor = 'rgba(45,142,255,.35)';
-  }
-  renderLeaderboard();
+  // Map leaderboard period buttons to globalTF and sync everything
+  const tfMap = {day:'1D', week:'1W', month:'1M', d:'1D', w:'1W', m:'1M'};
+  const tf = tfMap[p] || '1W';
+  setGlobalTF(tf);
 }
 
 function renderLeaderboard() {
   // Try both possible element IDs (sectors page has leaderboard-body, flow page had sector-leaderboard)
   const el = document.getElementById('leaderboard-body') || document.getElementById('sector-leaderboard');
   if (!el) return;
-  const key = lbPeriod === 'd' ? 'day' : lbPeriod === 'w' ? 'week' : 'month';
-  const sorted = [...SECTORS].sort((a,b) => b[key] - a[key]);
+  const tf = (typeof globalTF !== 'undefined') ? globalTF : '1W';
+  const getVal = s => (s.perf && s.perf[tf] != null) ? +s.perf[tf] : s.day;
+  const sorted = [...SECTORS].sort((a,b) => getVal(b) - getVal(a));
   const isTable = el.tagName === 'TBODY';
   el.innerHTML = sorted.map((s,i) => {
-    const v = s[key]; const col = v>=0?'var(--green)':'var(--red)';
+    const v = getVal(s);
+    const col = v>=0?'var(--green)':'var(--red)';
     const bw = Math.min(Math.abs(v)/10*100,100);
-    const dayCol = s.day>=0?'var(--green)':'var(--red)';
-    const wkCol  = s.week>=0?'var(--green)':'var(--red)';
-    const moCol  = s.month>=0?'var(--green)':'var(--red)';
-    const tf = (typeof globalTF !== 'undefined') ? globalTF : '1W';
     const rsVal = (s.rs && s.rs[tf]) ? +(s.rs[tf] - 100).toFixed(1) : 0;
     const rsCol = rsVal >= 0 ? 'var(--green)' : 'var(--red)';
     if (isTable) {
       return `<tr>
         <td style="color:${i<3?'var(--accent)':'var(--text4)'};font-weight:700;text-align:center">${i+1}</td>
         <td style="font-weight:600">${s.icon} ${s.name}</td>
-        <td style="color:${dayCol};font-family:var(--fm)">${s.day>=0?'+':''}${s.day.toFixed(2)}%</td>
+        <td style="color:${col};font-family:var(--fm)">${v>=0?'+':''}${v.toFixed(2)}%</td>
         <td style="min-width:120px"><div style="background:var(--bg5);border-radius:2px;height:6px;overflow:hidden"><div style="width:${bw}%;height:6px;background:${col};border-radius:2px"></div></div></td>
         <td style="color:${rsCol};font-family:var(--fm)">${rsVal>=0?'+':''}${rsVal}%</td>
       </tr>`;
     }
+    const dayV = s.day; const wkV = (s.perf && s.perf['1W'] != null) ? +s.perf['1W'] : s.week; const moV = (s.perf && s.perf['1M'] != null) ? +s.perf['1M'] : s.month;
+    const dayCol = dayV>=0?'var(--green)':'var(--red)';
+    const wkCol  = wkV>=0?'var(--green)':'var(--red)';
+    const moCol  = moV>=0?'var(--green)':'var(--red)';
     return `<div class="lb-row">
       <div class="lb-rank" style="color:${i<3?'var(--accent)':'var(--text4)'}">${i+1}</div>
       <div><div class="lb-name">${s.icon} ${s.name}</div></div>
-      <div class="lb-val" style="color:${dayCol}">${s.day>=0?'+':''}${s.day.toFixed(2)}%</div>
-      <div class="lb-val" style="color:${wkCol}">${s.week>=0?'+':''}${s.week.toFixed(1)}%</div>
-      <div class="lb-val" style="color:${moCol}">${s.month>=0?'+':''}${s.month.toFixed(1)}%</div>
+      <div class="lb-val" style="color:${dayCol}">${dayV>=0?'+':''}${dayV.toFixed(2)}%</div>
+      <div class="lb-val" style="color:${wkCol}">${wkV>=0?'+':''}${wkV.toFixed(1)}%</div>
+      <div class="lb-val" style="color:${moCol}">${moV>=0?'+':''}${moV.toFixed(1)}%</div>
       <div class="lb-bar-wrap"><div class="lb-bar-bg"><div class="lb-bar-fill" style="width:${bw}%;background:${col}"></div></div></div>
     </div>`;
   }).join('');
@@ -3943,27 +3942,35 @@ function renderLeaderboard() {
 
 function renderMoneyFlow() {
   const el = document.getElementById('money-flow'); if (!el) return;
-  const sorted = [...SECTORS].sort((a,b) => b.flow - a.flow);
+  const tf = (typeof globalTF !== 'undefined') ? globalTF : '1W';
+  // Use TF performance * relative volume ratio as flow proxy
+  const sorted = [...SECTORS].map(s => {
+    const perfVal = (s.perf && s.perf[tf] != null) ? +s.perf[tf] : s.day;
+    const tfFlow = (tf === '1D') ? s.flow : perfVal;
+    return { ...s, _tfFlow: tfFlow };
+  }).sort((a,b) => b._tfFlow - a._tfFlow);
+  const maxFlow = Math.max(...sorted.map(s => Math.abs(s._tfFlow)), 1);
   el.innerHTML = sorted.map(s => {
-    const inf = s.flow > 0; const w = Math.min(Math.abs(s.flow)/3*50,48);
+    const inf = s._tfFlow > 0; const w = Math.min(Math.abs(s._tfFlow)/maxFlow*48,48);
     return `<div class="mf-row">
       <div class="mf-name">${s.icon} ${s.name}</div>
       <div class="mf-track">
         ${inf?`<div class="mf-bull" style="width:${w}%;background:var(--green);opacity:.6"></div>`:''}
         ${!inf?`<div class="mf-bear" style="width:${w}%;background:var(--red);opacity:.6"></div>`:''}
       </div>
-      <div class="mf-label" style="color:${inf?'var(--green)':'var(--red)'}">${inf?'+':''}${s.flow.toFixed(1)}B</div>
+      <div class="mf-label" style="color:${inf?'var(--green)':'var(--red)'}">${inf?'+':''}${s._tfFlow.toFixed(1)}${tf==='1D'?'B':'%'}</div>
     </div>`;
   }).join('');
 }
 
 function renderRS() {
   const el = document.getElementById('rs-lines'); if (!el) return;
+  const tf = (typeof globalTF !== 'undefined') ? globalTF : '1W';
   el.innerHTML = HOLDINGS.map(h => {
     const hist = RS_HIST[h.sym] || [];
     const sec = SECTORS.find(s => s.name === h.sector);
-    const sDay = sec ? sec.day : 0;
-    const edge = h.stockDay - sDay;
+    const secPerf = sec ? ((sec.perf && sec.perf[tf] != null) ? +sec.perf[tf] : sec.day) : 0;
+    const edge = h.stockDay - secPerf;
     const last = hist[hist.length-1] || 100;
     const signal = last>105?'acc':last<97?'dist':edge>0.5?'watch':'neut';
     const sigLabel = {acc:'Accumulating',dist:'Distributing',watch:'Outperformer',neut:'Neutral'}[signal];
@@ -4036,10 +4043,13 @@ function renderOutperformers() {
   // Render into both possible containers
   var el = document.getElementById('outperf-rows') || document.getElementById('outperformer-list');
   if (!el) return;
+  const tf = (typeof globalTF !== 'undefined') ? globalTF : '1W';
   const list = HOLDINGS.map(h => {
     const sec = SECTORS.find(s => s.name === h.sector);
-    const sDay = sec ? sec.day : 0;
-    return {...h, sDay, edge: h.stockDay - sDay};
+    const secPerf = sec ? ((sec.perf && sec.perf[tf] != null) ? +sec.perf[tf] : sec.day) : 0;
+    // Use stock daily change as proxy (scanner only gives daily for individual stocks)
+    const stockPerf = h.stockDay;
+    return {...h, sPerf: secPerf, edge: stockPerf - secPerf};
   }).sort((a,b) => b.edge - a.edge);
   el.innerHTML = list.map(h => {
     const out = h.edge > 0;
@@ -4049,7 +4059,7 @@ function renderOutperformers() {
     return `<div style="display:grid;grid-template-columns:110px 90px 90px 80px 1fr 90px;gap:10px;padding:10px 16px;border-bottom:1px solid var(--border);align-items:center;cursor:pointer" onclick="openChart('${h.sym}')">
       <div><div style="font-size:13px;font-weight:700;font-family:var(--fd)">${h.sym.replace('.ASX','')}</div><div style="font-size:9px;color:var(--text3)">${h.sector}</div></div>
       <div style="font-family:var(--fm);font-size:12px;font-weight:600;color:${h.stockDay>=0?'var(--green)':'var(--red)'}">${h.stockDay>=0?'+':''}${h.stockDay.toFixed(2)}%</div>
-      <div style="font-family:var(--fm);font-size:12px;color:${h.sDay>=0?'var(--green)':'var(--red)'}">${h.sDay>=0?'+':''}${h.sDay.toFixed(2)}%</div>
+      <div style="font-family:var(--fm);font-size:12px;color:${h.sPerf>=0?'var(--green)':'var(--red)'}">${h.sPerf>=0?'+':''}${h.sPerf.toFixed(2)}%</div>
       <div style="font-family:var(--fm);font-size:12px;font-weight:700;color:${out?'var(--green)':'var(--red)'}">${out?'+':''}${h.edge.toFixed(2)}%</div>
       <div style="font-size:11px;color:var(--text2)">${status}</div>
       <div style="text-align:right"><span class="badge ${sc2}">${sig}</span></div>
@@ -4273,13 +4283,24 @@ function applySectorData(sec, d, benchPerf) {
   sec.week  = +(d[2] || 0).toFixed(2);
   sec.month = +(d[3] || 0).toFixed(2);
 
+  // Store all timeframe performance data
+  sec.perf = {
+    '1D': sec.day,
+    '1W': +(d[2] || 0).toFixed(2),
+    '1M': +(d[3] || 0).toFixed(2),
+    '3M': +(d[4] || 0).toFixed(2),
+    '6M': +(d[5] || 0).toFixed(2),
+    '1Y': +(d[6] || 0).toFixed(2),
+    'YTD':+(d[7] || 0).toFixed(2),
+  };
+
   // Money flow: day change weighted by relative volume
   var vol = d[8] || 0, avgVol = d[9] || vol || 1;
   sec.flow = vol > 0 ? +(sec.day * (vol / avgVol)).toFixed(1) : +sec.day.toFixed(1);
 
-  // RS and Momentum per timeframe
-  var tfPerf = { '1W': d[2]||0, '1M': d[3]||0, '3M': d[4]||0, '6M': d[5]||0, '1Y': d[6]||0, 'YTD': d[7]||0 };
-  ['1W','1M','3M','6M','1Y','YTD'].forEach(function(tf) {
+  // RS and Momentum per timeframe (including 1D)
+  var tfPerf = { '1D': d[1]||0, '1W': d[2]||0, '1M': d[3]||0, '3M': d[4]||0, '6M': d[5]||0, '1Y': d[6]||0, 'YTD': d[7]||0 };
+  ['1D','1W','1M','3M','6M','1Y','YTD'].forEach(function(tf) {
     sec.rs[tf]  = +(100 + (tfPerf[tf] || 0) - (benchPerf[tf] || 0)).toFixed(1);
     sec.mom[tf] = +(100 + ((tfPerf[tf] || 0) - (benchPerf[tf] || 0)) * 0.8 + sec.day * 0.2).toFixed(1);
   });
@@ -4335,14 +4356,17 @@ function renderRegimeBanner() {
 function renderSectorPulse() {
   var el = document.getElementById('asx-sector-pulse');
   if (!el) return;
-  var sorted = [...SECTORS].sort(function(a, b) { return b.day - a.day; });
+  var tf = (typeof globalTF !== 'undefined') ? globalTF : '1W';
+  function gv(s) { return (s.perf && s.perf[tf] != null) ? +s.perf[tf] : s.day; }
+  var sorted = [...SECTORS].sort(function(a, b) { return gv(b) - gv(a); });
   el.innerHTML = '<span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px;white-space:nowrap">PULSE</span>'
     + sorted.map(function(s) {
-      var col = s.day >= 1 ? 'var(--green)' : s.day >= 0 ? 'rgba(0,212,168,.6)' : s.day >= -1 ? 'var(--amber)' : 'var(--red)';
-      var arrow = s.day >= 0.5 ? '▲' : s.day >= -0.5 ? '—' : '▼';
-      return '<span style="font-size:10px;font-family:var(--fm);white-space:nowrap;padding:3px 8px;border-radius:4px;border:1px solid var(--border2);color:' + col + ';cursor:pointer" onclick="nav(\'sectors\')" title="' + s.name + ' ' + (s.day >= 0 ? '+' : '') + s.day.toFixed(1) + '%">'
+      var v = gv(s);
+      var col = v >= 1 ? 'var(--green)' : v >= 0 ? 'rgba(0,212,168,.6)' : v >= -1 ? 'var(--amber)' : 'var(--red)';
+      var arrow = v >= 0.5 ? '▲' : v >= -0.5 ? '—' : '▼';
+      return '<span style="font-size:10px;font-family:var(--fm);white-space:nowrap;padding:3px 8px;border-radius:4px;border:1px solid var(--border2);color:' + col + ';cursor:pointer" onclick="nav(\'sectors\')" title="' + s.name + ' ' + (v >= 0 ? '+' : '') + v.toFixed(1) + '%">'
         + s.icon + ' <span style="font-weight:600">' + s.name.split(' ')[0].substring(0, 5) + '</span> ' + arrow
-        + ' <span style="font-weight:700">' + (s.day >= 0 ? '+' : '') + s.day.toFixed(1) + '%</span></span>';
+        + ' <span style="font-weight:700">' + (v >= 0 ? '+' : '') + v.toFixed(1) + '%</span></span>';
     }).join('');
 }
 
@@ -5661,8 +5685,10 @@ function setGlobalTF(tf, btn) {
   if (pid === 'page-scanner') filterScanner();
   if (pid === 'page-intel') runIntelAnalysis && runIntelAnalysis();
   if (pid === 'page-flow') refreshFlowData && refreshFlowData();
-  if (pid === 'page-sectors') { refreshSectorData && refreshSectorData(); renderRRG && renderRRG(); renderLeaderboard && renderLeaderboard(); }
-  if (pid === 'page-sectors') { refreshSectorData && refreshSectorData(); renderRRG && renderRRG(); }
+  if (pid === 'page-sectors') {
+    // Re-render all sector components with new TF (data already fetched with all TFs)
+    renderHeatmap(); renderLeaderboard(); renderMoneyFlow(); renderRS(); renderRRG(); renderOutperformers(); renderSectorPulse();
+  }
   console.log('Global TF set to', tf);
 }
 
