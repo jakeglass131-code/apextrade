@@ -1304,33 +1304,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <button class="btn" onclick="runFutIntelAll()" id="fut-run-all" style="font-size:10px;padding:4px 10px;opacity:.7" title="Manual refresh">↻</button>
     </div>
 
-    <!-- TradingView live ticker tape — real-time streaming prices -->
-    <div style="border-bottom:1px solid var(--border2);overflow:hidden;height:46px;flex-shrink:0">
-      <div class="tradingview-widget-container">
-        <div class="tradingview-widget-container__widget"></div>
-        <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-        {
-          "symbols": [
-            {"proName":"FXCM:NAS100","title":"NAS100"},
-            {"proName":"FXCM:SPX500","title":"SPX500"},
-            {"proName":"FXCM:US30","title":"DOW"},
-            {"proName":"FXCM:XAUUSD","title":"GOLD"},
-            {"proName":"FXCM:XAGUSD","title":"SILVER"},
-            {"proName":"FXCM:AUDUSD","title":"AUD/USD"},
-            {"proName":"FXCM:EURUSD","title":"EUR/USD"},
-            {"proName":"FXCM:GBPUSD","title":"GBP/USD"},
-            {"proName":"FXCM:USDJPY","title":"USD/JPY"},
-            {"proName":"TVC:DXY","title":"DXY"}
-          ],
-          "showSymbolLogo":true,
-          "colorTheme":"dark",
-          "isTransparent":true,
-          "displayMode":"adaptive",
-          "locale":"en"
-        }
-        </script>
-      </div>
-    </div>
 
     <div class="scroll" style="padding:16px 20px">
 
@@ -8479,7 +8452,8 @@ function updateFutIntelCards() {
     const pr = document.getElementById('fc-price-' + sid);
     if (pr && d.price) {
       const chgUp = (d.pct||0) >= 0;
-      pr.innerHTML = '<span style="color:'+(chgUp?'var(--green)':'var(--red)')+'">'+d.price.toFixed(d.price>100?0:d.price>10?2:5)+'</span> <span style="font-size:11px;font-weight:600;color:'+(chgUp?'var(--green)':'var(--red)')+'">'+(chgUp?'+':'')+((d.pct||0).toFixed(2))+'%</span>';
+      const dp = d.price < 10 ? 5 : d.price < 200 ? 3 : 2;
+      pr.innerHTML = '<span style="color:'+(chgUp?'var(--green)':'var(--red)')+'">'+d.price.toFixed(dp)+'</span> <span style="font-size:11px;font-weight:600;color:'+(chgUp?'var(--green)':'var(--red)')+'">'+(chgUp?'+':'')+((d.pct||0).toFixed(2))+'%</span>';
     }
     const sig = document.getElementById('fc-sig-' + sid);
     if (sig) sig.textContent = (d.signals||[]).slice(0,2).join(' · ') || 'Calculated';
