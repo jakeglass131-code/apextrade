@@ -1053,6 +1053,37 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <div style="flex:1"></div>
     <div style="font-size:11px;color:var(--text3)">Updated <span id="asx-stat-time" style="color:var(--text2)">—</span></div>
   </div>
+  <!-- TradingView live ASX ticker tape -->
+  <div style="border-bottom:1px solid var(--border2);overflow:hidden;height:46px;flex-shrink:0">
+    <div class="tradingview-widget-container">
+      <div class="tradingview-widget-container__widget"></div>
+      <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+      {
+        "symbols": [
+          {"proName":"ASX:BHP","title":"BHP"},
+          {"proName":"ASX:CBA","title":"CBA"},
+          {"proName":"ASX:RIO","title":"RIO"},
+          {"proName":"ASX:CSL","title":"CSL"},
+          {"proName":"ASX:NAB","title":"NAB"},
+          {"proName":"ASX:WBC","title":"WBC"},
+          {"proName":"ASX:ANZ","title":"ANZ"},
+          {"proName":"ASX:FMG","title":"FMG"},
+          {"proName":"ASX:WDS","title":"WDS"},
+          {"proName":"ASX:MQG","title":"MQG"},
+          {"proName":"ASX:WOW","title":"WOW"},
+          {"proName":"ASX:TLS","title":"TLS"},
+          {"proName":"ASX:GMG","title":"GMG"},
+          {"proName":"ASX:REA","title":"REA"}
+        ],
+        "showSymbolLogo":true,
+        "colorTheme":"dark",
+        "isTransparent":true,
+        "displayMode":"adaptive",
+        "locale":"en"
+      }
+      </script>
+    </div>
+  </div>
   <!-- Momentum bar: ASX stocks -->
   <div id="asx-momentum-bar" class="momentum-bar"></div>
   <!-- Market regime banner -->
@@ -2852,7 +2883,41 @@ async function fetchTwelveData() {
   } catch(e) { console.warn('TD error:', e.message); return false; }
 }
 
-// ── YAHOO FINANCE FETCH (indices) — with ETF fallback ──
+// ── ASX LIVE PRICES (Yahoo Finance via CORS proxy) ──
+const ASX_TICKERS = WATCHLIST.filter(w => w.market === 'ASX Equity').map(w => ({
+  sym: w.sym,
+  yahoo: w.sym.replace('.ASX', '.AX'),
+}));
+async function fetchAsxPrices() {
+  if (ASX_TICKERS.length === 0) return 0;
+  const ySyms = ASX_TICKERS.map(t => t.yahoo).join(',');
+  const yf = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ySyms}&_t=${Date.now()}`;
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(yf)}`,
+    `https://corsproxy.io/?${encodeURIComponent(yf)}`,
+  ];
+  for (const url of proxies) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      if (!r.ok) continue;
+      const d = await r.json();
+      const results = d?.quoteResponse?.result || [];
+      let updated = 0;
+      results.forEach(q => {
+        const ticker = ASX_TICKERS.find(t => t.yahoo === q.symbol);
+        if (!ticker || q.regularMarketPrice == null) return;
+        const p = q.regularMarketPrice;
+        const sym = ticker.sym;
+        if (!dayOpen[sym] || dayOpen[sym] === 0) dayOpen[sym] = p;
+        if (!prevClose[sym] && q.regularMarketPreviousClose) prevClose[sym] = q.regularMarketPreviousClose;
+        prices[sym] = p;
+        updated++;
+      });
+      if (updated > 0) return updated;
+    } catch(e) { /* try next proxy */ }
+  }
+  return 0;
+}
 
 // ── MAIN PRICE FETCH ──
 async function fetchPrices() {
@@ -2863,12 +2928,13 @@ async function fetchPrices() {
     // Fetch previous close on first load for accurate % change
     if (!prevCloseFetched) await fetchPrevClose();
 
-    // Run TD (forex+metals) and YF (indices) in parallel
+    // Run TD (forex+metals) + ASX (Yahoo) in parallel
     liveCount = 0;
-    const [tdOk, yfOk] = await Promise.allSettled([
+    const [tdOk, asxOk] = await Promise.allSettled([
       fetchTwelveData(),
+      fetchAsxPrices(),
     ]);
-    const anyLive = tdOk.value;
+    const anyLive = tdOk.value || (asxOk.value > 0);
     if (!anyLive) simTick(); // fallback simulation
 
     updatePriceEls();
@@ -3319,6 +3385,9 @@ const TV_SYMBOL_MAP = {
   'WTI':'NYMEX:CL1!','ES1!':'CME_MINI:ES1!','NQ1!':'CME_MINI:NQ1!',
   'BHP.ASX':'ASX:BHP','CBA.ASX':'ASX:CBA','RIO.ASX':'ASX:RIO',
   'ANZ.ASX':'ASX:ANZ','FMG.ASX':'ASX:FMG','WBC.ASX':'ASX:WBC',
+  'NAB.ASX':'ASX:NAB','WDS.ASX':'ASX:WDS','MQG.ASX':'ASX:MQG',
+  'WOW.ASX':'ASX:WOW','CSL.ASX':'ASX:CSL','TLS.ASX':'ASX:TLS',
+  'GMG.ASX':'ASX:GMG','REA.ASX':'ASX:REA',
 };
 
 let chartModal = null;
