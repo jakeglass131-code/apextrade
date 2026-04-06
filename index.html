@@ -8399,7 +8399,7 @@ async function fetchTvScan(market, tickers, columns) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ symbols: { tickers }, columns }),
-    signal: AbortSignal.timeout(12000),
+    signal: AbortSignal.timeout(8000),
   });
   if (!r.ok) throw new Error('TV scan ' + r.status);
   return r.json();
@@ -8474,6 +8474,8 @@ function renderFutIntelCards(overrideMap) {
 }
 
 // ── Run all instruments via TradingView Scanner API ──────────────
+// Dual-fetch: always get PRICE from the primary symbol (futures contract),
+// and INDICATORS from whichever source supports the selected timeframe.
 async function runFutIntelAll() {
   if (futIntelRunning) return;
   futIntelRunning = true;
@@ -8486,46 +8488,95 @@ async function runFutIntelAll() {
   try {
     if (Object.keys(futIntelData).length === 0) renderFutIntelCards(null);
 
-    const columns = getTvScanColumns(futIntelTF);
+    const indColumns = getTvScanColumns(futIntelTF);
     const isIntraday = ['5m','15m','1H','4H'].includes(futIntelTF);
 
-    // Group instruments by TradingView market
-    // Futures only support daily indicators — use intraday fallback symbols for 5m/15m/1H/4H
-    const groups = {};
-    FUT_INSTRUMENTS.forEach(inst => {
-      const useFallback = isIntraday && inst.tvScanIntra;
-      const m = useFallback ? inst.tvMarketIntra : (inst.tvMarket || 'cfd');
-      const scanKey = useFallback ? inst.tvScanIntra : inst.tvScan;
-      if (!groups[m]) groups[m] = [];
-      groups[m].push({ ...inst, _scanKey: scanKey });
+    // Separate instruments into two groups:
+    // A) "dualFetch" — futures that need intraday fallback (price from futures, indicators from index)
+    // B) "normalFetch" — everything else (price + indicators from same source)
+    const dualFetch   = isIntraday ? FUT_INSTRUMENTS.filter(i => i.tvScanIntra) : [];
+    const normalFetch = isIntraday ? FUT_INSTRUMENTS.filter(i => !i.tvScanIntra) : [...FUT_INSTRUMENTS];
+
+    // ── Group A: normal instruments by market ──
+    const normGroups = {};
+    normalFetch.forEach(inst => {
+      const m = inst.tvMarket || 'cfd';
+      if (!normGroups[m]) normGroups[m] = [];
+      normGroups[m].push({ ...inst, _scanKey: inst.tvScan });
     });
 
-    // Fetch all market groups concurrently
-    const groupEntries = Object.entries(groups);
-    const results = await Promise.allSettled(groupEntries.map(([market, insts]) =>
-      fetchTvScan(market, insts.map(i => i._scanKey), columns)
-    ));
+    // ── Group B: dual-fetch — price group (futures) + indicator group (index) ──
+    const priceGroups = {};
+    const indGroups   = {};
+    dualFetch.forEach(inst => {
+      const pm = inst.tvMarket || 'futures';
+      if (!priceGroups[pm]) priceGroups[pm] = [];
+      priceGroups[pm].push({ ...inst, _scanKey: inst.tvScan });
 
-    // Map results back to instruments
-    results.forEach((res, idx) => {
-      const [market, insts] = groupEntries[idx];
+      const im = inst.tvMarketIntra || 'cfd';
+      if (!indGroups[im]) indGroups[im] = [];
+      indGroups[im].push({ ...inst, _scanKey: inst.tvScanIntra });
+    });
+
+    // Fire ALL fetches concurrently
+    const normEntries  = Object.entries(normGroups);
+    const priceEntries = Object.entries(priceGroups);
+    const indEntries   = Object.entries(indGroups);
+
+    const [normResults, priceResults, indResults] = await Promise.all([
+      Promise.allSettled(normEntries.map(([m, insts]) => fetchTvScan(m, insts.map(i => i._scanKey), indColumns))),
+      Promise.allSettled(priceEntries.map(([m, insts]) => fetchTvScan(m, insts.map(i => i._scanKey), ['close','change']))),
+      Promise.allSettled(indEntries.map(([m, insts]) => fetchTvScan(m, insts.map(i => i._scanKey), indColumns))),
+    ]);
+
+    // ── Process normal results ──
+    normResults.forEach((res, idx) => {
+      const [, insts] = normEntries[idx];
       if (res.status === 'fulfilled' && res.value?.data) {
         const lookup = {};
         res.value.data.forEach(row => { lookup[row.s] = row.d; });
         insts.forEach(inst => {
           const vals = lookup[inst._scanKey];
-          if (vals) {
-            futIntelData[inst.sym] = scoreTvIndicators(vals);
-          } else {
-            console.warn('TV scan: no data for', inst._scanKey);
-            if (!futIntelData[inst.sym]) futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['No TV data — retrying'], price:0, pct:0 };
-          }
+          if (vals) futIntelData[inst.sym] = scoreTvIndicators(vals);
+          else if (!futIntelData[inst.sym]) futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['No TV data — retrying'], price:0, pct:0 };
         });
       } else {
-        console.warn('TV scan failed for market', market, res.reason?.message || res.reason);
         insts.forEach(inst => {
           if (!futIntelData[inst.sym]) futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['Scanner unavailable — retrying'], price:0, pct:0 };
         });
+      }
+    });
+
+    // ── Process dual-fetch: merge futures price + index indicators ──
+    // Build price lookup  { tvScan symbol → [close, change] }
+    const priceLookup = {};
+    priceEntries.forEach(([, insts], idx) => {
+      const res = priceResults[idx];
+      if (res.status === 'fulfilled' && res.value?.data) {
+        res.value.data.forEach(row => { priceLookup[row.s] = row.d; });
+      }
+    });
+    // Build indicator lookup  { tvScanIntra symbol → full column array }
+    const indLookup = {};
+    indEntries.forEach(([, insts], idx) => {
+      const res = indResults[idx];
+      if (res.status === 'fulfilled' && res.value?.data) {
+        res.value.data.forEach(row => { indLookup[row.s] = row.d; });
+      }
+    });
+    // Merge: futures price (cols 0,1) + index indicators (cols 2+)
+    dualFetch.forEach(inst => {
+      const pData = priceLookup[inst.tvScan];
+      const iData = indLookup[inst.tvScanIntra];
+      if (iData) {
+        const merged = [...iData];
+        if (pData) { merged[0] = pData[0]; merged[1] = pData[1]; } // overwrite close & change with futures price
+        futIntelData[inst.sym] = scoreTvIndicators(merged);
+      } else if (pData) {
+        // Price only — no intraday indicators available
+        futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['Futures price live — indicators loading'], price: pData[0], pct: pData[1] || 0 };
+      } else if (!futIntelData[inst.sym]) {
+        futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['No TV data — retrying'], price:0, pct:0 };
       }
     });
 
