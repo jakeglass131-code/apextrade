@@ -8270,16 +8270,16 @@ async function checkCustomSmtPair() {
 // ══════════════════════════════════════════════════════════════════
 
 const FUT_INSTRUMENTS = [
-  { sym:'NAS100',  name:'NAS100',   cat:'US Index',   tv:'FXCM:NAS100',  tvScan:'NASDAQ:NDX',       tvMarket:'america' },
-  { sym:'SPX500',  name:'SPX500',   cat:'US Index',   tv:'FXCM:SPX500',  tvScan:'SP:SPX',           tvMarket:'cfd'     },
-  { sym:'US30',    name:'DOW',      cat:'US Index',   tv:'FXCM:US30',    tvScan:'TVC:DJI',          tvMarket:'cfd'     },
-  { sym:'XAU/USD', name:'Gold',     cat:'Commodity',  tv:'FXCM:XAUUSD',  tvScan:'TVC:GOLD',         tvMarket:'cfd'     },
-  { sym:'XAG/USD', name:'Silver',   cat:'Commodity',  tv:'FXCM:XAGUSD',  tvScan:'TVC:SILVER',       tvMarket:'cfd'     },
-  { sym:'AUD/USD', name:'AUD/USD',  cat:'FX Major',   tv:'FXCM:AUDUSD',  tvScan:'FX:AUDUSD',        tvMarket:'forex'   },
-  { sym:'EUR/USD', name:'EUR/USD',  cat:'FX Major',   tv:'FXCM:EURUSD',  tvScan:'FX:EURUSD',        tvMarket:'forex'   },
-  { sym:'GBP/USD', name:'GBP/USD',  cat:'FX Major',   tv:'FXCM:GBPUSD',  tvScan:'FX:GBPUSD',        tvMarket:'forex'   },
-  { sym:'USD/JPY', name:'USD/JPY',  cat:'FX Major',   tv:'FXCM:USDJPY',  tvScan:'FX:USDJPY',        tvMarket:'forex'   },
-  { sym:'DXY',     name:'DXY',      cat:'USD Index',  tv:'TVC:DXY',       tvScan:'TVC:DXY',          tvMarket:'cfd'     },
+  { sym:'NAS100',  name:'NAS100',   cat:'FXCM',       tv:'FXCM:NAS100',  tvScan:'NASDAQ:NDX',  tvMarket:'america' },
+  { sym:'SPX500',  name:'SPX500',   cat:'FXCM',       tv:'FXCM:SPX500',  tvScan:'SP:SPX',      tvMarket:'cfd'     },
+  { sym:'US30',    name:'US30',     cat:'FXCM',       tv:'FXCM:US30',    tvScan:'TVC:DJI',     tvMarket:'cfd'     },
+  { sym:'RUSSELL', name:'Russell',  cat:'IG',          tv:'TVC:RUT',      tvScan:'TVC:RUT',     tvMarket:'cfd'     },
+  { sym:'XAU/USD', name:'XAU/USD',  cat:'FXCM',       tv:'FXCM:XAUUSD',  tvScan:'TVC:GOLD',    tvMarket:'cfd'     },
+  { sym:'XAG/USD', name:'XAG/USD',  cat:'FXCM',       tv:'FXCM:XAGUSD',  tvScan:'TVC:SILVER',  tvMarket:'cfd'     },
+  { sym:'AUD/USD', name:'AUD/USD',  cat:'FXCM',       tv:'FXCM:AUDUSD',  tvScan:'FX:AUDUSD',   tvMarket:'forex'   },
+  { sym:'EUR/USD', name:'EUR/USD',  cat:'FXCM',       tv:'FXCM:EURUSD',  tvScan:'FX:EURUSD',   tvMarket:'forex'   },
+  { sym:'USD/JPY', name:'USD/JPY',  cat:'FXCM',       tv:'FXCM:USDJPY',  tvScan:'FX:USDJPY',   tvMarket:'forex'   },
+  { sym:'DXY',     name:'DXY',      cat:'TVC',         tv:'TVC:DXY',      tvScan:'TVC:DXY',     tvMarket:'cfd'     },
 ];
 
 let futIntelTF   = 'D';
