@@ -1723,11 +1723,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       </div>
     </div>
 
-    <!-- ── Commodity Rotation Graph — Full Width ── -->
+    <!-- ── Sector Rotation Graph — Full Width ── -->
     <div class="panel" style="margin-bottom:12px">
       <div class="phead">
-        <div class="ptitle">Commodity Rotation (RRG)</div>
-        <div style="display:flex;align-items:center;gap:12px">
+        <div class="ptitle" id="rrg-title">Commodity Rotation (RRG)</div>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;gap:2px;background:var(--bg5);border-radius:6px;padding:2px" id="rrg-mode-bar">
+            <button class="chip on" data-mode="commodity" onclick="setRRGMode('commodity',this)" style="font-size:11px;padding:4px 10px">Commodities</button>
+            <button class="chip" data-mode="equity" onclick="setRRGMode('equity',this)" style="font-size:11px;padding:4px 10px">Equities</button>
+          </div>
           <div style="display:flex;gap:4px" id="com-tf-bar">
             <button class="chip" data-ctf="1D" onclick="setCommodityTF('1D',this)">1D</button>
             <button class="chip on" data-ctf="1W" onclick="setCommodityTF('1W',this)">1W</button>
@@ -1740,8 +1744,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
           <div class="pmeta">Multi-factor + Broker Flow Analysis</div>
         </div>
       </div>
-      <div style="padding:16px 16px 8px">
-        <svg id="rrg-svg" viewBox="0 0 900 520" style="width:100%;height:auto;display:block;min-height:420px"></svg>
+      <div style="padding:12px 16px 8px;position:relative">
+        <svg id="rrg-svg" viewBox="0 0 900 520" style="width:100%;height:auto;display:block;max-height:380px"></svg>
+        <div id="rrg-tooltip" style="display:none;position:absolute;pointer-events:none;background:rgba(16,18,27,.95);border:1px solid rgba(45,142,255,.3);border-radius:8px;padding:10px 14px;font-size:11px;line-height:1.6;color:var(--text2);z-index:100;max-width:260px;box-shadow:0 8px 24px rgba(0,0,0,.5);backdrop-filter:blur(12px)"></div>
       </div>
       <div style="padding:0 16px 6px">
         <div id="rrg-legend-items"></div>
@@ -4084,70 +4089,173 @@ function highlightSector(name) { console.log('Sector:', name); }
 // ═══════════════════════════════════════════════════════
 
 var COMMODITY_GROUPS = [
-  {name:'Gold',      icon:'🥇', tickers:['NST','EVN','NEM','RMS','DEG','WAF','GOR','RSG','SBM','PRU','RRL','CMR','SLR','BGL','GCY','RED']},
-  {name:'Silver',    icon:'🥈', tickers:['SVL','SI6','AUZ','GGG','GSM','KNM','AKM','THR','MAG']},
-  {name:'Iron Ore',  icon:'⛰',  tickers:['BHP','RIO','FMG','MIN','CIA','GRR','CZR','MGX','SHV']},
-  {name:'Lithium',   icon:'🔋', tickers:['PLS','LTR','CXO','AKE','IGO','LKE','SYR','NMT','GL1','TLX']},
-  {name:'Copper',    icon:'🔶', tickers:['SFR','OZL','29M','AIS','REZ','CYM','HCH']},
-  {name:'Coal',      icon:'♦',  tickers:['WHC','NHC','YAL','SMR','BRL','TER']},
-  {name:'Uranium',   icon:'☢',  tickers:['PDN','BOE','LOT','PEN','BMN','DYL','AGE','ERA']},
-  {name:'Rare Earth',icon:'🌐', tickers:['LYC','ILU','ARU','HAS','VML','ASM','NTU']},
-  {name:'Nickel',    icon:'🔩', tickers:['IGO','NIC','MCR','PAN','WSA','WR1']},
-  {name:'Oil & Gas', icon:'🛢',  tickers:['WDS','STO','BPT','KAR','ORG','COE','FAR','BRU']},
-  {name:'Base Metal',icon:'⚙',  tickers:['S32','OZL','AWC','NZC','PEM','CHN']},
-  {name:'Graphite',  icon:'✏',  tickers:['SYR','TLG','EGR','RNU','BKT']},
-  {name:'Min Sands', icon:'🏖',  tickers:['ILU','DTM','STX','TIE','MZZ']},
-  {name:'Potash',    icon:'🌾', tickers:['AGY','SO4','KLL','IPL','NUF']},
+  {name:'Gold',      icon:'🥇', tickers:['NST','EVN','NEM','RMS','WAF','RSG','SBM','PRU','RRL','BGL','GMD','WGX','CMM']},
+  {name:'Silver',    icon:'🥈', tickers:['SVL','BML','USL','ASL','SS1','ARD','MTH']},
+  {name:'Iron Ore',  icon:'⛰',  tickers:['BHP','RIO','FMG','MIN','CIA','FEX']},
+  {name:'Lithium',   icon:'🔋', tickers:['PLS','LTR','CXO','IGO','LKE','GL1','INR','AGY','PMT','DLI','GLN','WC8','WR1','C1X']},
+  {name:'Copper',    icon:'🔶', tickers:['SFR','CSC','29M','AIS','A1M','HGO','DVP','CYM','HCH']},
+  {name:'Coal',      icon:'♦',  tickers:['WHC','NHC','YAL','SMR','CRN','BRL']},
+  {name:'Uranium',   icon:'☢',  tickers:['PDN','BOE','LOT','PEN','BMN','DYL','AGE','ERA','NXG','CXU','EL8','ORP','I88','AEE','AEU','TOE']},
+  {name:'Rare Earth',icon:'🌐', tickers:['LYC','ILU','ARU','HAS','NTU','ASM','DTR','LKY','VMM','IXR','REE','SGQ']},
+  {name:'Nickel',    icon:'🔩', tickers:['NIC']},
+  {name:'Oil & Gas', icon:'🛢',  tickers:['WDS','STO','BPT','KAR','ORG','FAR','BRU','CVN','ALD','VEA']},
+  {name:'PGM',       icon:'🔘', tickers:['CHN','FME','POD','ZIM']},
+  {name:'Graphite',  icon:'✏',  tickers:['SYR','RNU','TLG','NVX']},
+  {name:'Min Sands', icon:'🏖',  tickers:['ILU']},
+  {name:'Potash',    icon:'🌾', tickers:['BCI','AMN','AGR','APC','RWD','RLF','MNB']},
+  {name:'Travel',    icon:'✈',  tickers:['QAN','FLT','WEB','CTD','HLO','ALG']},
+  {name:'Ag & Food', icon:'🌿', tickers:['GNC','ELD','NUF','CGC','AAC','SM1']},
+  {name:'Steel & Al',icon:'🔧', tickers:['BSL','AWC','S32']},
+];
+
+var EQUITY_GROUPS = [
+  {name:'Banks',      icon:'🏦', tickers:['CBA','NAB','WBC','ANZ','MQG','BEN','BOQ']},
+  {name:'Insurance',  icon:'🛡', tickers:['QBE','SUN','IAG','NHF']},
+  {name:'Tech',       icon:'💻', tickers:['XRO','WTC','TNE','ALU','AD8','MP1','PME','SDR','BRN','ZIP','APX','HUB']},
+  {name:'Healthcare', icon:'💊', tickers:['CSL','COH','RHC','SHL','RMD','PNV','EBO']},
+  {name:'REITs',      icon:'🏠', tickers:['GMG','SCG','GPT','DXS','MGR','CHC','BWP','CQR','SGP','VCX','CLW','NSR','GOZ']},
+  {name:'Retail',     icon:'🛍', tickers:['WES','WOW','JBH','PMV','HVN','LOV','KGN','DMP']},
+  {name:'Telco/Media',icon:'📡', tickers:['TLS','TPG','NWS','REA','CAR','SEK']},
+  {name:'Infra',      icon:'🚧', tickers:['TCL','APA','AZJ','BXB','ORI']},
+  {name:'Wealth Mgmt',icon:'💼', tickers:['MFG','CPU','CGF','PPT','IFL','LNK','GQG','AMP']},
+  {name:'Building',   icon:'🏗', tickers:['JHX','BLD','RWC','AMC']},
+  {name:'Gaming',     icon:'🎰', tickers:['ALL','SGR','TAH']},
 ];
 
 var commodityTF = '1W'; // independent TF for commodity RRG
 
 // ═══════════════════════════════════════════════════════
-// MARKETLENS BROKER DATA — Net Top IB vs Net Retail (date: 2026-03-30)
+// MARKETLENS BROKER DATA — Per-timeframe Net Top IB vs Net Retail
 // Source: app.marketlens.com.au — Broker Groups view
+// Structure: ticker → { '1D': {netIB, netRetail}, '1M': {netIB, netRetail}, ... }
 // netIB = Net Top Investment Banks ($), netRetail = Net Retail ($)
 // Positive = net buying, Negative = net selling
 // ═══════════════════════════════════════════════════════
 window._mlBrokerData = {
-  _date: '2026-03-30',
-  // Gold — NST: IBs net selling -$20.3M, retail also selling
-  'NST': {netIB:-20313846, netRetail:-2340581},
-  'EVN': {netIB:-20313846, netRetail:-2340581}, // proxy from NST
-  // Iron Ore — RIO: IBs accumulating +$22.1M
-  'RIO': {netIB:22100946, netRetail:-7472134},
-  'BHP': {netIB:35403058, netRetail:-18354779}, // from initial BHP query
-  'FMG': {netIB:22100946, netRetail:-7472134},  // proxy from RIO
-  'MIN': {netIB:22100946, netRetail:-7472134},
-  // Lithium — PLS: Massive IB buying +$85M, retail dumping -$57M
-  'PLS': {netIB:85020019, netRetail:-56958948},
-  'LTR': {netIB:85020019, netRetail:-56958948}, // proxy from PLS
-  'CXO': {netIB:85020019, netRetail:-56958948},
-  'AKE': {netIB:85020019, netRetail:-56958948},
-  // Copper — SFR: mild IB buying +$3.7M
-  'SFR': {netIB:3677280, netRetail:134199},
-  'OZL': {netIB:3677280, netRetail:134199},
-  // Coal — WHC: IBs buying +$9.7M, retail selling
-  'WHC': {netIB:9664401, netRetail:-10342713},
-  'NHC': {netIB:9664401, netRetail:-10342713},
-  // Uranium — PDN: mild IB buying +$1.2M
-  'PDN': {netIB:1226569, netRetail:-295390},
-  'BOE': {netIB:1226569, netRetail:-295390},
-  // Rare Earth — LYC: IBs flat, retail buying +$1.8M
-  'LYC': {netIB:-81168, netRetail:1771600},
-  'ILU': {netIB:-1525698, netRetail:-284017},
-  // Nickel — IGO: mild IB buying
-  'IGO': {netIB:765888, netRetail:-696886},
-  // Oil & Gas — STO: Strong IB buying +$34.1M
-  'STO': {netIB:34076788, netRetail:-7290489},
-  'WDS': {netIB:34076788, netRetail:-7290489}, // proxy from STO
-  // Base Metal — S32: IB buying +$32.6M
-  'S32': {netIB:32626860, netRetail:-15899242},
-  // Graphite — SYR: mild IB buying
-  'SYR': {netIB:406320, netRetail:-172470},
-  // Potash — IPL: proxy from sector avg
-  'IPL': {netIB:0, netRetail:0},
-  // Silver — SVL: proxy
-  'SVL': {netIB:0, netRetail:0},
+  _meta: {'1D':{date:'2026-04-04'},'1W':{from:'2026-03-30',to:'2026-04-04'},'1M':{from:'2026-03-06',to:'2026-04-06'},'1Y':{from:'2025-04-06',to:'2026-04-06'},scraped:'2026-04-06'},
+  // ── Gold (13) ──
+  'NST': {'1D':{netIB:-20313846,netRetail:-2340581},'1W':{netIB:-121474618,netRetail:21116496},'1M':{netIB:-376101481,netRetail:106310739},'1Y':{netIB:68129134,netRetail:-152801916}},
+  'EVN': {'1D':{netIB:4500839,netRetail:4209827},'1W':{netIB:832189,netRetail:10086631},'1M':{netIB:65640635,netRetail:22326844},'1Y':{netIB:917954196,netRetail:-327525851}},
+  'NEM': {'1D':{netIB:11943680,netRetail:-122279},'1W':{netIB:816317,netRetail:-4767348},'1M':{netIB:-65719459,netRetail:-41312815},'1Y':{netIB:-53337160,netRetail:-367382685}},
+  'RMS': {'1D':{netIB:3685757,netRetail:1238819},'1W':{netIB:2556337,netRetail:5852371},'1M':{netIB:36761392,netRetail:19830914},'1Y':{netIB:148299541,netRetail:-14264838}},
+  'WAF': {'1D':{netIB:510590,netRetail:-137926},'1W':{netIB:-5572720,netRetail:-1471725},'1M':{netIB:-29198328,netRetail:-4688739},'1Y':{netIB:-22920304,netRetail:-27028337}},
+  'RSG': {'1D':{netIB:465716,netRetail:-270348},'1W':{netIB:-594035,netRetail:214401},'1M':{netIB:25621306,netRetail:-5228957},'1Y':{netIB:198854260,netRetail:-96849656}},
+  'SBM': {'1D':{netIB:-783750,netRetail:304978},'1W':{netIB:-10431827,netRetail:4943799},'1M':{netIB:11636878,netRetail:1853421},'1Y':{netIB:46320290,netRetail:-24220935}},
+  'PRU': {'1D':{netIB:1873115,netRetail:-717371},'1W':{netIB:7777727,netRetail:-1420197},'1M':{netIB:-7116086,netRetail:-206893},'1Y':{netIB:103606749,netRetail:-42516923}},
+  'RRL': {'1D':{netIB:6878080,netRetail:167462},'1W':{netIB:-4569083,netRetail:8193850},'1M':{netIB:2586213,netRetail:12940175},'1Y':{netIB:179058048,netRetail:-133390167}},
+  'BGL': {'1D':{netIB:1676054,netRetail:-102354},'1W':{netIB:-260658,netRetail:-1526914},'1M':{netIB:29479355,netRetail:-23412764},'1Y':{netIB:18629551,netRetail:-75927634}},
+  'GMD': {'1D':{netIB:4618378,netRetail:913627},'1W':{netIB:16898810,netRetail:1996239},'1M':{netIB:4375967,netRetail:-3755602},'1Y':{netIB:352169388,netRetail:-48641102}},
+  'WGX': {'1D':{netIB:-2847865,netRetail:-1447803},'1W':{netIB:-23591144,netRetail:3457118},'1M':{netIB:77536148,netRetail:6428518},'1Y':{netIB:100097131,netRetail:-4584031}},
+  'CMM': {'1D':{netIB:2813127,netRetail:-117517},'1W':{netIB:-145895,netRetail:1949535},'1M':{netIB:-20255238,netRetail:2562242},'1Y':{netIB:209104892,netRetail:-76727804}},
+  // ── Silver (7) ──
+  'SVL': {'1D':{netIB:-346500,netRetail:69362},'1W':{netIB:-1797185,netRetail:1730448},'1M':{netIB:-6110945,netRetail:6639626},'1Y':{netIB:2882113,netRetail:6669907}},
+  'BML': {'1D':{netIB:-1907744,netRetail:1288646},'1W':{netIB:-2973932,netRetail:2122827},'1M':{netIB:-5354772,netRetail:4030935},'1Y':{netIB:-8719500,netRetail:33320378}},
+  'USL': {'1D':{netIB:-173298,netRetail:207450},'1W':{netIB:-2601511,netRetail:2068167},'1M':{netIB:-8694401,netRetail:1576086},'1Y':{netIB:21725788,netRetail:4888173}},
+  'ASL': {'1D':{netIB:-138381,netRetail:-5689},'1W':{netIB:-289327,netRetail:523285},'1M':{netIB:2597995,netRetail:-3076121},'1Y':{netIB:54976325,netRetail:11211162}},
+  'SS1': {'1D':{netIB:-220428,netRetail:436616},'1W':{netIB:-1017216,netRetail:1535564},'1M':{netIB:-4782168,netRetail:3427891},'1Y':{netIB:-16237005,netRetail:22778915}},
+  'ARD': {'1D':{netIB:7276,netRetail:5709},'1W':{netIB:37634,netRetail:-45742},'1M':{netIB:515676,netRetail:-436830},'1Y':{netIB:1016747,netRetail:3597976}},
+  'MTH': {'1D':{netIB:385,netRetail:-5500},'1W':{netIB:-35229,netRetail:112467},'1M':{netIB:19248,netRetail:326841},'1Y':{netIB:-129418,netRetail:2270652}},
+  // ── Iron Ore (6) ──
+  'BHP': {'1D':{netIB:35403058,netRetail:-18354779},'1W':{netIB:-44120586,netRetail:-49332705},'1M':{netIB:237302770,netRetail:-18540730},'1Y':{netIB:2108639621,netRetail:-1347723726}},
+  'RIO': {'1D':{netIB:22100946,netRetail:-7472134},'1W':{netIB:25426837,netRetail:-26588720},'1M':{netIB:45655910,netRetail:-32675405},'1Y':{netIB:115558439,netRetail:-246405372}},
+  'FMG': {'1D':{netIB:32626860,netRetail:-15899242},'1W':{netIB:50732042,netRetail:-42145239},'1M':{netIB:10183699,netRetail:-55402341},'1Y':{netIB:659353330,netRetail:-894778978}},
+  'MIN': {'1D':{netIB:11259723,netRetail:-948727},'1W':{netIB:23682776,netRetail:-19190741},'1M':{netIB:25636849,netRetail:-37498972},'1Y':{netIB:719120880,netRetail:-516406326}},
+  'CIA': {'1D':{netIB:748861,netRetail:-50439},'1W':{netIB:-5270043,netRetail:-386823},'1M':{netIB:-14947156,netRetail:983140},'1Y':{netIB:-66083524,netRetail:-4206396}},
+  'FEX': {'1D':{netIB:29818,netRetail:8319},'1W':{netIB:-524626,netRetail:496853},'1M':{netIB:-1785978,netRetail:2127187},'1Y':{netIB:5874596,netRetail:-4675263}},
+  // ── Lithium (14) ──
+  'PLS': {'1D':{netIB:36697829,netRetail:-38015028},'1W':{netIB:85606986,netRetail:-136640874},'1M':{netIB:242860440,netRetail:-134664307},'1Y':{netIB:1517420331,netRetail:-1056074675}},
+  'LTR': {'1D':{netIB:1424065,netRetail:2045448},'1W':{netIB:15181483,netRetail:-16080693},'1M':{netIB:-14618875,netRetail:-14977079},'1Y':{netIB:232310554,netRetail:-233602364}},
+  'CXO': {'1D':{netIB:-928308,netRetail:840439},'1W':{netIB:-1606407,netRetail:3413848},'1M':{netIB:-519956,netRetail:4575010},'1Y':{netIB:-5872460,netRetail:-212895}},
+  'IGO': {'1D':{netIB:765888,netRetail:-696886},'1W':{netIB:-5056841,netRetail:-3914966},'1M':{netIB:21998538,netRetail:-5094757},'1Y':{netIB:114755967,netRetail:-93069114}},
+  'LKE': {'1D':{netIB:-62438,netRetail:-34973},'1W':{netIB:-85352,netRetail:-68694},'1M':{netIB:873288,netRetail:-262653},'1Y':{netIB:784957,netRetail:11733443}},
+  'GL1': {'1D':{netIB:17034,netRetail:27489},'1W':{netIB:-13938,netRetail:37347},'1M':{netIB:-295093,netRetail:-33067},'1Y':{netIB:-859533,netRetail:-643979}},
+  'INR': {'1D':{netIB:227785,netRetail:62692},'1W':{netIB:1585287,netRetail:80821},'1M':{netIB:-783787,netRetail:4760185},'1Y':{netIB:-27058437,netRetail:22142676}},
+  'AGY': {'1D':{netIB:-31694,netRetail:44565},'1W':{netIB:-229393,netRetail:271252},'1M':{netIB:71796,netRetail:51915},'1Y':{netIB:68485,netRetail:1147644}},
+  'PMT': {'1D':{netIB:436795,netRetail:391872},'1W':{netIB:794199,netRetail:500281},'1M':{netIB:996487,netRetail:1054851},'1Y':{netIB:18854221,netRetail:1872987}},
+  'DLI': {'1D':{netIB:103337,netRetail:40939},'1W':{netIB:236523,netRetail:252398},'1M':{netIB:32476,netRetail:670887},'1Y':{netIB:1945396,netRetail:57841}},
+  'GLN': {'1D':{netIB:495228,netRetail:-428630},'1W':{netIB:529495,netRetail:-395790},'1M':{netIB:2293111,netRetail:124524},'1Y':{netIB:8259237,netRetail:4453574}},
+  'WC8': {'1D':{netIB:-329488,netRetail:-301149},'1W':{netIB:-5363916,netRetail:375250},'1M':{netIB:-2249309,netRetail:-2556126},'1Y':{netIB:-2712509,netRetail:3511070}},
+  'WR1': {'1D':{netIB:-78901,netRetail:25584},'1W':{netIB:-4495,netRetail:12125},'1M':{netIB:-212734,netRetail:-599961},'1Y':{netIB:-2194697,netRetail:-2724690}},
+  'C1X': {'1D':{netIB:-20137,netRetail:3385},'1W':{netIB:-82597,netRetail:60272},'1M':{netIB:-56909,netRetail:561641},'1Y':{netIB:230174,netRetail:660135}},
+  // ── Copper (9) ──
+  'SFR': {'1D':{netIB:3677280,netRetail:134199},'1W':{netIB:-13429390,netRetail:2465934},'1M':{netIB:-28277994,netRetail:-8807240},'1Y':{netIB:178223302,netRetail:-15821225}},
+  'CSC': {'1D':{netIB:1235694,netRetail:492245},'1W':{netIB:-8428023,netRetail:2560923},'1M':{netIB:-13723127,netRetail:9675841},'1Y':{netIB:-81976252,netRetail:56069155}},
+  '29M': {'1D':{netIB:115384,netRetail:88006},'1W':{netIB:1359200,netRetail:111591},'1M':{netIB:8970165,netRetail:-866456},'1Y':{netIB:17231052,netRetail:-5448205}},
+  'AIS': {'1D':{netIB:255788,netRetail:-120470},'1W':{netIB:201183,netRetail:293937},'1M':{netIB:1290137,netRetail:1878684},'1Y':{netIB:44023171,netRetail:-18234587}},
+  'A1M': {'1D':{netIB:669966,netRetail:-93257},'1W':{netIB:-2420107,netRetail:815070},'1M':{netIB:4914358,netRetail:-1115938},'1Y':{netIB:15181058,netRetail:-151721}},
+  'HGO': {'1D':{netIB:7012,netRetail:-74060},'1W':{netIB:-122870,netRetail:105403},'1M':{netIB:-914351,netRetail:614024},'1Y':{netIB:-3490623,netRetail:12913182}},
+  'DVP': {'1D':{netIB:-233505,netRetail:-299946},'1W':{netIB:545060,netRetail:-1113308},'1M':{netIB:686156,netRetail:-2885146},'1Y':{netIB:44391023,netRetail:-27390740}},
+  'CYM': {'1D':{netIB:-6273,netRetail:16016},'1W':{netIB:-242205,netRetail:374386},'1M':{netIB:-1841363,netRetail:1659181},'1Y':{netIB:-1532479,netRetail:6655624}},
+  'HCH': {'1D':{netIB:157436,netRetail:-231878},'1W':{netIB:190914,netRetail:-678162},'1M':{netIB:1260970,netRetail:-1980895},'1Y':{netIB:4105958,netRetail:-1500517}},
+  // ── Coal (6) ──
+  'WHC': {'1D':{netIB:9664401,netRetail:-10342713},'1W':{netIB:63799052,netRetail:-24420653},'1M':{netIB:177764241,netRetail:-56073167},'1Y':{netIB:563917170,netRetail:-370060374}},
+  'NHC': {'1D':{netIB:12381562,netRetail:-12845001},'1W':{netIB:19075369,netRetail:-17431971},'1M':{netIB:53616341,netRetail:-67597258},'1Y':{netIB:-53588585,netRetail:-24138926}},
+  'YAL': {'1D':{netIB:10397009,netRetail:-7059967},'1W':{netIB:51328198,netRetail:-37020571},'1M':{netIB:47168637,netRetail:-194373211},'1Y':{netIB:174780070,netRetail:-221748277}},
+  'SMR': {'1D':{netIB:-82268,netRetail:549931},'1W':{netIB:1258224,netRetail:-687505},'1M':{netIB:8160775,netRetail:-1076621},'1Y':{netIB:-33377195,netRetail:13319764}},
+  'CRN': {'1D':{netIB:-194939,netRetail:671},'1W':{netIB:882961,netRetail:-1036110},'1M':{netIB:-2374766,netRetail:299526},'1Y':{netIB:-4232738,netRetail:15484679}},
+  'BRL': {'1D':{netIB:1315,netRetail:-1314},'1W':{netIB:-73487,netRetail:51391},'1M':{netIB:-93690,netRetail:183438},'1Y':{netIB:859890,netRetail:413515}},
+  // ── Uranium (16) ──
+  'PDN': {'1D':{netIB:1226569,netRetail:-295390},'1W':{netIB:-9813417,netRetail:214808},'1M':{netIB:-5069109,netRetail:-3964787},'1Y':{netIB:363128286,netRetail:-179768897}},
+  'BOE': {'1D':{netIB:415651,netRetail:393402},'1W':{netIB:2088697,netRetail:-726370},'1M':{netIB:11721210,netRetail:-5268686},'1Y':{netIB:48907624,netRetail:91486812}},
+  'LOT': {'1D':{netIB:-942211,netRetail:646709},'1W':{netIB:-3194639,netRetail:4840488},'1M':{netIB:-18486210,netRetail:19496377},'1Y':{netIB:-35624328,netRetail:54833241}},
+  'PEN': {'1D':{netIB:75134,netRetail:-59431},'1W':{netIB:-103745,netRetail:674629},'1M':{netIB:-4069806,netRetail:2416717},'1Y':{netIB:-19149097,netRetail:14830303}},
+  'BMN': {'1D':{netIB:105417,netRetail:-200530},'1W':{netIB:-2705401,netRetail:591621},'1M':{netIB:-12218011,netRetail:1753878},'1Y':{netIB:-7525891,netRetail:-18613647}},
+  'DYL': {'1D':{netIB:245217,netRetail:181724},'1W':{netIB:-3995194,netRetail:860032},'1M':{netIB:-27613998,netRetail:7266775},'1Y':{netIB:94726197,netRetail:-111006450}},
+  'AGE': {'1D':{netIB:-299843,netRetail:260418},'1W':{netIB:-746180,netRetail:631846},'1M':{netIB:-1076665,netRetail:175801},'1Y':{netIB:-11321755,netRetail:8595350}},
+  'ERA': {'1D':{netIB:3893,netRetail:1659},'1W':{netIB:5299,netRetail:-5085},'1M':{netIB:18493,netRetail:-15973},'1Y':{netIB:380865,netRetail:-601908}},
+  'NXG': {'1D':{netIB:894832,netRetail:-665556},'1W':{netIB:-11897,netRetail:-495475},'1M':{netIB:4746459,netRetail:-33534},'1Y':{netIB:-48606709,netRetail:19938885}},
+  'CXU': {'1D':{netIB:39214,netRetail:-43685},'1W':{netIB:6068,netRetail:-7752},'1M':{netIB:163031,netRetail:-309519},'1Y':{netIB:470392,netRetail:686574}},
+  'EL8': {'1D':{netIB:19484,netRetail:-4571},'1W':{netIB:-289181,netRetail:277745},'1M':{netIB:309176,netRetail:-182547},'1Y':{netIB:-555164,netRetail:1000742}},
+  'ORP': {'1D':{netIB:-4313,netRetail:425},'1W':{netIB:-2603,netRetail:-7891},'1M':{netIB:-7949,netRetail:-68091},'1Y':{netIB:4297,netRetail:101446}},
+  'I88': {'1D':{netIB:-4084,netRetail:6750},'1W':{netIB:-27252,netRetail:22966},'1M':{netIB:-47420,netRetail:62759},'1Y':{netIB:-1513027,netRetail:4338391}},
+  'AEE': {'1D':{netIB:-93667,netRetail:2155},'1W':{netIB:-302988,netRetail:308276},'1M':{netIB:-122953,netRetail:400805},'1Y':{netIB:-1479816,netRetail:1980062}},
+  'AEU': {'1D':{netIB:-26300,netRetail:25520},'1W':{netIB:45822,netRetail:36065},'1M':{netIB:-1860437,netRetail:-452907},'1Y':{netIB:2354059,netRetail:-2113421}},
+  'TOE': {'1D':{netIB:3926,netRetail:1679},'1W':{netIB:-18973,netRetail:-31041},'1M':{netIB:-105658,netRetail:-594534},'1Y':{netIB:91031,netRetail:-7362296}},
+  // ── Rare Earth (12) ──
+  'LYC': {'1D':{netIB:-81168,netRetail:1771600},'1W':{netIB:30659003,netRetail:-9500225},'1M':{netIB:259803319,netRetail:-97947804},'1Y':{netIB:705368756,netRetail:-473958757}},
+  'ILU': {'1D':{netIB:-1525698,netRetail:-284017},'1W':{netIB:6330433,netRetail:-5269398},'1M':{netIB:4517102,netRetail:-16831701},'1Y':{netIB:-27152708,netRetail:25651317}},
+  'ARU': {'1D':{netIB:-1240995,netRetail:803073},'1W':{netIB:673022,netRetail:-472385},'1M':{netIB:26751283,netRetail:-17581682},'1Y':{netIB:-166853890,netRetail:189626901}},
+  'HAS': {'1D':{netIB:0,netRetail:0},'1W':{netIB:-132502,netRetail:119916},'1M':{netIB:232959,netRetail:-208469},'1Y':{netIB:-3580331,netRetail:1732490}},
+  'NTU': {'1D':{netIB:37913,netRetail:-54722},'1W':{netIB:165540,netRetail:163023},'1M':{netIB:-2084503,netRetail:600239},'1Y':{netIB:-8809682,netRetail:35857777}},
+  'ASM': {'1D':{netIB:132553,netRetail:-59225},'1W':{netIB:1001677,netRetail:-371478},'1M':{netIB:6585349,netRetail:-2193233},'1Y':{netIB:56004264,netRetail:-53975443}},
+  'DTR': {'1D':{netIB:0,netRetail:0},'1W':{netIB:8822546,netRetail:-3363059},'1M':{netIB:38751141,netRetail:-21949191},'1Y':{netIB:152714436,netRetail:-87493243}},
+  'LKY': {'1D':{netIB:-44092,netRetail:419468},'1W':{netIB:736513,netRetail:-257876},'1M':{netIB:-364876,netRetail:681248},'1Y':{netIB:-9659665,netRetail:32737847}},
+  'VMM': {'1D':{netIB:-79925,netRetail:-33061},'1W':{netIB:-462499,netRetail:583231},'1M':{netIB:-2788450,netRetail:2554742},'1Y':{netIB:14786902,netRetail:-8322815}},
+  'IXR': {'1D':{netIB:27962,netRetail:-6027},'1W':{netIB:25947,netRetail:-48550},'1M':{netIB:127441,netRetail:-113987},'1Y':{netIB:4119294,netRetail:7211683}},
+  'REE': {'1D':{netIB:180,netRetail:10121},'1W':{netIB:75531,netRetail:65745},'1M':{netIB:-102081,netRetail:28460},'1Y':{netIB:-358498,netRetail:4207863}},
+  'SGQ': {'1D':{netIB:-35363,netRetail:43684},'1W':{netIB:866550,netRetail:1678404},'1M':{netIB:-8272829,netRetail:12770915},'1Y':{netIB:-24198487,netRetail:63375796}},
+  // ── Nickel (1) ──
+  'NIC': {'1D':{netIB:401831,netRetail:-192034},'1W':{netIB:-507595,netRetail:-619253},'1M':{netIB:-14453092,netRetail:1324674},'1Y':{netIB:-12397324,netRetail:-25105126}},
+  // ── Oil & Gas (10) ──
+  'WDS': {'1D':{netIB:85020019,netRetail:-56958948},'1W':{netIB:483533589,netRetail:-265855708},'1M':{netIB:1482933846,netRetail:-1072035820},'1Y':{netIB:1182364424,netRetail:-837234203}},
+  'STO': {'1D':{netIB:34076788,netRetail:-7290489},'1W':{netIB:84223302,netRetail:-39440629},'1M':{netIB:112113304,netRetail:-150888831},'1Y':{netIB:302640413,netRetail:-378684938}},
+  'BPT': {'1D':{netIB:132240,netRetail:415027},'1W':{netIB:14423482,netRetail:-6386211},'1M':{netIB:42033862,netRetail:-48625461},'1Y':{netIB:-18875182,netRetail:40424930}},
+  'KAR': {'1D':{netIB:8115508,netRetail:-4409400},'1W':{netIB:13034757,netRetail:-9570005},'1M':{netIB:62749257,netRetail:-24536968},'1Y':{netIB:144779824,netRetail:-67489297}},
+  'ORG': {'1D':{netIB:13243271,netRetail:-1033057},'1W':{netIB:9535507,netRetail:-4853140},'1M':{netIB:128265050,netRetail:-10597053},'1Y':{netIB:213066415,netRetail:-68771370}},
+  'FAR': {'1D':{netIB:-27108,netRetail:36791},'1W':{netIB:42110,netRetail:-5818},'1M':{netIB:-1934647,netRetail:21793},'1Y':{netIB:-2344031,netRetail:313874}},
+  'BRU': {'1D':{netIB:-1545,netRetail:1112},'1W':{netIB:5058,netRetail:-1074},'1M':{netIB:41150,netRetail:-18164},'1Y':{netIB:-658324,netRetail:1880920}},
+  'CVN': {'1D':{netIB:165857,netRetail:-190632},'1W':{netIB:316657,netRetail:-521153},'1M':{netIB:-548243,netRetail:64804},'1Y':{netIB:-1546443,netRetail:5595970}},
+  'ALD': {'1D':{netIB:-186719,netRetail:2561935},'1W':{netIB:19787147,netRetail:-1926490},'1M':{netIB:43466721,netRetail:-28293281},'1Y':{netIB:170120489,netRetail:-126595250}},
+  'VEA': {'1D':{netIB:1220467,netRetail:-2558675},'1W':{netIB:9204693,netRetail:-2816758},'1M':{netIB:22554063,netRetail:-20994893},'1Y':{netIB:-17820416,netRetail:-7403049}},
+  // ── PGM (4) ──
+  'CHN': {'1D':{netIB:101692,netRetail:-48519},'1W':{netIB:-2431177,netRetail:310705},'1M':{netIB:-6488557,netRetail:4035364},'1Y':{netIB:9674497,netRetail:-31866793}},
+  'FME': {'1D':{netIB:-7669,netRetail:-10058},'1W':{netIB:-12101,netRetail:-15153},'1M':{netIB:24419,netRetail:-121241},'1Y':{netIB:396207,netRetail:1467979}},
+  'POD': {'1D':{netIB:-274,netRetail:-29201},'1W':{netIB:-34033,netRetail:57661},'1M':{netIB:-156548,netRetail:-252963},'1Y':{netIB:374548,netRetail:2270479}},
+  'ZIM': {'1D':{netIB:146338,netRetail:-149706},'1W':{netIB:-269663,netRetail:148277},'1M':{netIB:1605397,netRetail:-207278},'1Y':{netIB:4430478,netRetail:-1123077}},
+  // ── Graphite (4) ──
+  'SYR': {'1D':{netIB:406320,netRetail:-172470},'1W':{netIB:256365,netRetail:380559},'1M':{netIB:-2538960,netRetail:4680592},'1Y':{netIB:-9034159,netRetail:16971749}},
+  'RNU': {'1D':{netIB:23566,netRetail:-8229},'1W':{netIB:60258,netRetail:-75910},'1M':{netIB:-38843,netRetail:149991},'1Y':{netIB:91246,netRetail:-1355393}},
+  'TLG': {'1D':{netIB:-101714,netRetail:70593},'1W':{netIB:-195353,netRetail:103957},'1M':{netIB:-377109,netRetail:306923},'1Y':{netIB:1334260,netRetail:1722205}},
+  'NVX': {'1D':{netIB:16185,netRetail:182100},'1W':{netIB:-88938,netRetail:413666},'1M':{netIB:521072,netRetail:2596719},'1Y':{netIB:31149005,netRetail:38919036}},
+  // ── Min Sands (1) — uses ILU from Rare Earth ──
+  // ── Potash (7) ──
+  'BCI': {'1D':{netIB:117537,netRetail:-35958},'1W':{netIB:177144,netRetail:-56840},'1M':{netIB:-1358057,netRetail:543207},'1Y':{netIB:-12900625,netRetail:7420529}},
+  'AMN': {'1D':{netIB:-1265,netRetail:-4905},'1W':{netIB:-11915,netRetail:19700},'1M':{netIB:-25835,netRetail:-129520},'1Y':{netIB:-49742,netRetail:400548}},
+  'AGR': {'1D':{netIB:76410,netRetail:36328},'1W':{netIB:294756,netRetail:124417},'1M':{netIB:273879,netRetail:2006936},'1Y':{netIB:853134,netRetail:3747347}},
+  'APC': {'1D':{netIB:0,netRetail:-5531},'1W':{netIB:1968,netRetail:-11849},'1M':{netIB:-16935,netRetail:-162},'1Y':{netIB:-3674,netRetail:75234}},
+  'RWD': {'1D':{netIB:0,netRetail:0},'1W':{netIB:0,netRetail:0},'1M':{netIB:-177,netRetail:363},'1Y':{netIB:-22105,netRetail:82793}},
+  'RLF': {'1D':{netIB:6388,netRetail:20682},'1W':{netIB:-16996,netRetail:136568},'1M':{netIB:64569,netRetail:577007},'1Y':{netIB:-1658206,netRetail:1793737}},
+  'MNB': {'1D':{netIB:-2339,netRetail:1480},'1W':{netIB:-17819,netRetail:14455},'1M':{netIB:-54609,netRetail:288109},'1Y':{netIB:487882,netRetail:2675760}},
 };
 var COMMODITIES = COMMODITY_GROUPS.map(function(g) {
   return { name:g.name, icon:g.icon, tickers:g.tickers,
@@ -4157,13 +4265,24 @@ var COMMODITIES = COMMODITY_GROUPS.map(function(g) {
     signal:null, signalLabel:'', _data:[] };
 });
 
-async function fetchCommodityData() {
+var EQUITIES = EQUITY_GROUPS.map(function(g) {
+  return { name:g.name, icon:g.icon, tickers:g.tickers,
+    rs:{}, mom:{}, perf:{'1D':0,'1W':0,'1M':0,'3M':0,'6M':0,'1Y':0,'YTD':0},
+    metrics:{avgRSI:50,avgStochK:50,avgStochD:50,macdHist:0,avgADX:15,diPlus:0,diMinus:0,volRatio:1,emaScore:0.5,tvRec:0,tickerCount:0},
+    brokerFlow:{score:0,instBuyers:0,instSellers:0,retailOnly:0,label:'',color:'var(--text3)',totalFlow:0},
+    signal:null, signalLabel:'', _data:[] };
+});
+
+var rrgMode = 'commodity'; // 'commodity' or 'equity'
+
+async function fetchCommodityData(_grp, _itm, _bch) {
+  var grp=_grp||COMMODITY_GROUPS, itm=_itm||COMMODITIES, bch=_bch||'ASX:XSO';
   try {
     var allTickers = [];
-    COMMODITY_GROUPS.forEach(function(g){g.tickers.forEach(function(t){allTickers.push('ASX:'+t);});});
+    grp.forEach(function(g){g.tickers.forEach(function(t){allTickers.push('ASX:'+t);});});
     var rawTickers=[...new Set(allTickers)].map(function(t){return t.replace('ASX:','');});
     allTickers=[...new Set(allTickers)];
-    allTickers.push('ASX:XSO');
+    allTickers.push(bch);
     // 26 columns — includes open/high/low + relative_volume for broker flow detection
     var columns=['close','change','Perf.W','Perf.1M','Perf.3M','Perf.6M','Perf.Y','Perf.YTD',
       'volume','average_volume_30d_calc','RSI','Stoch.K','Stoch.D','MACD.macd','MACD.signal',
@@ -4184,10 +4303,10 @@ async function fetchCommodityData() {
       console.log('ASIC shorts loaded:',asicData.count,'positions, date:',asicDate);
     }
     var lookup={}; data.data.forEach(function(row){lookup[row.s]=row.d;});
-    var bench=lookup['ASX:XSO']||[];
+    var bench=lookup[bch]||[];
     var bp={'1D':bench[1]||0,'1W':bench[2]||0,'1M':bench[3]||0,'3M':bench[4]||0,'6M':bench[5]||0,'1Y':bench[6]||0,'YTD':bench[7]||0};
-    COMMODITIES.forEach(function(com,ci){
-      var rows=[]; COMMODITY_GROUPS[ci].tickers.forEach(function(t){var d=lookup['ASX:'+t];if(d&&d[0])rows.push({ticker:t,d:d,mcap:d[20]||0});});
+    itm.forEach(function(com,ci){
+      var rows=[]; grp[ci].tickers.forEach(function(t){var d=lookup['ASX:'+t];if(d&&d[0])rows.push({ticker:t,d:d,mcap:d[20]||0});});
       com._data=rows; if(rows.length===0) return;
       var totM=rows.reduce(function(s,r){return s+(r.mcap||1);},0); if(totM===0)totM=rows.length;
       function wa(c){return rows.reduce(function(s,r){return s+(r.d[c]||0)*(r.mcap||1)/totM;},0);}
@@ -4207,6 +4326,7 @@ async function fetchCommodityData() {
       // ═══════════════════════════════════════════════════
       var instBuyers=0, instSellers=0, retailOnly=0, totalFlowScore=0;
       var groupShortPct=0, shortCount=0;
+      var tfFallback={'1D':'1D','1W':'1W','1M':'1M','3M':'1M','6M':'1Y','1Y':'1Y','YTD':'1M'};
       rows.forEach(function(r){
         var close=r.d[0]||0, chg=r.d[1]||0, vol=r.d[8]||0, avgVol30=r.d[9]||vol||1;
         var open=r.d[23]||close, relVol10=r.d[24]||1, avgVol60=r.d[25]||avgVol30;
@@ -4246,8 +4366,9 @@ async function fetchCommodityData() {
         // Apply ASIC short bias to flow score
         totalFlowScore+=shortBias*mcW;
 
-        // MarketLens data overlay (if loaded)
-        var ml=window._mlBrokerData&&window._mlBrokerData[r.ticker];
+        // MarketLens data overlay — TF-synced broker flow
+        var mlTicker=window._mlBrokerData&&window._mlBrokerData[r.ticker];
+        var ml=mlTicker&&(mlTicker[commodityTF]||mlTicker[tfFallback[commodityTF]]||mlTicker['1M']||mlTicker['1D']);
         if(ml){
           // ml.netIB = net institutional broker figure (positive=buying)
           // ml.netRetail = net retail broker figure
@@ -4275,10 +4396,12 @@ async function fetchCommodityData() {
       else if(flowNorm<-15){flowLabel='Dist'; flowColor='rgba(255,68,102,.7)';}
       else if(flowNorm<-5){flowLabel='Mild Sell'; flowColor='rgba(255,68,102,.4)';}
       else{flowLabel='Neutral'; flowColor='var(--text4)';}
+      var mlMeta=window._mlBrokerData&&window._mlBrokerData._meta;
+      var mlTFUsed=mlMeta&&(mlMeta[commodityTF]||mlMeta[tfFallback&&tfFallback[commodityTF]])?commodityTF:(mlMeta&&mlMeta['1D']?'1D':'');
       com.brokerFlow={score:+flowNorm.toFixed(1),instBuyers:instBuyers,instSellers:instSellers,retailOnly:retailOnly,
         label:flowLabel,color:flowColor,totalFlow:+totalFlowScore.toFixed(1),
         shortPct:+groupShortPct.toFixed(2),asicDate:asicDate,
-        mlAvail:!!(window._mlBrokerData)};
+        mlAvail:!!(window._mlBrokerData),mlTF:mlTFUsed};
 
       // ═ MULTI-FACTOR RS (X): Perf×Volume×Trend×DI×EMA×BrokerFlow ═
       ['1D','1W','1M','3M','6M','1Y','YTD'].forEach(function(tf){
@@ -4318,15 +4441,41 @@ async function fetchCommodityData() {
       else if(aRSI>75){sig='overbought';sigL='Overbought 🔴';}
       com.signal=sig; com.signalLabel=sigL;
     });
-    console.log('Commodity RRG updated:',COMMODITIES.filter(function(c){return c._data.length>0;}).length,'groups with broker flow');
+    console.log('RRG updated:',itm.filter(function(c){return c._data.length>0;}).length,'groups with broker flow (',bch,')');
   } catch(e){console.warn('fetchCommodityData:',e.message);}
+}
+
+async function fetchEquityData() {
+  return fetchCommodityData(EQUITY_GROUPS, EQUITIES, 'ASX:XJO');
+}
+
+function setRRGMode(mode, btn) {
+  rrgMode = mode;
+  var bar = document.getElementById('rrg-mode-bar');
+  if (bar) bar.querySelectorAll('.chip').forEach(function(b) {
+    b.classList.toggle('on', b.getAttribute('data-mode') === mode);
+  });
+  var title = document.getElementById('rrg-title');
+  if (title) title.textContent = mode === 'equity' ? 'Equity Sector Rotation (RRG)' : 'Commodity Rotation (RRG)';
+  var tip = document.getElementById('rrg-tooltip');
+  if (tip) tip.style.display = 'none';
+  var fetchFn = mode === 'equity' ? fetchEquityData : function() { return fetchCommodityData(); };
+  fetchFn().then(function() {
+    renderCommodityRRG();
+  }).catch(function() {
+    renderCommodityRRG();
+  });
 }
 
 function setCommodityTF(tf,btn){
   commodityTF=tf;
   var bar=document.getElementById('com-tf-bar');
   if(bar){bar.querySelectorAll('.chip').forEach(function(b){b.classList.toggle('on',b.getAttribute('data-ctf')===tf);});}
-  renderCommodityRRG();
+  // Re-fetch both datasets with TF-matched broker data, then re-render active mode
+  Promise.allSettled([fetchCommodityData(), fetchEquityData()]).then(function(){
+    renderCommodityRRG();
+    renderCommodityLegend();
+  });
 }
 
 function comQuadColor(rs,mom){if(rs>100&&mom>100)return'#00d4a8';if(rs<100&&mom>100)return'#2d8eff';if(rs<100&&mom<100)return'#ff4466';return'#ffaa00';}
@@ -4336,20 +4485,19 @@ function renderCommodityRRG(){
   var W=900,H=520,cx=W/2,cy=H/2;
   svg.setAttribute('viewBox','0 0 '+W+' '+H);
   var tf=commodityTF||'1W';
-  var items=COMMODITIES.filter(function(c){return c._data.length>0;}).map(function(c){
+  var activeData=rrgMode==='equity'?EQUITIES:COMMODITIES;
+  var items=activeData.filter(function(c){return c._data.length>0;}).map(function(c){
     var bf=c.brokerFlow||{score:0,label:'',color:'#888'};
-    // Dot radius scales with broker flow intensity (bigger = more institutional activity)
     var flowAbs=Math.abs(bf.score||0);
-    var r=Math.max(10,Math.min(22,10+flowAbs*0.12));
-    return{label:c.name.length>10?c.name.substring(0,9):c.name,full:c.name,icon:c.icon,
+    var r=Math.max(6,Math.min(14,6+flowAbs*0.08));
+    return{label:c.name.length>9?c.name.substring(0,8):c.name,full:c.name,icon:c.icon,
       rs:(c.rs&&c.rs[tf])?c.rs[tf]:100,mom:(c.mom&&c.mom[tf])?c.mom[tf]:100,
-      sig:c.signal,sigL:c.signalLabel,m:c.metrics,perf:c.perf,bf:bf,r:r};
+      sig:c.signal,sigL:c.signalLabel,m:c.metrics,perf:c.perf,bf:bf,r:r,tc:c._data.length};
   });
   if(items.length===0)return;
   var rsMax=Math.max(3,...items.map(function(i){return Math.abs(i.rs-100);}));
   var momMax=Math.max(3,...items.map(function(i){return Math.abs(i.mom-100);}));
   var sc=Math.min(180,(W/2-60)/Math.max(rsMax,momMax,1));
-  // Grid lines for reference
   var gridLines='';
   [-2,-1,1,2].forEach(function(n){
     var gx=cx+n*(W/2-60)/3, gy=cy-n*(H/2-40)/3;
@@ -4357,61 +4505,83 @@ function renderCommodityRRG(){
     gridLines+='<line x1="20" y1="'+gy+'" x2="'+(W-20)+'" y2="'+gy+'" stroke="rgba(255,255,255,.04)" stroke-width="1"/>';
   });
   var quads=[
-    {x:cx,y:0,w:cx,h:cy,fill:'rgba(0,212,168,0.07)',label:'LEADING',lx:W-80,ly:22,col:'rgba(0,212,168,.5)'},
-    {x:0,y:0,w:cx,h:cy,fill:'rgba(45,142,255,0.07)',label:'IMPROVING',lx:14,ly:22,col:'rgba(45,142,255,.5)'},
-    {x:0,y:cy,w:cx,h:cy,fill:'rgba(255,68,102,0.05)',label:'LAGGING',lx:14,ly:cy+22,col:'rgba(255,68,102,.4)'},
-    {x:cx,y:cy,w:cx,h:cy,fill:'rgba(255,170,0,0.05)',label:'WEAKENING',lx:W-100,ly:cy+22,col:'rgba(255,170,0,.5)'}];
+    {x:cx,y:0,w:cx,h:cy,fill:'rgba(0,212,168,0.07)',label:'LEADING',lx:W-80,ly:20,col:'rgba(0,212,168,.5)'},
+    {x:0,y:0,w:cx,h:cy,fill:'rgba(45,142,255,0.07)',label:'IMPROVING',lx:14,ly:20,col:'rgba(45,142,255,.5)'},
+    {x:0,y:cy,w:cx,h:cy,fill:'rgba(255,68,102,0.05)',label:'LAGGING',lx:14,ly:cy+20,col:'rgba(255,68,102,.4)'},
+    {x:cx,y:cy,w:cx,h:cy,fill:'rgba(255,170,0,0.05)',label:'WEAKENING',lx:W-100,ly:cy+20,col:'rgba(255,170,0,.5)'}];
   var trails=items.map(function(it){
     var x=Math.max(30,Math.min(W-30,cx+(it.rs-100)*sc)),y=Math.max(30,Math.min(H-30,cy-(it.mom-100)*sc));
-    var tx=x-(it.rs-100)*sc*0.3,ty=y+(it.mom-100)*sc*0.3;
+    var tx=x-(it.rs-100)*sc*0.25,ty=y+(it.mom-100)*sc*0.25;
     var col=comQuadColor(it.rs,it.mom);
-    return'<path d="M'+tx.toFixed(1)+','+ty.toFixed(1)+' Q'+((tx+x)/2+8).toFixed(1)+','+((ty+y)/2).toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1)+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-dasharray="5 4" opacity="0.45"/>';
+    return'<path d="M'+tx.toFixed(1)+','+ty.toFixed(1)+' Q'+((tx+x)/2+6).toFixed(1)+','+((ty+y)/2).toFixed(1)+' '+x.toFixed(1)+','+y.toFixed(1)+'" fill="none" stroke="'+col+'" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.4"/>';
   }).join('');
-  var dots=items.map(function(it){
+  var dots=items.map(function(it,idx){
     var x=Math.max(30,Math.min(W-30,cx+(it.rs-100)*sc)),y=Math.max(30,Math.min(H-30,cy-(it.mom-100)*sc));
     var col=comQuadColor(it.rs,it.mom);
-    var tip=it.full+' ('+tf+')\nRS: '+it.rs.toFixed(1)+' | Mom: '+it.mom.toFixed(1)+'\nRSI: '+it.m.avgRSI+' | Stoch: '+it.m.avgStochK+'/'+it.m.avgStochD+'\nADX: '+it.m.avgADX+' | Vol: '+it.m.volRatio+'x'+'\nBroker Flow: '+it.bf.label+' ('+it.bf.score+')'+'\nInst Buyers: '+it.bf.instBuyers+' | Inst Sellers: '+it.bf.instSellers+' | Retail: '+it.bf.retailOnly;
-    if(it.sigL)tip+='\nSignal: '+it.sigL;
-    // Outer ring = institutional activity strength
+    // Store data attributes for tooltip
+    var da=' data-idx="'+idx+'" data-name="'+it.full+'" data-icon="'+it.icon+'" data-rs="'+it.rs.toFixed(1)+'" data-mom="'+it.mom.toFixed(1)+'"';
+    da+=' data-rsi="'+it.m.avgRSI+'" data-stk="'+it.m.avgStochK+'" data-std="'+it.m.avgStochD+'" data-adx="'+it.m.avgADX+'" data-vol="'+it.m.volRatio+'"';
+    da+=' data-bf="'+it.bf.label+'" data-bfs="'+it.bf.score+'" data-bfc="'+it.bf.color+'" data-ib="'+it.bf.instBuyers+'" data-is="'+it.bf.instSellers+'" data-ro="'+it.bf.retailOnly+'"';
+    da+=' data-sig="'+(it.sigL||'')+'" data-tc="'+it.tc+'" data-perf="'+(it.perf[tf]||0)+'" data-col="'+col+'"';
     var ring='';
     if(Math.abs(it.bf.score)>15){
       var ringCol=it.bf.score>0?'rgba(0,232,150,.4)':'rgba(255,68,102,.4)';
-      var ringR=it.r+4;
-      ring='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+ringR+'" fill="none" stroke="'+ringCol+'" stroke-width="2" stroke-dasharray="3 2" opacity="0.7"/>';
+      ring='<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+(it.r+3)+'" fill="none" stroke="'+ringCol+'" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.7"/>';
     }
-    // Signal label below dot
-    var sm='';
-    var sigMap={'bull_cycle':['BULL','#FFD700'],'inst_accumulation':['INST BUY','#00e896'],'inst_distribution':['INST SELL','#ff4466'],
-      'vol_breakout':['BRK','#FF6F00'],'cycle_top':['TOP','#FF4466'],'accumulation':['ACC','#2d8eff'],
-      'smart_money':['SMART $$','#00e896'],'distribution':['DIST','#ff4466'],'strong_trend':['TREND','#00d4a8'],
-      'oversold':['OVERSOLD','#00e896'],'overbought':['OVERBOUGHT','#ff4466']};
-    var sInfo=sigMap[it.sig];
-    if(sInfo)sm='<text x="'+x.toFixed(1)+'" y="'+(y+it.r+14).toFixed(1)+'" text-anchor="middle" font-size="9" fill="'+sInfo[1]+'" font-weight="700" font-family="Inter,sans-serif">'+sInfo[0]+'</text>';
-    // Broker flow badge below signal
-    var bfBadge='';
-    if(Math.abs(it.bf.score)>10){
-      var by=sInfo?(y+it.r+26):(y+it.r+14);
-      bfBadge='<text x="'+x.toFixed(1)+'" y="'+by.toFixed(1)+'" text-anchor="middle" font-size="8" fill="'+it.bf.color+'" font-family="Inter,sans-serif">'+it.bf.label+'</text>';
-    }
-    return'<g style="cursor:pointer">'+ring
-      +'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+it.r+'" fill="'+col+'" opacity="0.8" stroke="'+col+'" stroke-width="2"><title>'+tip+'</title></circle>'
-      +'<text x="'+x.toFixed(1)+'" y="'+(y-it.r-7).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="700" fill="'+col+'" font-family="Inter,sans-serif">'+it.icon+' '+it.label+'</text>'
-      +sm+bfBadge+'</g>';
+    return'<g class="rrg-dot" style="cursor:pointer"'+da+'>'+ring
+      +'<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="'+it.r+'" fill="'+col+'" opacity="0.85" stroke="'+col+'" stroke-width="1.5"/>'
+      +'<text x="'+x.toFixed(1)+'" y="'+(y-it.r-4).toFixed(1)+'" text-anchor="middle" font-size="9" font-weight="700" fill="'+col+'" font-family="Inter,sans-serif" pointer-events="none">'+it.icon+'</text>'
+      +'</g>';
   }).join('');
-  svg.innerHTML=quads.map(function(q){return'<rect x="'+q.x+'" y="'+q.y+'" width="'+q.w+'" height="'+q.h+'" fill="'+q.fill+'"/><text x="'+q.lx+'" y="'+q.ly+'" font-size="11" font-weight="700" fill="'+q.col+'" font-family="Inter,sans-serif" letter-spacing="1.5">'+q.label+'</text>';}).join('')
+  svg.innerHTML=quads.map(function(q){return'<rect x="'+q.x+'" y="'+q.y+'" width="'+q.w+'" height="'+q.h+'" fill="'+q.fill+'"/><text x="'+q.lx+'" y="'+q.ly+'" font-size="10" font-weight="700" fill="'+q.col+'" font-family="Inter,sans-serif" letter-spacing="1.5">'+q.label+'</text>';}).join('')
     +gridLines
     +'<line x1="'+cx+'" y1="0" x2="'+cx+'" y2="'+H+'" stroke="rgba(100,160,255,.12)" stroke-width="1"/>'
     +'<line x1="0" y1="'+cy+'" x2="'+W+'" y2="'+cy+'" stroke="rgba(100,160,255,.12)" stroke-width="1"/>'
-    +'<text x="'+W/2+'" y="'+(H-8)+'" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.2)" font-family="Inter,sans-serif" letter-spacing="1">\u2190 Lagging  RS-Ratio  Leading \u2192</text>'
-    +'<text x="8" y="'+H/2+'" text-anchor="middle" font-size="9" fill="rgba(255,255,255,.2)" font-family="Inter,sans-serif" transform="rotate(-90,8,'+H/2+')" letter-spacing="1">\u2190 Weakening  Momentum  Improving \u2192</text>'
+    +'<text x="'+W/2+'" y="'+(H-6)+'" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.18)" font-family="Inter,sans-serif" letter-spacing="1">\u2190 Lagging  RS-Ratio  Leading \u2192</text>'
+    +'<text x="8" y="'+H/2+'" text-anchor="middle" font-size="8" fill="rgba(255,255,255,.18)" font-family="Inter,sans-serif" transform="rotate(-90,8,'+H/2+')" letter-spacing="1">\u2190 Weakening  Momentum  Improving \u2192</text>'
     +trails+dots;
+  // Wire up hover tooltips
+  var tip=document.getElementById('rrg-tooltip');
+  if(tip){
+    svg.querySelectorAll('.rrg-dot').forEach(function(g){
+      g.addEventListener('mouseenter',function(e){
+        var d=g.dataset, perf=parseFloat(d.perf), bfs=parseFloat(d.bfs);
+        var perfCol=perf>=0?'var(--green)':'var(--red)';
+        var bfCol=d.bfc||'var(--text3)';
+        var quad=parseFloat(d.rs)>=100?(parseFloat(d.mom)>=100?'Leading':'Weakening'):(parseFloat(d.mom)>=100?'Improving':'Lagging');
+        var qCol={'Leading':'#00d4a8','Improving':'#2d8eff','Lagging':'#ff4466','Weakening':'#ffaa00'}[quad];
+        tip.innerHTML='<div style="font-size:13px;font-weight:700;color:'+d.col+';margin-bottom:4px">'+d.icon+' '+d.name+'</div>'
+          +'<div style="display:inline-block;padding:2px 7px;border-radius:4px;background:'+qCol+'22;color:'+qCol+';font-size:9px;font-weight:700;margin-bottom:6px">'+quad.toUpperCase()+'</div>'
+          +'<div style="color:var(--text3);font-size:10px;margin-bottom:2px">'+d.tc+' stocks | TF: '+tf+'</div>'
+          +'<div style="border-top:1px solid rgba(255,255,255,.08);margin:4px 0;padding-top:4px">'
+          +'<span style="color:var(--text4)">Perf:</span> <span style="color:'+perfCol+';font-weight:600">'+perf.toFixed(2)+'%</span>'
+          +' <span style="color:var(--text4);margin-left:8px">RS:</span> <b>'+d.rs+'</b>'
+          +' <span style="color:var(--text4);margin-left:8px">Mom:</span> <b>'+d.mom+'</b></div>'
+          +'<div><span style="color:var(--text4)">RSI:</span> '+d.rsi+' <span style="color:var(--text4);margin-left:6px">Stoch:</span> '+d.stk+'/'+d.std+' <span style="color:var(--text4);margin-left:6px">ADX:</span> '+d.adx+'</div>'
+          +'<div style="border-top:1px solid rgba(255,255,255,.08);margin:4px 0;padding-top:4px">'
+          +'<span style="color:var(--text4)">Flow:</span> <span style="color:'+bfCol+';font-weight:600">'+d.bf+' ('+bfs.toFixed(0)+')</span></div>'
+          +'<div><span style="color:var(--green)">Inst Buy:</span> '+d.ib+' <span style="color:var(--red);margin-left:6px">Inst Sell:</span> '+d.is+' <span style="color:var(--text4);margin-left:6px">Retail:</span> '+d.ro+'</div>'
+          +(d.sig?'<div style="margin-top:4px;color:#FFD700;font-weight:600;font-size:10px">Signal: '+d.sig+'</div>':'');
+        tip.style.display='block';
+      });
+      g.addEventListener('mousemove',function(e){
+        var rect=svg.parentElement.getBoundingClientRect();
+        var tx=e.clientX-rect.left+12, ty=e.clientY-rect.top-10;
+        if(tx+260>rect.width) tx=tx-280;
+        if(ty+200>rect.height) ty=ty-180;
+        tip.style.left=tx+'px'; tip.style.top=ty+'px';
+      });
+      g.addEventListener('mouseleave',function(){tip.style.display='none';});
+    });
+  }
   renderCommodityLegend();
 }
 
 function renderCommodityLegend(){
   var el=document.getElementById('rrg-legend-items');if(!el)return;
   var tf=commodityTF||'1W';
-  var sorted=COMMODITIES.filter(function(c){return c._data.length>0;}).sort(function(a,b){return(b.rs[tf]||100)-(a.rs[tf]||100);});
+  var activeData=rrgMode==='equity'?EQUITIES:COMMODITIES;
+  var sorted=activeData.filter(function(c){return c._data.length>0;}).sort(function(a,b){return(b.rs[tf]||100)-(a.rs[tf]||100);});
   el.style.cssText='display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:2px';
   el.innerHTML=sorted.map(function(c){
     var rs=c.rs[tf]||100,mom=c.mom[tf]||100,col=comQuadColor(rs,mom),pv=c.perf[tf]||0;
@@ -4521,7 +4691,8 @@ function renderLiveNewsFeed(){
 }
 
 async function refreshCommodityAndNews(){
-  await Promise.allSettled([fetchCommodityData().then(function(){renderCommodityRRG();}),scanAFR(),fetchLiveNewsFeed()]);
+  await Promise.allSettled([fetchCommodityData(),fetchEquityData(),scanAFR(),fetchLiveNewsFeed()]);
+  renderCommodityRRG();
 }
 
 // ── LIVE SECTOR DATA ─────────────────────────────────
