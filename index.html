@@ -9003,6 +9003,19 @@ const SMT_WEAK_PAIRS = [
 
 const SMT_ALL_PAIRS = [...SMT_STRONG_PAIRS, ...SMT_WEAK_PAIRS].filter(function(p){return p && p.t1 && p.t2;});
 
+// Build ASX ticker set (all t1 values are ASX)
+var _smtAsxSet = {};
+SMT_ALL_PAIRS.forEach(function(p){ _smtAsxSet[p.t1] = 1; });
+function smtMarketLabel(ticker) {
+  if (_smtAsxSet[ticker]) return '';
+  if (/\.L$/.test(ticker)) return ' (UK)';
+  if (/\.TO$/.test(ticker)) return ' (CA)';
+  if (/\.HK$/.test(ticker)) return ' (HK)';
+  if (/^\d+$/.test(ticker)) return ' (JP)';
+  if (/\./.test(ticker)) return ' (' + ticker.split('.').pop() + ')';
+  return ' (US)';
+}
+
 
 const SMT_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions/smt';
 
@@ -9343,7 +9356,7 @@ function renderSmtResults() {
             <div style="display:flex;align-items:center;gap:8px">
               <span style="font-size:16px;font-weight:800;color:#fff">${r.t1}</span>
               <span style="color:var(--text4);font-size:12px">vs</span>
-              <span style="font-size:16px;font-weight:800;color:#fff">${r.t2}</span>
+              <span style="font-size:16px;font-weight:800;color:#fff">${r.t2}</span>${smtMarketLabel(r.t2) ? '<span style="font-size:9px;color:var(--text4);font-weight:600">'+smtMarketLabel(r.t2)+'</span>' : ''}
               <span style="font-size:9px;padding:2px 8px;border-radius:3px;background:${bg};color:${col};font-weight:700">${d.type} SMT</span>
               ${d.tf ? '<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:var(--bg5);color:var(--text2);font-weight:600;text-transform:uppercase">' + d.tf + '</span>' : ''}
             </div>
@@ -9389,9 +9402,9 @@ function renderSmtResults() {
             <span style="font-size:14px;font-weight:800;padding:2px 6px;border-radius:4px;background:rgba(45,142,255,.12);color:${gradeCol}">${r.grade}</span>
             <span style="font-size:15px;font-weight:800;color:#fff">${r.t1}</span>
             <span style="color:var(--text4);font-size:11px">×</span>
-            <span style="font-size:15px;font-weight:800;color:#fff">${r.t2}</span>
+            <span style="font-size:15px;font-weight:800;color:#fff">${r.t2}</span>${smtMarketLabel(r.t2) ? '<span style="font-size:9px;color:var(--text4);font-weight:600">'+smtMarketLabel(r.t2)+'</span>' : ''}
           </div>
-          <span style="font-size:9px;padding:2px 8px;border-radius:3px;background:var(--bg5);color:var(--text3);font-weight:600">${r.sector}</span>
+          <span style="font-size:9px;padding:2px 8px;border-radius:3px;background:var(--bg5);color:var(--text3);font-weight:600">ASX</span>
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">
           <div style="background:var(--bg4);border-radius:4px;padding:6px 8px;text-align:center">
