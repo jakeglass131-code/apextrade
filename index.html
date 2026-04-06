@@ -2618,7 +2618,10 @@ console.log('Strategy Engine loaded');
 // ── NAV ──
 function nav(p) {
   // Stop futures auto-refresh when leaving futures page
-  if (p !== 'futures' && typeof futIntelTimer !== 'undefined' && futIntelTimer) { clearInterval(futIntelTimer); futIntelTimer = null; }
+  if (p !== 'futures') {
+    if (typeof futIntelTimer !== 'undefined' && futIntelTimer) { clearInterval(futIntelTimer); futIntelTimer = null; }
+    if (typeof futPriceTimer !== 'undefined' && futPriceTimer) { clearInterval(futPriceTimer); futPriceTimer = null; }
+  }
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('.sbb').forEach(x => x.classList.remove('active'));
   const pg = document.getElementById('page-' + p);
@@ -2631,15 +2634,21 @@ function nav(p) {
   }
   if (p === 'futures') {
     updateFutMomBar(); fetchFutNews();
-    // Auto-start intel scoring + refresh timer
+    // Auto-start intel scoring + price refresh timers
     setTimeout(() => {
       const panel = document.getElementById('fut-panel-intel');
       if (panel && panel.style.display !== 'none' && !futIntelRunning) runFutIntelAll();
+      if (!futPriceTimer) {
+        futPriceTimer = setInterval(() => {
+          const pg = document.getElementById('page-futures');
+          if (pg && pg.classList.contains('active')) refreshFutPrices();
+        }, 10000);
+      }
       if (!futIntelTimer) {
         futIntelTimer = setInterval(() => {
           const pg = document.getElementById('page-futures');
           if (pg && pg.classList.contains('active') && !futIntelRunning) runFutIntelAll();
-        }, 30000);
+        }, 60000);
       }
     }, 200);
   }
@@ -6128,15 +6137,22 @@ function setFutTab(tab) {
       if (typeof renderFutIntelCards === 'function') renderFutIntelCards(null);
       // Auto-run immediately
       if (!futIntelRunning) runFutIntelAll();
-      // Start 30s auto-refresh
+      // Price-only refresh every 10s (single lightweight batch request)
+      if (futPriceTimer) clearInterval(futPriceTimer);
+      futPriceTimer = setInterval(() => {
+        const page = document.getElementById('page-futures');
+        if (page && page.classList.contains('active')) refreshFutPrices();
+      }, 10000);
+      // Full re-score every 60s
       if (futIntelTimer) clearInterval(futIntelTimer);
       futIntelTimer = setInterval(() => {
         const page = document.getElementById('page-futures');
         if (page && page.classList.contains('active') && !futIntelRunning) runFutIntelAll();
-      }, 30000);
+      }, 60000);
     }, 150);
   } else {
     if (futIntelTimer) { clearInterval(futIntelTimer); futIntelTimer = null; }
+    if (futPriceTimer) { clearInterval(futPriceTimer); futPriceTimer = null; }
   }
 }
 
@@ -8251,7 +8267,7 @@ function scoreFutInstrument(closes, highs, lows, price) {
 // ── Fetch chart data — dual CORS proxy with fallback ─────────────
 async function fetchFutChart(yahoo, tf) {
   const cfg = FUT_TF_MAP[tf || futIntelTF] || FUT_TF_MAP['D'];
-  const yf  = `https://query1.finance.yahoo.com/v8/finance/chart/${yahoo}?interval=${cfg.interval}&range=${cfg.range}`;
+  const yf  = `https://query1.finance.yahoo.com/v8/finance/chart/${yahoo}?interval=${cfg.interval}&range=${cfg.range}&_t=${Date.now()}`;
   const proxies = [
     `https://api.allorigins.win/raw?url=${encodeURIComponent(yf)}`,
     `https://corsproxy.io/?${encodeURIComponent(yf)}`,
@@ -8442,9 +8458,40 @@ function setFutTF(tf, btn) {
 }
 
 
-// Auto-refresh: also start timer when Futures page becomes active via nav()
-// The setFutTab('intel') call handles it; this ensures the timer also starts
-// if the page is already on intel tab when navigating back to Futures
+// ── Fast price-only refresh (single batch request for all 10) ────
+let futPriceTimer = null;
+async function refreshFutPrices() {
+  const syms = FUT_INSTRUMENTS.map(i => i.yahoo).join(',');
+  const yf = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${syms}&_t=${Date.now()}`;
+  const proxies = [
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(yf)}`,
+    `https://corsproxy.io/?${encodeURIComponent(yf)}`,
+  ];
+  for (const url of proxies) {
+    try {
+      const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) continue;
+      const d = await r.json();
+      const results = d?.quoteResponse?.result || [];
+      let changed = false;
+      results.forEach(q => {
+        const inst = FUT_INSTRUMENTS.find(i => i.yahoo === q.symbol);
+        if (!inst || !futIntelData[inst.sym]) return;
+        const newPrice = q.regularMarketPrice;
+        const newPct = q.regularMarketChangePercent;
+        if (newPrice != null && newPrice !== futIntelData[inst.sym].price) {
+          futIntelData[inst.sym].price = newPrice;
+          futIntelData[inst.sym].pct = newPct || 0;
+          changed = true;
+        }
+      });
+      if (changed) renderFutIntelCards(null);
+      const last = document.getElementById('fut-intel-last');
+      if (last) last.textContent = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZone:'Australia/Perth'}) + ' AWST';
+      return; // success
+    } catch(e) { /* try next proxy */ }
+  }
+}
 
 </script>
 
