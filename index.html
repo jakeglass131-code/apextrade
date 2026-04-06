@@ -2688,6 +2688,7 @@ function nav(p) {
   if (sb) sb.classList.add('active');
   if (p === 'asx')     {
     updateAsxMomBar(); fetchAsxNews();
+    startAsxPriceEngine(); // start live ASX price streaming
     if (typeof fundData !== 'undefined' && fundData.length === 0) setTimeout(runFundamentalsAgent, 800);
   }
   if (p === 'futures') {
@@ -2883,40 +2884,113 @@ async function fetchTwelveData() {
   } catch(e) { console.warn('TD error:', e.message); return false; }
 }
 
-// ── ASX LIVE PRICES (Yahoo Finance via CORS proxy) ──
-const ASX_TICKERS = WATCHLIST.filter(w => w.market === 'ASX Equity').map(w => ({
-  sym: w.sym,
-  yahoo: w.sym.replace('.ASX', '.AX'),
-}));
-async function fetchAsxPrices() {
-  if (ASX_TICKERS.length === 0) return 0;
-  const ySyms = ASX_TICKERS.map(t => t.yahoo).join(',');
-  const yf = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ySyms}&_t=${Date.now()}`;
+// ── ASX LIVE PRICES — ALL STOCKS (Yahoo Finance via CORS proxy) ──
+let asxPriceCache = {};    // { BHP: {price,pct,prevClose,vol,high,low,ts}, ... }
+let asxAllTickers = [];    // Full list: ['BHP','CBA','CSL', ... ~2000]
+let asxPriceLoading = false;
+let asxPriceTimer = null;
+let asxPriceCount = 0;
+
+// Load full ASX ticker list (from /asx-list endpoint or fallback)
+async function loadAsxTickerList() {
+  if (asxAllTickers.length > 100) return;
+  try {
+    const r = await fetch(PROXY + '/asx-list', {signal: AbortSignal.timeout(10000)});
+    if (r.ok) {
+      const d = await r.json();
+      if (d.stocks && d.stocks.length > 100) {
+        asxAllTickers = d.stocks.map(s => s.ticker);
+        console.log('ASX list loaded:', asxAllTickers.length, 'stocks');
+        return;
+      }
+    }
+  } catch(e) {}
+  // Fallback to CRT scanner's default list
+  asxAllTickers = ['BHP','CBA','CSL','NAB','WBC','ANZ','WES','MQG','RIO','FMG','WOW','GMG','REA','TLS','XRO','ALL','STO','WDS','QAN','COH','MIN','LYC','PLS','EVN','NST','WHC','IGO','S32','ORA','NHC','SFR','AWC','ILU','NXT','CQR','BWP','ARF','SGP','GPT','MGR','SCG','DXS','CHC','BAP','APE','GNC','DEG','WAF','DRR','GOR','RSG','SBM','PRU','RRL','OGC','SLR','RMS','PNV','RHC','SHL','HLS','QBE','SUN','IAG','AMP','NCM','PDN','BOE','LOT','PEN','YAL','IPL','PPT','PMV','DMP','RMD','WEB','IEL','ALU','MFG','CTD','FLT','CPU','APA','JHX','TCL','AMC','LLC','JBH','CAR','SEK','TPG','HVN','LOV','ALD','BSL','NWS','WOR','DOW','ELD','BEN','BOQ','HUB','BKW','TNE','WTC','ALQ','PME','CXO','LTR','AKE','NVX','BRN','ZIP','GUD','ARB'];
+  console.log('ASX list fallback:', asxAllTickers.length, 'stocks');
+}
+
+// Fetch a batch of ASX prices from Yahoo
+async function fetchAsxBatch(tickers) {
+  const yahooSyms = tickers.map(t => t + '.AX').join(',');
+  const yf = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${yahooSyms}&_t=${Date.now()}`;
   const proxies = [
     `https://api.allorigins.win/raw?url=${encodeURIComponent(yf)}`,
     `https://corsproxy.io/?${encodeURIComponent(yf)}`,
   ];
   for (const url of proxies) {
     try {
-      const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+      const r = await fetch(url, {signal: AbortSignal.timeout(15000)});
       if (!r.ok) continue;
       const d = await r.json();
       const results = d?.quoteResponse?.result || [];
-      let updated = 0;
       results.forEach(q => {
-        const ticker = ASX_TICKERS.find(t => t.yahoo === q.symbol);
-        if (!ticker || q.regularMarketPrice == null) return;
-        const p = q.regularMarketPrice;
-        const sym = ticker.sym;
-        if (!dayOpen[sym] || dayOpen[sym] === 0) dayOpen[sym] = p;
-        if (!prevClose[sym] && q.regularMarketPreviousClose) prevClose[sym] = q.regularMarketPreviousClose;
-        prices[sym] = p;
-        updated++;
+        const t = q.symbol?.replace('.AX','');
+        if (!t || q.regularMarketPrice == null) return;
+        asxPriceCache[t] = {
+          price: q.regularMarketPrice,
+          pct: q.regularMarketChangePercent || 0,
+          prevClose: q.regularMarketPreviousClose || 0,
+          vol: q.regularMarketVolume || 0,
+          high: q.regularMarketDayHigh || 0,
+          low: q.regularMarketDayLow || 0,
+          ts: Date.now(),
+        };
       });
-      if (updated > 0) return updated;
-    } catch(e) { /* try next proxy */ }
+      return results.length;
+    } catch(e) {}
   }
   return 0;
+}
+
+// Full background refresh: all ASX tickers in concurrent batches
+async function refreshAllAsxPrices() {
+  if (asxPriceLoading) return;
+  asxPriceLoading = true;
+  if (asxAllTickers.length === 0) await loadAsxTickerList();
+  const BATCH = 150, CONC = 5;
+  let total = 0;
+  for (let i = 0; i < asxAllTickers.length; i += BATCH * CONC) {
+    const promises = [];
+    for (let j = 0; j < CONC; j++) {
+      const start = i + j * BATCH;
+      if (start >= asxAllTickers.length) break;
+      promises.push(fetchAsxBatch(asxAllTickers.slice(start, start + BATCH)));
+    }
+    const results = await Promise.all(promises);
+    total += results.reduce((a,b) => a + (b||0), 0);
+  }
+  asxPriceCount = Object.keys(asxPriceCache).length;
+  // Sync to app's prices object for watchlist stocks
+  syncAsxPricesToApp();
+  console.log('ASX prices refreshed:', asxPriceCount, '/', asxAllTickers.length);
+  asxPriceLoading = false;
+}
+
+// Copy cached ASX prices into the app's global prices object
+function syncAsxPricesToApp() {
+  let updated = 0;
+  WATCHLIST.filter(w => w.market === 'ASX Equity').forEach(w => {
+    const t = w.sym.replace('.ASX','');
+    const c = asxPriceCache[t];
+    if (c) {
+      prices[w.sym] = c.price;
+      if (!prevClose[w.sym] && c.prevClose) prevClose[w.sym] = c.prevClose;
+      if (!dayOpen[w.sym]) dayOpen[w.sym] = c.price;
+      updated++;
+    }
+  });
+  return updated;
+}
+
+// Start/stop ASX background price engine
+function startAsxPriceEngine() {
+  if (asxPriceTimer) return;
+  refreshAllAsxPrices(); // immediate first fetch
+  asxPriceTimer = setInterval(refreshAllAsxPrices, 30000); // refresh every 30s
+}
+function stopAsxPriceEngine() {
+  if (asxPriceTimer) { clearInterval(asxPriceTimer); asxPriceTimer = null; }
 }
 
 // ── MAIN PRICE FETCH ──
@@ -2928,13 +3002,11 @@ async function fetchPrices() {
     // Fetch previous close on first load for accurate % change
     if (!prevCloseFetched) await fetchPrevClose();
 
-    // Run TD (forex+metals) + ASX (Yahoo) in parallel
+    // Run TD (forex+metals) — ASX prices come from background engine
     liveCount = 0;
-    const [tdOk, asxOk] = await Promise.allSettled([
-      fetchTwelveData(),
-      fetchAsxPrices(),
-    ]);
-    const anyLive = tdOk.value || (asxOk.value > 0);
+    const [tdOk] = await Promise.allSettled([fetchTwelveData()]);
+    const asxSynced = syncAsxPricesToApp(); // copy cached ASX prices
+    const anyLive = tdOk.value || asxSynced > 0;
     if (!anyLive) simTick(); // fallback simulation
 
     updatePriceEls();
@@ -5464,6 +5536,9 @@ window.apexTrade = {
 // Start price feed
 fetchPrices();
 priceTimer = setInterval(fetchPrices, CFG.priceInterval);
+
+// Start ASX background price engine (all ~2000 stocks, refreshes every 30s)
+startAsxPriceEngine();
 
 // Welcome toast
 setTimeout(() => {
