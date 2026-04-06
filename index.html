@@ -4058,145 +4058,117 @@ function renderOutperformers() {
 }
 
 function highlightSector(name) { console.log('Sector:', name); }
-// ── LIVE SECTOR DATA ──────────────────────────────────
-const SECTOR_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions';
-const SECTOR_ETFS = {
-  'Materials':'^AXMJ','Financials':'^AXFJ','Energy':'^AXEJ','Healthcare':'^AXHJ',
-  'Cons Disc':'^AXDJ','Industrials':'^AXNJ','IT / Tech':'^AXIJ','Real Estate':'^AXRE',
-  'Utilities':'^AXUJ','Comm Svcs':'^AXTJ','Cons Staples':'^AXSJ',
+// ── LIVE SECTOR DATA via TradingView Scanner ─────────
+// 7 sectors have index tickers in the scanner; 5 are computed from stock baskets
+const SECTOR_TV_INDEX = {
+  'Materials':'ASX:XMJ', 'Financials':'ASX:XFJ', 'Energy':'ASX:XEJ', 'Healthcare':'ASX:XHJ',
+  'Industrials':'ASX:XNJ', 'IT / Tech':'ASX:XIJ',
 };
-const ASX_BENCHMARK = '^AXJO';
-const SECTOR_STOCKS = SECTOR_ETFS;
-
-// Map holdings sym to Yahoo ticker
-function holdingYahoo(sym) {
-  return sym.replace('.ASX', '.AX');
-}
+const SECTOR_TV_BASKET = {
+  'Cons Disc':  ['ASX:WES','ASX:JBH','ASX:HVN','ASX:LOV','ASX:DMP','ASX:PMV','ASX:SUL','ASX:APE'],
+  'Real Estate':['ASX:GMG','ASX:SGP','ASX:GPT','ASX:MGR','ASX:SCG','ASX:DXS','ASX:CQR','ASX:CHC'],
+  'Utilities':  ['ASX:APA','ASX:ORG','ASX:AGL','ASX:SKI'],
+  'Comm Svcs':  ['ASX:TLS','ASX:TPG','ASX:REA','ASX:CAR','ASX:SEK','ASX:NWS'],
+  'Cons Staples':['ASX:WOW','ASX:COL','ASX:TWE','ASX:EDV','ASX:ING'],
+};
+const ASX_BENCHMARK_TV = 'ASX:XJO';
+// Keep old names for backward compatibility
+const SECTOR_ETFS = Object.fromEntries(
+  Object.entries(SECTOR_TV_INDEX).concat(Object.keys(SECTOR_TV_BASKET).map(k => [k, k]))
+);
+const ASX_BENCHMARK = ASX_BENCHMARK_TV;
 
 async function fetchSectorData() {
   try {
-    // Fetch sector indices + benchmark + all holdings stocks in parallel
-    var sectorTickers = Object.values(SECTOR_ETFS).concat([ASX_BENCHMARK]);
-    var holdingTickers = HOLDINGS.map(function(h) { return holdingYahoo(h.sym); });
-    var allTickers = sectorTickers.concat(holdingTickers);
+    // Build full ticker list: indices + benchmark + basket stocks + holdings
+    var indexTickers = Object.values(SECTOR_TV_INDEX).concat([ASX_BENCHMARK_TV]);
+    var basketTickers = Object.values(SECTOR_TV_BASKET).flat();
+    var holdingTickers = HOLDINGS.map(function(h) { return 'ASX:' + h.sym.replace('.ASX', ''); });
 
-    var candleResults = await Promise.allSettled(
-      allTickers.map(function(ticker) {
-        return fetch(SECTOR_PROXY + '/candles?ticker=' + encodeURIComponent(ticker) + '&range=2y&interval=1d', { signal: AbortSignal.timeout(12000) })
-          .then(function(r) { return r.json(); })
-          .then(function(d) { return { ticker: ticker, candles: d.candles || [] }; });
-      })
-    );
-    var candleMap = {};
-    candleResults.forEach(function(res) {
-      if (res.status === 'fulfilled' && res.value.candles.length > 10) candleMap[res.value.ticker] = res.value.candles;
-    });
+    // Deduplicate
+    var allTickers = [...new Set(indexTickers.concat(basketTickers).concat(holdingTickers))];
 
-    var benchCandles = candleMap[ASX_BENCHMARK] || [];
-    var now = Date.now();
-    var MS = { '1D': 864e5, '1W': 6048e5, '1M': 30 * 864e5, '3M': 91 * 864e5, '6M': 182 * 864e5, '1Y': 365 * 864e5 };
-    var ytdStart = new Date(new Date().getFullYear(), 0, 1).getTime();
+    var columns = [
+      'close', 'change',                // 0,1 — price & daily change %
+      'Perf.W', 'Perf.1M',              // 2,3 — weekly & monthly (percentage)
+      'Perf.3M', 'Perf.6M',             // 4,5
+      'Perf.Y', 'Perf.YTD',             // 6,7
+      'volume', 'average_volume_30d_calc', // 8,9
+      'EMA50', 'EMA200',                // 10,11 — for benchmark regime
+    ];
 
-    function closeBefore(candles, msAgo) { var t = now - msAgo; for (var i = candles.length - 1; i >= 0; i--) { if (candles[i].t <= t) return candles[i].c; } return candles[0].c; }
-    function closeSince(candles, ts) { for (var i = 0; i < candles.length; i++) { if (candles[i].t >= ts) return candles[i].c; } return candles[0].c; }
-    function pct(cur, ref) { return ref ? +((cur - ref) / ref * 100).toFixed(2) : 0; }
+    var res = await fetchTvScan('australia', allTickers, columns);
+    var lookup = {};
+    if (res && res.data) res.data.forEach(function(row) { lookup[row.s] = row.d; });
 
-    // Benchmark returns for RS calculation
-    var benchReturns = {};
-    if (benchCandles.length > 10) {
-      var bc = benchCandles[benchCandles.length - 1].c;
-      benchReturns = {
-        '1W': pct(bc, closeBefore(benchCandles, MS['1W'])),
-        '1M': pct(bc, closeBefore(benchCandles, MS['1M'])),
-        '3M': pct(bc, closeBefore(benchCandles, MS['3M'])),
-        '6M': pct(bc, closeBefore(benchCandles, MS['6M'])),
-        '1Y': pct(bc, closeBefore(benchCandles, MS['1Y'])),
-        'YTD': pct(bc, closeSince(benchCandles, ytdStart))
-      };
+    // ── Benchmark performance for RS calculation ──
+    var benchData = lookup[ASX_BENCHMARK_TV];
+    var benchPerf = { '1D':0, '1W':0, '1M':0, '3M':0, '6M':0, '1Y':0, 'YTD':0 };
+    if (benchData) {
+      benchPerf['1D'] = benchData[1] || 0;
+      benchPerf['1W'] = benchData[2] || 0;
+      benchPerf['1M'] = benchData[3] || 0;
+      benchPerf['3M'] = benchData[4] || 0;
+      benchPerf['6M'] = benchData[5] || 0;
+      benchPerf['1Y'] = benchData[6] || 0;
+      benchPerf['YTD'] = benchData[7] || 0;
     }
 
-    // ── Update SECTORS from sector index candles ──
-    var sectorCandleMap = {};
-    Object.keys(SECTOR_ETFS).forEach(function(name) {
-      var ticker = SECTOR_ETFS[name];
-      var candles = candleMap[ticker];
-      if (!candles || candles.length < 10) return;
-      sectorCandleMap[name] = candles;
-      var cur = candles[candles.length - 1].c;
+    // Helper: average a column across a stock basket
+    function basketAvg(tickers, colIdx) {
+      var vals = tickers.map(function(t) { return lookup[t]; }).filter(function(v) { return v && v[colIdx] != null && !isNaN(v[colIdx]); });
+      if (!vals.length) return 0;
+      return vals.reduce(function(a, v) { return a + v[colIdx]; }, 0) / vals.length;
+    }
+
+    // ── Update SECTORS ──
+    // A) From direct index tickers
+    Object.keys(SECTOR_TV_INDEX).forEach(function(name) {
+      var d = lookup[SECTOR_TV_INDEX[name]];
+      if (!d) return;
       var sec = SECTORS.find(function(s) { return s.name === name; });
       if (!sec) return;
-      sec.day = pct(cur, closeBefore(candles, MS['1D']));
-      sec.week = pct(cur, closeBefore(candles, MS['1W']));
-      sec.month = pct(cur, closeBefore(candles, MS['1M']));
-      // Money flow: volume-weighted directional bias
-      if (candles.length >= 20) {
-        var v5 = 0, v20 = 0;
-        for (var i = candles.length - 5; i < candles.length; i++) v5 += (candles[i].v || 0);
-        for (var j = candles.length - 20; j < candles.length; j++) v20 += (candles[j].v || 0);
-        sec.flow = v20 > 0 ? +(sec.day * ((v5 / 5) / (v20 / 20))).toFixed(1) : sec.day;
-      } else { sec.flow = sec.day; }
-      // RS and Momentum per timeframe
-      var tfR = {
-        '1W': pct(cur, closeBefore(candles, MS['1W'])),
-        '1M': pct(cur, closeBefore(candles, MS['1M'])),
-        '3M': pct(cur, closeBefore(candles, MS['3M'])),
-        '6M': pct(cur, closeBefore(candles, MS['6M'])),
-        '1Y': pct(cur, closeBefore(candles, MS['1Y'])),
-        'YTD': pct(cur, closeSince(candles, ytdStart))
-      };
-      ['1W', '1M', '3M', '6M', '1Y', 'YTD'].forEach(function(tf) {
-        sec.rs[tf] = +(100 + (tfR[tf] || 0) - (benchReturns[tf] || 0)).toFixed(1);
-        sec.mom[tf] = +(100 + ((tfR[tf] || 0) - (benchReturns[tf] || 0)) * 0.8 + sec.day * 0.2).toFixed(1);
-      });
-      sec._rsVsBench = sec.rs['1M'] ? +(sec.rs['1M'] - 100).toFixed(1) : 0;
+      applySectorData(sec, d, benchPerf);
     });
 
-    // ── Update HOLDINGS from individual stock candles ──
-    HOLDINGS.forEach(function(h) {
-      var ticker = holdingYahoo(h.sym);
-      var candles = candleMap[ticker];
-      if (!candles || candles.length < 10) return;
-      var cur = candles[candles.length - 1].c;
-      var prev = closeBefore(candles, MS['1D']);
-      h.stockDay = pct(cur, prev);
+    // B) From stock baskets (averaged)
+    Object.keys(SECTOR_TV_BASKET).forEach(function(name) {
+      var stocks = SECTOR_TV_BASKET[name];
+      var sec = SECTORS.find(function(s) { return s.name === name; });
+      if (!sec) return;
+      // Build a synthetic data row from basket averages
+      var synth = columns.map(function(_, i) { return basketAvg(stocks, i); });
+      applySectorData(sec, synth, benchPerf);
+    });
 
-      // RS vs sector index
+    // ── Update HOLDINGS ──
+    HOLDINGS.forEach(function(h) {
+      var ticker = 'ASX:' + h.sym.replace('.ASX', '');
+      var d = lookup[ticker];
+      if (!d) return;
+      h.stockDay = +(d[1] || 0).toFixed(2);
+
+      // RS vs sector
       var sec = SECTORS.find(function(s) { return s.name === h.sector; });
-      var secCandles = sec ? sectorCandleMap[h.sector] : null;
-      if (secCandles && secCandles.length > 10) {
-        var secCur = secCandles[secCandles.length - 1].c;
-        var stockMonth = pct(cur, closeBefore(candles, MS['1M']));
-        var secMonth = pct(secCur, closeBefore(secCandles, MS['1M']));
+      if (sec) {
+        var stockMonth = d[3] || 0;
+        var secMonth = sec.month || 0;
         h.rs = +(100 + stockMonth - secMonth).toFixed(1);
-        var stockWeek = pct(cur, closeBefore(candles, MS['1W']));
-        var secWeek = pct(secCur, closeBefore(secCandles, MS['1W']));
+        var stockWeek = d[2] || 0;
+        var secWeek = sec.week || 0;
         h.mom = +(100 + (stockWeek - secWeek) * 0.8 + h.stockDay * 0.2).toFixed(1);
       }
-
-      // Build RS_HIST: last 30 daily closes as RS index (stock / sector, rebased to 100)
-      if (secCandles && secCandles.length > 30) {
-        var hist = [];
-        var len = Math.min(candles.length, secCandles.length, 30);
-        var startStock = candles.length - len;
-        var startSec = secCandles.length - len;
-        var baseRatio = candles[startStock].c / (secCandles[startSec].c || 1);
-        for (var k = 0; k < len; k++) {
-          var ratio = candles[startStock + k].c / (secCandles[startSec + k].c || 1);
-          hist.push(+(ratio / baseRatio * 100).toFixed(1));
-        }
-        RS_HIST[h.sym] = hist;
-      }
     });
 
-    // ── Compute market regime from ASX200 benchmark ──
-    if (benchCandles.length >= 200) {
-      var ema50 = computeEMA(benchCandles.map(function(c){return c.c;}), 50);
-      var ema200 = computeEMA(benchCandles.map(function(c){return c.c;}), 200);
-      var lastClose = benchCandles[benchCandles.length - 1].c;
+    // ── Market regime from benchmark EMA50/EMA200 ──
+    if (benchData && benchData[10] && benchData[11]) {
+      var lastClose = benchData[0];
+      var ema50 = benchData[10];
+      var ema200 = benchData[11];
       window._marketRegime = {
         close: lastClose,
-        ema50: ema50,
-        ema200: ema200,
+        ema50: Math.round(ema50 * 100) / 100,
+        ema200: Math.round(ema200 * 100) / 100,
         bullish: lastClose > ema50 && lastClose > ema200,
         aboveEma50: lastClose > ema50,
         aboveEma200: lastClose > ema200,
@@ -4207,9 +4179,28 @@ async function fetchSectorData() {
 
     var t = new Date().toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit', timeZone: 'Australia/Perth' });
     var sub = document.getElementById('sector-sub');
-    if (sub) sub.textContent = 'Live · ' + t + ' AWST · ASX Sector Indices + Holdings via Yahoo';
-    console.log('Sector + holdings data updated');
+    if (sub) sub.textContent = 'Live · ' + t + ' AWST · ASX Sector Indices via TradingView';
+    console.log('Sector data updated via TradingView Scanner');
   } catch (e) { console.warn('fetchSectorData failed:', e.message); }
+}
+
+// Apply scanner row to a SECTOR entry
+function applySectorData(sec, d, benchPerf) {
+  sec.day   = +(d[1] || 0).toFixed(2);
+  sec.week  = +(d[2] || 0).toFixed(2);
+  sec.month = +(d[3] || 0).toFixed(2);
+
+  // Money flow: day change weighted by relative volume
+  var vol = d[8] || 0, avgVol = d[9] || vol || 1;
+  sec.flow = vol > 0 ? +(sec.day * (vol / avgVol)).toFixed(1) : +sec.day.toFixed(1);
+
+  // RS and Momentum per timeframe
+  var tfPerf = { '1W': d[2]||0, '1M': d[3]||0, '3M': d[4]||0, '6M': d[5]||0, '1Y': d[6]||0, 'YTD': d[7]||0 };
+  ['1W','1M','3M','6M','1Y','YTD'].forEach(function(tf) {
+    sec.rs[tf]  = +(100 + (tfPerf[tf] || 0) - (benchPerf[tf] || 0)).toFixed(1);
+    sec.mom[tf] = +(100 + ((tfPerf[tf] || 0) - (benchPerf[tf] || 0)) * 0.8 + sec.day * 0.2).toFixed(1);
+  });
+  sec._rsVsBench = sec.rs['1M'] ? +(sec.rs['1M'] - 100).toFixed(1) : 0;
 }
 
 // EMA calculation helper
