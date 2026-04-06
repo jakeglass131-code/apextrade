@@ -10842,15 +10842,15 @@ async function startSmtScan() {
   document.getElementById('smt-stop-btn').style.display = 'flex';
   document.getElementById('smt-progress').style.display = 'block';
 
-  // Extract unique tickers (474 tickers vs 2231 individual pair calls)
-  var tickers = [], seen = {};
+  // Extract unique tickers — t1 = ASX main tickers, t2 = partners (may include non-ASX)
+  var tickers = [], seen = {}, asxCount = 0;
   SMT_ALL_PAIRS.forEach(function(p) {
-    if (!seen[p.t1]) { tickers.push(p.t1); seen[p.t1] = true; }
+    if (!seen[p.t1]) { tickers.push(p.t1); seen[p.t1] = true; asxCount++; }
     if (!seen[p.t2]) { tickers.push(p.t2); seen[p.t2] = true; }
   });
   var total = SMT_ALL_PAIRS.length;
 
-  document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div id="smt-scan-counter" style="font-size:13px;color:var(--text2)">Fetching data for ' + tickers.length + ' tickers...</div></div>';
+  document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div id="smt-scan-counter" style="font-size:13px;color:var(--text2)">Scanning ' + total + ' pairs (' + asxCount + ' ASX tickers)...</div></div>';
 
   // Phase 1: Bulk-fetch candle data — 15 tickers/call, 3 concurrent requests
   var batchSz = 15, concurrency = 3, fetched = 0;
@@ -10875,7 +10875,7 @@ async function startSmtScan() {
     document.getElementById('smt-progress-fill').style.width = pct + '%';
     document.getElementById('smt-progress-text').textContent = 'Fetching ' + fetched + ' / ' + tickers.length + ' tickers...';
     var counter = document.getElementById('smt-scan-counter');
-    if (counter) counter.textContent = 'Fetched ' + fetched + ' / ' + tickers.length + ' tickers...';
+    if (counter) counter.textContent = 'Scanning ' + total + ' pairs · Fetched ' + fetched + ' / ' + tickers.length + ' tickers...';
   }
 
   if (smtAbort) { smtFinish(0, 0, 0, 0, 0); return; }
