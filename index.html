@@ -2658,6 +2658,8 @@ function nav(p) {
   if (p !== 'futures') {
     if (typeof futIntelTimer !== 'undefined' && futIntelTimer) { clearInterval(futIntelTimer); futIntelTimer = null; }
   }
+  // Stop ASX price engine when leaving ASX tab (saves API calls)
+  if (p !== 'asx') { stopAsxPriceEngine(); }
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('.sbb').forEach(x => x.classList.remove('active'));
   const pg = document.getElementById('page-' + p);
@@ -2966,7 +2968,10 @@ function syncAsxPricesToApp() {
 function startAsxPriceEngine() {
   if (asxPriceTimer) return;
   refreshAllAsxPrices(); // immediate first fetch
-  asxPriceTimer = setInterval(refreshAllAsxPrices, 30000); // refresh every 30s
+  asxPriceTimer = setInterval(function() {
+    if (document.hidden) return;
+    refreshAllAsxPrices();
+  }, 30000); // refresh every 30s when tab visible
 }
 function stopAsxPriceEngine() {
   if (asxPriceTimer) { clearInterval(asxPriceTimer); asxPriceTimer = null; }
@@ -6386,12 +6391,35 @@ window.apexTrade = {
   version: '3.0',
 };
 
-// Start price feed
-fetchPrices();
-priceTimer = setInterval(fetchPrices, CFG.priceInterval);
+// ── Market hours check (AWST = UTC+8) ──
+function isAsxOpen() {
+  var now = new Date();
+  var awst = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Perth' }));
+  var d = awst.getDay(), h = awst.getHours(), m = awst.getMinutes();
+  if (d === 0 || d === 6) return false; // weekend
+  var t = h * 60 + m;
+  return t >= 595 && t <= 975; // 9:55am - 4:15pm AWST (includes pre/post)
+}
+function isForexOpen() {
+  var now = new Date();
+  var ny = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+  var d = ny.getDay(), h = ny.getHours();
+  if (d === 6) return false; // Sat closed
+  if (d === 0 && h < 17) return false; // Sun before 5pm NY
+  if (d === 5 && h >= 17) return false; // Fri after 5pm NY
+  return true;
+}
 
-// Start ASX background price engine (all ~2000 stocks, refreshes every 30s)
-startAsxPriceEngine();
+// Start price feed (visibility + market-hours gated)
+fetchPrices();
+priceTimer = setInterval(function() {
+  if (document.hidden) return;
+  if (!isForexOpen() && !isAsxOpen()) return; // skip when all markets closed
+  fetchPrices();
+}, CFG.priceInterval);
+
+// ASX price engine — only start when ASX tab is active (lazy load)
+// startAsxPriceEngine() is called from nav('asx') instead of on boot
 
 // Welcome toast
 setTimeout(() => {
@@ -6403,10 +6431,13 @@ setTimeout(() => {
   }
 }, 2000);
 
-// Backend scanner
+// Backend scanner (visibility-gated)
 if (BACKEND_URL) {
   fetchBackendSignals();
-  setInterval(fetchBackendSignals, 30000);
+  setInterval(function() {
+    if (document.hidden) return;
+    fetchBackendSignals();
+  }, 30000);
 }
 
 // Pre-fill backend URL in settings
@@ -6424,7 +6455,10 @@ setTimeout(() => {
   const text = feed?.textContent || '';
   if (text.includes('Fetching') || text.includes('Curated')) fetchNews();
 }, 8000);
-newsTimer = setInterval(fetchNews, CFG.newsInterval);
+newsTimer = setInterval(function() {
+  if (document.hidden) return;
+  fetchNews();
+}, CFG.newsInterval);
 
 // Auto-refresh: if on intel page, re-run full analysis every 5 minutes
 setInterval(() => {

@@ -2,7 +2,7 @@
 const CACHE_URL = process.env.URL ? process.env.URL + '/.netlify/functions/cache' : 'https://apextrade-proxy.netlify.app/.netlify/functions/cache';
 
 exports.handler = async (event) => {
-  const H = {'Access-Control-Allow-Origin':'*','Content-Type':'application/json'};
+  const H = {'Access-Control-Allow-Origin':'*','Content-Type':'application/json','Cache-Control':'public, max-age=30'};
   if(event.httpMethod==='OPTIONS')return{statusCode:200,headers:H,body:''};
   const {ticker,interval,range} = event.queryStringParameters||{};
   

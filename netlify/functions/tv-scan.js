@@ -8,6 +8,7 @@ exports.handler = async (event) => {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     'Content-Type': 'application/json',
+    'Cache-Control': 'public, max-age=15',
   };
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: H, body: '' };
 
