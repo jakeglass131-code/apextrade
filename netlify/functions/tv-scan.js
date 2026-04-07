@@ -35,6 +35,7 @@ exports.handler = async (event) => {
         'Accept': 'application/json',
         'Origin': 'https://www.tradingview.com',
         'Referer': 'https://www.tradingview.com/',
+        'Cookie': process.env.TV_SESSION || 'sessionid=y2f7decnyu4zne1mi58s50vonuqnbrw4; sessionid_sign=v3:y2f7decnyu4zne1mi58s50vonuqnbrw4; device_t=web',
       },
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(15000),
