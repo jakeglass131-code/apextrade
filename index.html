@@ -4881,22 +4881,33 @@ async function fetchSectorData() {
     // ── Step 2: Yahoo candles for 5 missing sectors (exact index data) ──
     var yahooTickers = Object.values(SECTOR_YAHOO_INDEX).concat([ASX_BENCHMARK_YAHOO]);
 
-    // Fire both in parallel
-    var [tvRes, ...yahooResults] = await Promise.all([
+    // Fire TV scan + Yahoo daily candles + Yahoo intraday (for fresh prices) in parallel
+    var [tvRes, ...allYahoo] = await Promise.all([
       fetchTvScan('australia', tvTickers, columns),
+      // Daily candles for historical perf (1W, 1M, etc.)
       ...yahooTickers.map(function(ticker) {
         return fetch(SECTOR_CANDLE_PROXY + '/candles?ticker=' + encodeURIComponent(ticker) + '&range=2y&interval=1d', { signal: AbortSignal.timeout(10000) })
           .then(function(r) { return r.json(); })
-          .then(function(d) { return { ticker: ticker, candles: d.candles || [] }; })
-          .catch(function() { return { ticker: ticker, candles: [] }; });
+          .then(function(d) { return { ticker: ticker, type: 'daily', candles: d.candles || [] }; })
+          .catch(function() { return { ticker: ticker, type: 'daily', candles: [] }; });
+      }),
+      // Intraday candles for fresh live price
+      ...yahooTickers.map(function(ticker) {
+        return fetch(SECTOR_CANDLE_PROXY + '/candles?ticker=' + encodeURIComponent(ticker) + '&range=1d&interval=5m', { signal: AbortSignal.timeout(10000) })
+          .then(function(r) { return r.json(); })
+          .then(function(d) { return { ticker: ticker, type: 'intraday', candles: d.candles || [] }; })
+          .catch(function() { return { ticker: ticker, type: 'intraday', candles: [] }; });
       })
     ]);
 
     var lookup = {};
     if (tvRes && tvRes.data) tvRes.data.forEach(function(row) { lookup[row.s] = row.d; });
 
-    var yahooMap = {};
-    yahooResults.forEach(function(r) { if (r.candles.length > 10) yahooMap[r.ticker] = r.candles; });
+    var yahooMap = {}, yahooIntraday = {};
+    allYahoo.forEach(function(r) {
+      if (r.type === 'daily' && r.candles.length > 10) yahooMap[r.ticker] = r.candles;
+      if (r.type === 'intraday' && r.candles.length > 1) yahooIntraday[r.ticker] = r.candles;
+    });
 
     // ── Benchmark performance for RS calculation ──
     var benchData = lookup[ASX_BENCHMARK_TV];
@@ -4915,7 +4926,8 @@ async function fetchSectorData() {
     if (!benchData && benchCandles && benchCandles.length > 10) {
       var MS = { '1W': 6048e5, '1M': 30*864e5, '3M': 91*864e5, '6M': 182*864e5, '1Y': 365*864e5 };
       var ytdTs = new Date(new Date().getFullYear(), 0, 1).getTime();
-      var bc = benchCandles[benchCandles.length - 1].c;
+      var benchIntra = yahooIntraday[ASX_BENCHMARK_YAHOO];
+      var bc = benchIntra && benchIntra.length > 1 ? benchIntra[benchIntra.length - 1].c : benchCandles[benchCandles.length - 1].c;
       var bcPrev = benchCandles.length >= 2 ? benchCandles[benchCandles.length - 2].c : bc;
       benchPerf['1D'] = +((bc - bcPrev) / bcPrev * 100).toFixed(2);
       benchPerf['1W'] = candlePct(benchCandles, MS['1W']);
@@ -4951,7 +4963,9 @@ async function fetchSectorData() {
       if (candles.length < 2) candles = rawCandles;
       var sec = SECTORS.find(function(s) { return s.name === name; });
       if (!sec) return;
-      var cur = candles[candles.length - 1].c;
+      // Use intraday data for fresh live price if available
+      var intra = yahooIntraday[ticker];
+      var cur = intra && intra.length > 1 ? intra[intra.length - 1].c : candles[candles.length - 1].c;
       var prev = candles.length >= 2 ? candles[candles.length - 2].c : cur;
       var dayChg = +((cur - prev) / prev * 100).toFixed(2);
       // Build synthetic data row matching TradingView column format
