@@ -6412,8 +6412,13 @@ setInterval(() => {
   }
 }, 300000); // every 5 minutes
 
-// Build sector page
+// Build sector page + auto-refresh every 60s during market hours
 refreshSectorData();
+setInterval(function() {
+  // Auto-refresh sectors if page is visible
+  if (document.hidden) return;
+  refreshSectorData();
+}, 60000);
 
 // Initial calc
 calcRisk();
