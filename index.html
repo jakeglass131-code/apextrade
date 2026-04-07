@@ -5781,6 +5781,16 @@ journalTrades.forEach(t => addJournalRow(t));
 (function(){try{var s=localStorage.getItem('apex_ml_screener');if(s){var d=JSON.parse(s);if(Array.isArray(d)&&d.length)processMlScreener(d);}}catch(e){}})();
 var PROXY='https://apextrade-proxy.netlify.app/.netlify/functions';
 var TV_SCAN_URL = PROXY + '/tv-scan';
+async function fetchTvScan(market, tickers, columns) {
+  const r = await fetch(TV_SCAN_URL + '?market=' + market, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ symbols: { tickers }, columns }),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!r.ok) throw new Error('TV scan ' + r.status);
+  return r.json();
+}
 var crtSignals=[],crtScanning=false,crtAbort=false;
 
 // ── Favourites system ──
@@ -9730,17 +9740,7 @@ function scoreTvIndicators(vals) {
   return { bull: bullPct, bear: bearPct, conf, dir, signals, price, pct: changePct || 0 };
 }
 
-// ── Fetch from TradingView Scanner API via Netlify proxy ─────────
-async function fetchTvScan(market, tickers, columns) {
-  const r = await fetch(TV_SCAN_URL + '?market=' + market, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ symbols: { tickers }, columns }),
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!r.ok) throw new Error('TV scan ' + r.status);
-  return r.json();
-}
+// fetchTvScan moved to main script block (before sector code) so it's available on first load
 
 // ── Build cards (lightweight, no iframes) ─────────────────────────
 let futCardsBuilt = false;
