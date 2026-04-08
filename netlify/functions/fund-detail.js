@@ -339,10 +339,13 @@ async function fetchFundamentals(ticker) {
   const prevOperatingCF = raw(prevCF.totalCashFromOperatingActivities);
 
   // Cash burn & runway (for pre-revenue / loss-making companies)
+  // Use operatingCashFlow if available, fall back to freeCashFlow for burn calc
   const isPreRevenue = !revenue || revenue < 1000000; // < $1M revenue
-  const isBurningCash = operatingCashFlow != null && operatingCashFlow < 0;
-  const quarterlyBurn = isBurningCash ? Math.abs(operatingCashFlow) / 4 : null; // annualized / 4
-  const monthlyBurn = isBurningCash ? Math.abs(operatingCashFlow) / 12 : null;
+  const burnSource = operatingCashFlow != null ? operatingCashFlow : freeCashFlow;
+  const isBurningCash = burnSource != null && burnSource < 0;
+  const annualBurn = isBurningCash ? Math.abs(burnSource) : null;
+  const quarterlyBurn = annualBurn ? annualBurn / 4 : null;
+  const monthlyBurn = annualBurn ? annualBurn / 12 : null;
   const cashRunwayMonths = monthlyBurn && totalCash > 0 ? Math.round(totalCash / monthlyBurn) : null;
 
   // EPS growth from earningsTrend
@@ -483,7 +486,7 @@ async function fetchFundamentals(ticker) {
     freeCashFlow: freeCashFlow,
     capex: capex,
     isPreRevenue: isPreRevenue,
-    isCashFlowPositive: operatingCashFlow != null ? operatingCashFlow > 0 : null,
+    isCashFlowPositive: burnSource != null ? burnSource > 0 : null,
     monthlyBurn: monthlyBurn,
     cashRunwayMonths: cashRunwayMonths,
     // Analyst

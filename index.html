@@ -7704,36 +7704,61 @@ async function runAsxIntel() {
 
   // ── 4: CASH POSITION & FINANCIAL HEALTH ──
   h += _sec('Cash Position & Financial Health');
-  // Cash status banner for cash-burning companies
-  if (f.isCashFlowPositive === false && f.totalCash) {
-    const runwayCol = f.cashRunwayMonths != null ? (f.cashRunwayMonths < 6 ? 'var(--red)' : f.cashRunwayMonths < 12 ? 'var(--amber)' : 'var(--green)') : 'var(--amber)';
-    const runwayPct = f.cashRunwayMonths ? Math.min(100, (f.cashRunwayMonths / 24) * 100) : 0;
-    h += '<div style="background:' + (f.cashRunwayMonths && f.cashRunwayMonths < 12 ? 'rgba(239,68,68,.08)' : 'rgba(245,158,11,.06)') + ';border:1px solid ' + (f.cashRunwayMonths && f.cashRunwayMonths < 12 ? 'rgba(239,68,68,.2)' : 'rgba(245,158,11,.15)') + ';border-radius:8px;padding:12px;margin-bottom:10px">'
-      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
-      + '<div style="font-size:11px;font-weight:700;color:' + runwayCol + '">CASH RUNWAY</div>'
-      + '<div style="font-size:18px;font-weight:800;color:' + runwayCol + '">' + (f.cashRunwayMonths != null ? f.cashRunwayMonths + ' months' : 'Unknown') + '</div></div>'
-      + '<div style="height:6px;background:var(--bg5);border-radius:3px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:' + runwayPct + '%;background:' + runwayCol + ';border-radius:3px"></div></div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:10px">'
-      + '<div><span style="color:var(--text4)">Cash Balance</span><div style="color:var(--green);font-weight:700">' + fmtM(f.totalCash) + '</div></div>'
-      + '<div><span style="color:var(--text4)">Monthly Burn</span><div style="color:var(--red);font-weight:700">-' + fmtM(f.monthlyBurn) + '</div></div>'
-      + '<div><span style="color:var(--text4)">Op Cash Flow</span><div style="color:var(--red);font-weight:700">' + fmtM(f.operatingCashFlow) + '</div></div></div>'
-      + (f.cashRunwayMonths && f.cashRunwayMonths < 12 ? '<div style="font-size:10px;color:var(--red);margin-top:8px;font-weight:600">Capital raise likely within ' + f.cashRunwayMonths + ' months — dilution risk</div>' : '')
-      + '</div>';
+
+  // Cash runway visual for cash-burning companies
+  if (f.isCashFlowPositive === false) {
+    const rwM = f.cashRunwayMonths;
+    const rwCol = rwM != null ? (rwM < 6 ? 'var(--red)' : rwM < 12 ? 'var(--amber)' : rwM < 24 ? 'var(--green)' : '#10b981') : 'var(--amber)';
+    const rwPct = rwM ? Math.min(100, (rwM / 36) * 100) : 5;
+    const rwBg = rwM && rwM < 12 ? 'rgba(239,68,68,.06)' : 'rgba(245,158,11,.04)';
+    const rwBdr = rwM && rwM < 12 ? 'rgba(239,68,68,.15)' : 'rgba(245,158,11,.1)';
+    // Quarter markers for the runway bar
+    const qMarks = [6, 12, 18, 24].map(m => {
+      const pct = (m / 36) * 100;
+      return '<div style="position:absolute;left:' + pct + '%;top:-14px;font-size:8px;color:var(--text4);transform:translateX(-50%)">' + m + 'm</div>'
+        + '<div style="position:absolute;left:' + pct + '%;top:0;height:100%;width:1px;background:rgba(255,255,255,.08)"></div>';
+    }).join('');
+
+    h += '<div style="background:' + rwBg + ';border:1px solid ' + rwBdr + ';border-radius:10px;padding:14px 16px;margin-bottom:10px">';
+    // Header row: RUNWAY label + big number
+    h += '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">'
+      + '<div><div style="font-size:9px;color:var(--text4);letter-spacing:.08em;margin-bottom:2px">CASH RUNWAY</div>'
+      + '<div style="font-size:24px;font-weight:800;color:' + rwCol + ';line-height:1">' + (rwM != null ? rwM + '<span style="font-size:12px;font-weight:600"> months</span>' : '<span style="font-size:14px">Calculating...</span>') + '</div></div>'
+      + '<div style="text-align:right"><div style="font-size:9px;color:var(--text4)">Cash</div><div style="font-size:16px;font-weight:700;color:var(--green)">' + fmtM(f.totalCash) + '</div></div></div>';
+    // Progress bar with quarter markers
+    h += '<div style="position:relative;margin:18px 0 8px">'
+      + qMarks
+      + '<div style="height:8px;background:var(--bg5);border-radius:4px;overflow:hidden"><div style="height:100%;width:' + rwPct + '%;background:linear-gradient(90deg,' + rwCol + ',' + rwCol + 'aa);border-radius:4px;transition:width .5s"></div></div></div>';
+    // Burn metrics row
+    h += '<div style="display:flex;gap:16px;margin-top:8px;font-size:10px">'
+      + '<div><span style="color:var(--text4)">Monthly burn</span> <span style="color:var(--red);font-weight:700">' + (f.monthlyBurn ? '-' + fmtM(f.monthlyBurn) : '—') + '</span></div>'
+      + '<div><span style="color:var(--text4)">Quarterly burn</span> <span style="color:var(--red);font-weight:700">' + (f.monthlyBurn ? '-' + fmtM(f.monthlyBurn * 3) : '—') + '</span></div>'
+      + '<div><span style="color:var(--text4)">Annual burn</span> <span style="color:var(--red);font-weight:700">' + (f.monthlyBurn ? '-' + fmtM(f.monthlyBurn * 12) : '—') + '</span></div></div>';
+    // Warning
+    if (rwM && rwM < 12)
+      h += '<div style="margin-top:8px;padding:6px 10px;background:rgba(239,68,68,.08);border-radius:6px;font-size:10px;color:var(--red);font-weight:600">⚠ Capital raise likely within ' + rwM + ' months — expect dilution</div>';
+    else if (rwM && rwM < 24)
+      h += '<div style="margin-top:8px;padding:6px 10px;background:rgba(245,158,11,.06);border-radius:6px;font-size:10px;color:var(--amber);font-weight:600">Monitor cash — may need to raise within 12-18 months</div>';
+    h += '</div>';
+  } else if (f.isCashFlowPositive === true) {
+    // Cash flow positive banner
+    h += '<div style="background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.15);border-radius:10px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center">'
+      + '<div><div style="font-size:9px;color:var(--text4);letter-spacing:.08em">CASH FLOW</div><div style="font-size:16px;font-weight:800;color:var(--green)">Positive</div></div>'
+      + '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Cash</div><div style="font-size:14px;font-weight:700;color:var(--green)">' + fmtM(f.totalCash) + '</div></div>'
+      + '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Op CF</div><div style="font-size:14px;font-weight:700;color:var(--green)">' + fmtM(f.operatingCashFlow) + '</div></div>'
+      + '<div style="text-align:right"><div style="font-size:9px;color:var(--text4)">FCF</div><div style="font-size:14px;font-weight:700;color:var(--green)">' + fmtM(f.freeCashFlow) + '</div></div></div>';
   }
 
-  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
-    + _b('CASH', [fmtM(f.totalCash), 'var(--green)'])
-    + _b('TOTAL DEBT', [fmtM(f.totalDebt), f.totalDebt > 0 ? 'var(--red)' : 'var(--text)'])
-    + _b('NET CASH', [fmtM((f.totalCash||0) - (f.totalDebt||0)), ((f.totalCash||0) - (f.totalDebt||0)) >= 0 ? 'var(--green)' : 'var(--red)'])
-    + _b('OP CASH FLOW', [fmtM(f.operatingCashFlow), f.operatingCashFlow != null ? (f.operatingCashFlow >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--text3)'])
-    + _b('FREE CASH FLOW', [fmtM(f.freeCashFlow), f.freeCashFlow != null ? (f.freeCashFlow >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--text3)'])
-    + _b('CAPEX', [fmtM(f.capex), 'var(--text)'])
-    + _b('TOTAL ASSETS', [fmtM(f.totalAssets), 'var(--text)'])
-    + _b('EQUITY', [fmtM(f.totalEquity), f.totalEquity != null ? (f.totalEquity > 0 ? 'var(--text)' : 'var(--red)') : 'var(--text3)'])
-    + _b('CURRENT RATIO', [f.currentRatio != null ? fmt(f.currentRatio, 2) + 'x' : '—', f.currentRatio != null ? (f.currentRatio > 1.5 ? 'var(--green)' : f.currentRatio < 1 ? 'var(--red)' : 'var(--amber)') : 'var(--text3)'])
-    + _b('D/E RATIO', [f.debtToEquity != null ? fmt(f.debtToEquity, 2) + 'x' : '—', valCol(f.debtToEquity, -1, 1.0)])
+  // Compact financial grid — 2 rows of 4
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:16px">'
     + _b('REVENUE', [fmtM(f.revenue), 'var(--text)'])
-    + _b('NET INCOME', [fmtM(f.netIncome), f.netIncome != null ? (f.netIncome >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--text3)'])
+    + _b('NET INCOME', [fmtM(f.netIncome), f.netIncome != null && typeof f.netIncome === 'number' ? (f.netIncome >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--text3)'])
+    + _b('TOTAL DEBT', [fmtM(f.totalDebt), f.totalDebt > 0 ? 'var(--red)' : 'var(--text)'])
+    + _b('D/E RATIO', [f.debtToEquity != null ? fmt(f.debtToEquity, 2) + 'x' : '—', f.debtToEquity != null ? (f.debtToEquity < 0.5 ? 'var(--green)' : f.debtToEquity > 1.5 ? 'var(--red)' : 'var(--text)') : 'var(--text3)'])
+    + _b('ASSETS', [fmtM(f.totalAssets), 'var(--text)'])
+    + _b('EQUITY', [fmtM(f.totalEquity), f.totalEquity != null && typeof f.totalEquity === 'number' ? (f.totalEquity > 0 ? 'var(--text)' : 'var(--red)') : 'var(--text3)'])
+    + _b('CURRENT', [f.currentRatio != null ? fmt(f.currentRatio, 2) + 'x' : '—', f.currentRatio != null ? (f.currentRatio > 1.5 ? 'var(--green)' : f.currentRatio < 1 ? 'var(--red)' : 'var(--amber)') : 'var(--text3)'])
+    + _b('CAPEX', [fmtM(f.capex), 'var(--text)'])
     + '</div>';
 
   // ── 5: DIVIDENDS ──
