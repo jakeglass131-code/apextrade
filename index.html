@@ -3680,9 +3680,8 @@ function renderAlertHistory() {
 }
 
 function checkAlerts(results) {
-  for (const sig of results) {
-    if (sig.confidence >= 75) fireAlert(sig);
-  }
+  // Disabled — strategy engine uses simulated scoring, not real user-defined alert criteria.
+  // Alerts will be re-enabled once proper alert rules are configured.
 }
 
 // ═══════════════════════════════════════════════════════
