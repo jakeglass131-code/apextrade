@@ -10743,26 +10743,8 @@ updateJournalStats = function() {
   const set = (id, val) => { const el=document.getElementById(id); if(el) el.textContent=val; };
   set('jstat-trades', trades.length);
   set('jstat-wr', winRate + '%');
-  set('jstat-pnl', (totalPnl >= 0 ? '+
-
-</script>
-
-</body>
-</html>
- : '-
-
-</script>
-
-</body>
-</html>
-) + Math.abs(totalPnl).toFixed(0));
-  set('jstat-avgw', '+
-
-</script>
-
-</body>
-</html>
- + avgWin.toFixed(0));
+  set('jstat-pnl', (totalPnl >= 0 ? '+$' : '-$') + Math.abs(totalPnl).toFixed(0));
+  set('jstat-avgw', '+$' + avgWin.toFixed(0));
   set('jstat-pf', pf.toFixed(2) + ':1');
 
   const pnlEl = document.getElementById('jstat-pnl');
@@ -10780,19 +10762,7 @@ updateJournalStats = function() {
   const expectancy = (wr * avgWin) - ((1-wr) * Math.abs(avgLoss));
 
   const expEl = document.getElementById('jstat-exp');
-  if (expEl) { expEl.textContent = (expectancy >= 0 ? '+
-
-</script>
-
-</body>
-</html>
- : '-
-
-</script>
-
-</body>
-</html>
-) + Math.abs(expectancy).toFixed(0); expEl.style.color = expectancy >= 0 ? 'var(--green)' : 'var(--red)'; }
+  if (expEl) { expEl.textContent = (expectancy >= 0 ? '+$' : '-$') + Math.abs(expectancy).toFixed(0); expEl.style.color = expectancy >= 0 ? 'var(--green)' : 'var(--red)'; }
   const shEl = document.getElementById('jstat-sharpe');
   if (shEl) { shEl.textContent = sharpe.toFixed(2); shEl.style.color = sharpe >= 1 ? 'var(--green)' : sharpe >= 0.5 ? 'var(--amber)' : 'var(--red)'; }
 
@@ -10857,13 +10827,7 @@ function renderEquityCurve() {
     const gy = padT + (chartH / gridSteps) * i;
     const val = maxY - (rangeY / gridSteps) * i;
     svg += '<line x1="'+padL+'" y1="'+gy.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+gy.toFixed(1)+'" stroke="rgba(148,163,184,0.06)" stroke-width="1"/>';
-    svg += '<text x="'+(padL-8)+'" y="'+(gy+3).toFixed(1)+'" fill="rgba(148,163,184,0.4)" font-size="9" text-anchor="end" font-family="Inter">
-
-</script>
-
-</body>
-</html>
-+Math.round(val).toLocaleString()+'</text>';
+    svg += '<text x="'+(padL-8)+'" y="'+(gy+3).toFixed(1)+'" fill="rgba(148,163,184,0.4)" font-size="9" text-anchor="end" font-family="Inter">$'+Math.round(val).toLocaleString()+'</text>';
   }
   // Reference line
   svg += '<line x1="'+padL+'" y1="'+refY.toFixed(1)+'" x2="'+(W-padR)+'" y2="'+refY.toFixed(1)+'" stroke="rgba(148,163,184,0.25)" stroke-width="1" stroke-dasharray="4,3"/>';
@@ -10878,13 +10842,7 @@ function renderEquityCurve() {
 
   container.innerHTML = svg;
   if (currentEl) {
-    currentEl.textContent = '
-
-</script>
-
-</body>
-</html>
- + Math.round(cum).toLocaleString();
+    currentEl.textContent = '$' + Math.round(cum).toLocaleString();
     currentEl.style.color = netPnl >= 0 ? 'var(--green)' : 'var(--red)';
   }
 }
@@ -10908,19 +10866,7 @@ function renderJournalPage() {
   tbody.innerHTML = '';
   pageItems.forEach(t => {
     const pUp = parseFloat(t.pnl) >= 0;
-    const pStr = pUp ? '+
-
-</script>
-
-</body>
-</html>
- + parseFloat(t.pnl).toFixed(0) : '-
-
-</script>
-
-</body>
-</html>
- + Math.abs(parseFloat(t.pnl)).toFixed(0);
+    const pStr = pUp ? '+$' + parseFloat(t.pnl).toFixed(0) : '-$' + Math.abs(parseFloat(t.pnl)).toFixed(0);
     const tagHtml = (t.tags || []).map(tag => '<span class="tag '+(tc[tag]||'ta')+'">'+tag+'</span>').join('');
     const row = document.createElement('tr');
     row.innerHTML = '<td>'+t.date+'</td><td style="font-weight:700;color:var(--text)">'+t.sym+'</td><td><span class="badge '+(t.dir==='Long'?'bg':'br')+'">'+t.dir+'</span></td><td>'+t.entry+'</td><td>'+t.exit+'</td><td class="'+(pUp?'up':'dn')+'">'+pStr+'</td><td>'+tagHtml+'</td><td class="disc-'+(t.plan==='YES'?'yes':'no')+'">'+t.plan+'</td><td class="dn">'+(t.mae||'—')+'</td><td class="up">'+(t.mfe||'—')+'</td><td style="color:var(--text3);font-size:11px">'+(t.notes||'')+'</td>';
@@ -11058,10 +11004,7 @@ async function testTdKey() {
     if (data.price) {
       resEl.className = 'test-result ok'; resEl.innerHTML = '&#10003; Connected (AAPL: 
 
-</script>
 
-</body>
-</html>
  + parseFloat(data.price).toFixed(2) + ')';
     } else {
       resEl.className = 'test-result fail'; resEl.innerHTML = '&#10007; ' + (data.message || 'Invalid key');
