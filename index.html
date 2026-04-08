@@ -931,10 +931,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10H12z"/><path d="M12 12L2 12a10 10 0 0 0 10 10z"/></svg>
     <span>Sectors</span>
   </button>
-  <button class="sbb" id="sb-flow" onclick="nav('flow')">
-    <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><path d="M17 7l-5 5-3-3-5 5"/></svg>
-    <span>Flow</span>
-  </button>
   <button class="sbb" id="sb-smt" onclick="nav('smt')">
     <svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
     <span>SMT</span>
@@ -1676,60 +1672,6 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <div id="alert-log-list" style="max-height:600px;overflow-y:auto">
         <div style="padding:24px;text-align:center;color:var(--text3);font-size:12px">No alerts yet — signals will appear here when they fire</div>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════════ PAGE: FLOW ═══════════════ -->
-<div class="page" id="page-flow">
-  <div class="ph">
-    <div><div class="ph-t">Market Flow</div><div class="ph-s">Currency strength · Correlations · Sector rotation</div></div>
-    <div class="ph-r"><button class="btn g" onclick="refreshFlowData()">Refresh</button></div>
-  </div>
-  <!-- Global timeframe selector -->
-  <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
-    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
-    <button class="tf-btn"        data-tf="1D"  onclick="setGlobalTF('1D',this)">1D</button>
-    <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
-    <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
-    <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
-    <button class="tf-btn"        data-tf="6M"  onclick="setGlobalTF('6M',this)">6M</button>
-    <button class="tf-btn"        data-tf="1Y"  onclick="setGlobalTF('1Y',this)">1Y</button>
-    <button class="tf-btn"        data-tf="YTD" onclick="setGlobalTF('YTD',this)">YTD</button>
-  </div>
-  <div class="scroll" style="padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:16px">
-    <div class="panel">
-      <div class="phead"><div class="ptitle">Currency Strength</div><div class="pmeta">Live from prices</div></div>
-      <div id="flow-currency-strength" style="padding:8px 16px"><div style="color:var(--text3);font-size:12px;padding:16px 0">Loading...</div></div>
-    </div>
-    <div class="panel">
-      <div class="phead"><div class="ptitle">Key Correlations</div><div class="pmeta">Live</div></div>
-      <div id="flow-correlations" style="padding:16px"><div style="color:var(--text3);font-size:12px">Loading...</div></div>
-    </div>
-    <div class="panel" style="grid-column:1/-1">
-      <div class="phead">
-        <div class="ptitle">🔗 MarketLens — Smart Money Flow</div>
-        <div class="pmeta" id="ml-sync-time">Install the ApexTrade Bridge extension</div>
-      </div>
-      <div id="ml-flow-panel" style="padding:16px">
-        <div style="color:var(--text3);font-size:12px;text-align:center;padding:16px">
-          Open MarketLens and search any ASX stock — broker data syncs here automatically via the extension.<br><br>
-          <a href="https://app.marketlens.com.au" target="_blank" style="color:var(--accent)">Open MarketLens →</a>
-        </div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="phead"><div class="ptitle">Market Sessions</div></div>
-      <div style="padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px">
-        <div style="background:var(--bg4);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--text3);font-weight:600">ASX</div><div style="font-size:12px;margin-top:4px" id="flow-asx-status">Checking...</div></div>
-        <div style="background:var(--bg4);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--text3);font-weight:600">LONDON</div><div style="font-size:12px;margin-top:4px" id="flow-lon-status">Checking...</div></div>
-        <div style="background:var(--bg4);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--text3);font-weight:600">NEW YORK</div><div style="font-size:12px;margin-top:4px" id="flow-ny-status">Checking...</div></div>
-        <div style="background:var(--bg4);border-radius:8px;padding:12px"><div style="font-size:10px;color:var(--text3);font-weight:600">TOKYO</div><div style="font-size:12px;margin-top:4px" id="flow-tok-status">Checking...</div></div>
-      </div>
-    </div>
-    <div class="panel">
-      <div class="phead"><div class="ptitle">Top Movers</div><div class="pmeta">Live % change</div></div>
-      <div id="flow-movers" style="padding:8px 0"><div style="color:var(--text3);font-size:12px;padding:16px">Loading...</div></div>
     </div>
   </div>
 </div>
@@ -2846,7 +2788,6 @@ function nav(p) {
   }
   if (p === 'dash') { if (typeof fetchOvernightData === 'function' && !Object.keys(overnightData||{}).length) fetchOvernightData(); }
   if (p === 'sector' || p === 'sectors') refreshSectorData();
-  if (p === 'flow') refreshFlowData();
   if (p === 'log') { if (typeof alertHistory !== 'undefined') renderAlertLog(); }
   if (p === 'intel') {
     updateIntelCards(null);
@@ -3233,7 +3174,6 @@ function updatePriceEls() {
   updateIntelCards(null);
   updateMomentumBar();
   updateJournalStats();
-  if (document.getElementById('page-flow')?.classList.contains('active')) updateCurrencyStrength();
   if (document.getElementById('page-futures')?.classList.contains('active')) updateFutStrengthMeters();
 }
 
@@ -5847,7 +5787,6 @@ async function requestPush() {
   showToast(CFG.pushEnabled ? 'Push enabled' : 'Permission denied', CFG.pushEnabled ? 'Signal alerts active' : 'Enable in browser settings', CFG.pushEnabled ? 'success' : 'warning');
 }
 
-// ── FLOW PAGE ──
 // ═══════════════════════════════════════════════════════
 // MARKETLENS INTEGRATION
 // Receives broker data from the MarketLens Bridge extension
@@ -6003,93 +5942,6 @@ function updateMlFlowPanel() {
       <div style="font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Top Institutional Buys (Screener · ${mlLastSync ? new Date(mlLastSync).toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'})+' AWST' : ''})</div>
       ${topPicks}
     </div>` : ''}`;
-}
-
-function refreshFlowData() {
-  updateCurrencyStrength();
-  updateCorrelations();
-  updateFlowSessions();
-  updateTopMovers();
-}
-
-function updateCurrencyStrength() {
-  const el = document.getElementById('flow-currency-strength');
-  if (!el) return;
-  const currencies = ['USD','EUR','GBP','AUD','NZD','JPY','CHF','CAD'];
-  const scores = {};
-  currencies.forEach(c => scores[c] = 0);
-  const pairs = [
-    ['EUR/USD','EUR','USD'],['GBP/USD','GBP','USD'],['AUD/USD','AUD','USD'],
-    ['NZD/USD','NZD','USD'],['USD/CAD','USD','CAD'],['USD/JPY','USD','JPY'],
-    ['USD/CHF','USD','CHF'],['EUR/GBP','EUR','GBP'],['GBP/JPY','GBP','JPY'],['EUR/JPY','EUR','JPY'],
-  ];
-  pairs.forEach(([sym, base, quote]) => {
-    const p = pctChange(sym);
-    if (p > 0) scores[base] = (scores[base]||0) + p;
-    else scores[quote] = (scores[quote]||0) + Math.abs(p);
-  });
-  const sorted = currencies.map(c => ({c, score: scores[c]||0})).sort((a,b) => b.score - a.score);
-  const max = Math.max(...sorted.map(s => s.score)) || 1;
-  el.innerHTML = sorted.map(({c, score}, i) => {
-    const w = (score/max*100).toFixed(0);
-    const col = i < 3 ? 'var(--green)' : i > 4 ? 'var(--red)' : 'var(--amber)';
-    return '<div style="display:flex;align-items:center;gap:10px;padding:6px 0">'
-      + '<div style="width:36px;font-size:12px;font-weight:800;color:' + col + '">' + c + '</div>'
-      + '<div style="flex:1;background:var(--bg5);border-radius:2px;height:8px;overflow:hidden">'
-      + '<div style="height:8px;border-radius:2px;background:' + col + ';width:' + w + '%;transition:width .6s"></div></div>'
-      + '<div style="font-size:11px;font-weight:700;color:' + col + ';width:20px;text-align:right">' + (i+1) + '</div></div>';
-  }).join('');
-}
-
-function updateCorrelations() {
-  const el = document.getElementById('flow-correlations');
-  if (!el) return;
-  const pairs = [
-    ['DXY vs Gold','DXY','XAU/USD','inverse'],
-    ['EUR vs GBP','EUR/USD','GBP/USD','positive'],
-    ['AUD vs NZD','AUD/USD','NZD/USD','positive'],
-    ['NAS100 vs JPY','NAS100','USD/JPY','positive'],
-  ];
-  el.innerHTML = pairs.map(([label, s1, s2, type]) => {
-    const p1 = pctChange(s1), p2 = pctChange(s2);
-    const aligned = type === 'inverse' ? p1 * p2 < 0 : p1 * p2 > 0;
-    const col = aligned ? 'var(--green)' : 'var(--red)';
-    return '<div style="padding:8px 0;border-bottom:1px solid var(--border)">'
-      + '<div style="display:flex;justify-content:space-between"><span style="font-size:11px;font-weight:600">' + label + '</span>'
-      + '<span style="font-size:10px;font-weight:700;color:' + col + '">' + (aligned?'✓ Aligned':'✗ Diverging') + '</span></div>'
-      + '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + s1 + ': ' + (p1>=0?'+':'') + p1.toFixed(2) + '% · ' + s2 + ': ' + (p2>=0?'+':'') + p2.toFixed(2) + '%</div></div>';
-  }).join('');
-}
-
-function updateFlowSessions() {
-  const now = new Date();
-  const utcH = now.getUTCHours(), utcM = now.getUTCMinutes();
-  const mins = utcH * 60 + utcM;
-  const wd = now.getUTCDay();
-  const isWd = wd >= 1 && wd <= 5;
-  const sessions = [
-    ['flow-asx-status',  isWd && mins >= 0   && mins < 360,  'Open 10am–4pm AEST'],
-    ['flow-lon-status',  isWd && mins >= 480  && mins < 990,  'Open 8am–4:30pm GMT'],
-    ['flow-ny-status',   isWd && mins >= 870  && mins < 1260, 'Open 9:30am–4pm EST'],
-    ['flow-tok-status',  isWd && mins >= 0   && mins < 360,  'Open 9am–3pm JST'],
-  ];
-  sessions.forEach(([id, open, label]) => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = '<span style="color:' + (open?'var(--green)':'var(--text4)') + ';font-weight:700">' + (open?'● OPEN':'○ Closed') + '</span><div style="font-size:10px;color:var(--text3);margin-top:2px">' + label + '</div>';
-  });
-}
-
-function updateTopMovers() {
-  const el = document.getElementById('flow-movers');
-  if (!el || typeof INSTRUMENTS === 'undefined') return;
-  const movers = Object.keys(INSTRUMENTS).map(sym => ({sym, pct: pctChange(sym)}))
-    .sort((a,b) => Math.abs(b.pct) - Math.abs(a.pct)).slice(0, 8);
-  el.innerHTML = movers.map(({sym, pct}) => {
-    const up = pct >= 0;
-    return '<div style="display:flex;justify-content:space-between;padding:8px 16px;border-bottom:1px solid var(--border)">'
-      + '<span style="font-size:12px;font-weight:700">' + sym + '</span>'
-      + '<span style="font-size:12px;font-weight:700;color:' + (up?'var(--green)':'var(--red)') + '">' + (up?'+':'') + pct.toFixed(2) + '%</span></div>';
-  }).join('');
 }
 
 // ── Futures strength meters (Forex / Indices / Commodities) ──
@@ -6950,7 +6802,6 @@ function setGlobalTF(tf, btn) {
   const pid = activePage.id;
   if (pid === 'page-scanner') filterScanner();
   if (pid === 'page-intel') runIntelAnalysis && runIntelAnalysis();
-  if (pid === 'page-flow') refreshFlowData && refreshFlowData();
   if (pid === 'page-sectors') {
     // Re-render all sector components with new TF (data already fetched with all TFs)
     renderHeatmap(); renderLeaderboard(); renderMoneyFlow(); renderRS(); renderOutperformers(); renderSectorPulse();
@@ -7462,8 +7313,7 @@ document.addEventListener('keydown', function(e) {
       case '3': nav('futures'); break;
       case '4': nav('sectors'); break;
       case '5': nav('smt'); break;
-      case '6': nav('flow'); break;
-      case '7': nav('settings'); break;
+      case '6': nav('settings'); break;
       case 'n': if (!e.shiftKey) { nav('dash'); setTimeout(()=> showAddTrade && showAddTrade(), 100); } break;
       case 'escape':
         const mw = document.getElementById('modal-wrap');
@@ -7472,7 +7322,7 @@ document.addEventListener('keydown', function(e) {
         if (atf && atf.style.display !== 'none') atf.style.display = 'none';
         break;
       case '?':
-        if (e.shiftKey) showToast('Keyboard Shortcuts', '1:Today 2:ASX 3:Futures 4:Sectors 5:SMT 6:Flow 7:Settings · N:New trade · Esc:Close', 'info', 6000);
+        if (e.shiftKey) showToast('Keyboard Shortcuts', '1:Today 2:ASX 3:Futures 4:Sectors 5:SMT 6:Settings · N:New trade · Esc:Close', 'info', 6000);
         break;
     }
   }
