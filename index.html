@@ -9561,56 +9561,109 @@ function updateAsxScanKPIs() {
   }
 }
 
-// Override startAsxCrtScan to use new UI
-function startAsxCrtScan() {
+// Self-contained ASX CRT scan — no dependency on legacy startCrtScan
+let _asxCrtScanning = false;
+async function startAsxCrtScan() {
+  if (_asxCrtScanning) return;
+  _asxCrtScanning = true;
   asxCrtSignals = [];
   asxScanCount  = 0;
+
   const rows = document.getElementById('asx-crt-rows');
   if (rows) rows.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Scanning ASX...</div></div>';
 
-  // show prog bar
   const prog = document.getElementById('asx-crt-progress');
   if (prog) prog.style.display = 'block';
 
-  // start the underlying scan (which populates crtSignals)
-  if (typeof startCrtScan === 'function') startCrtScan();
+  // Build ticker list — strip .AX suffix for engine
+  const tickers = ASX_SCAN_LIST.map(t => t.replace('.AX',''));
+  const total = tickers.length;
+  let scanned = 0;
 
-  // poll and copy signals into our local array + re-render
-  const poll = setInterval(() => {
-    if (typeof crtSignals !== 'undefined') {
-      const newSigs = crtSignals.filter(s => !asxCrtSignals.find(x => x.ticker===s.ticker && x.model===s.model));
-      newSigs.forEach(s => asxCrtSignals.push(s));
-      asxScanCount = (typeof crtScanned !== 'undefined') ? crtScanned : asxCrtSignals.length * 3;
+  const BATCH = 5, CONC = 3;
+  for (let i = 0; i < total; i += BATCH * CONC) {
+    const promises = [];
+    for (let ci = 0; ci < CONC; ci++) {
+      const start = i + ci * BATCH;
+      if (start >= total) break;
+      const batch = tickers.slice(start, Math.min(start + BATCH, total));
+      promises.push(
+        fetch(PROXY + '/crt-engine?tickers=' + batch.join(','), { signal: AbortSignal.timeout(25000) })
+          .then(r => r.json())
+          .then(d => {
+            if (d.results) d.results.forEach(r => {
+              if (!r || !r.signals || !r.signals.length) return;
+              r.signals.forEach(sig => {
+                // Map engine fields
+                if (sig.status === 'FORMING' && !sig.tbosForming) sig.tbosForming = true;
+                if (sig.status === 'SWEEP_ACTIVE' && !sig.sweepingNow) sig.sweepingNow = true;
+                if (sig.sweepExtreme != null && sig.direction === 'LONG' && sig.sweepLow == null) sig.sweepLow = sig.sweepExtreme;
+                if (sig.sweepExtreme != null && sig.direction === 'SHORT' && sig.sweepHigh == null) sig.sweepHigh = sig.sweepExtreme;
+                // ML enrichment
+                var ml = (typeof mlScreener !== 'undefined' ? mlScreener.find(s => s.ticker === r.ticker) : null) || (typeof mlData !== 'undefined' ? mlData[r.ticker] : null);
+                var mlScore = ml ? getCrtMlScore(ml, sig.direction) : 0;
+                var baseConf = sig.confidence || sig.baseConfidence || 60;
+                var final = Math.min(Math.round(baseConf + mlScore), 99);
+                // Regime adjustment
+                var regime = window._marketRegime;
+                if (regime) {
+                  if (regime.bullish && sig.direction === 'LONG') final = Math.min(final + 5, 99);
+                  else if (regime.bullish && sig.direction === 'SHORT') final = Math.max(final - 8, 20);
+                  else if (!regime.bullish && sig.direction === 'SHORT') final = Math.min(final + 5, 99);
+                  else if (!regime.bullish && sig.direction === 'LONG') final = Math.max(final - 8, 20);
+                }
+                var signal = Object.assign({}, sig, {
+                  ticker: r.ticker, price: sig.price || r.price || (r.meta && r.meta.price),
+                  mlScore: mlScore, mlNetVal: ml ? (ml.netVal || (ml.summary && ml.summary.totalNet) || null) : null,
+                  finalConfidence: final
+                });
+                asxCrtSignals.push(signal);
+              });
+            });
+          })
+          .catch(() => {})
+      );
     }
-    // bridge progress
-    const f = document.getElementById('crt-progress-fill'), af = document.getElementById('asx-crt-fill');
-    const t = document.getElementById('crt-progress-text'), at = document.getElementById('asx-crt-txt');
-    const p = document.getElementById('crt-progress-pct'),  ap = document.getElementById('asx-crt-pct');
-    if (f && af) af.style.width = f.style.width;
-    if (t && at) at.textContent = t.textContent;
-    if (p && ap) ap.textContent = p.textContent;
+    await Promise.all(promises);
+    scanned = Math.min(i + BATCH * CONC, total);
+    asxScanCount = scanned;
 
-    if (asxCrtSignals.length > 0) renderAsxCrtRows();
-    else if (typeof crtScanning !== 'undefined' && crtScanning) {
-      const scanPct = (typeof crtScanned !== 'undefined' && typeof crtSignals !== 'undefined') ? Math.round((crtScanned / Math.max((typeof ASX_SCAN_LIST !== 'undefined' ? ASX_SCAN_LIST.length : 100), 1)) * 100) : 0;
-      const rowsEl = document.getElementById('asx-crt-rows');
-      if (rowsEl) rowsEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Scanning ASX... ' + (typeof crtScanned !== 'undefined' ? crtScanned : 0) + ' stocks scanned</div><div style="font-size:11px;color:var(--text3);margin-top:4px">' + asxCrtSignals.length + ' signals found</div></div>';
-    }
+    // Update progress bar
+    const pct = Math.round(scanned / total * 100);
+    const fill = document.getElementById('asx-crt-fill');
+    const txt  = document.getElementById('asx-crt-txt');
+    const pctEl = document.getElementById('asx-crt-pct');
+    if (fill) fill.style.width = pct + '%';
+    if (txt)  txt.textContent = 'Scanning ' + scanned + '/' + total + ' · ' + asxCrtSignals.length + ' signals';
+    if (pctEl) pctEl.textContent = pct + '%';
 
-    if (typeof crtScanning !== 'undefined' && !crtScanning) {
-      clearInterval(poll);
-      if (prog) prog.style.display = 'none';
-      asxScanCount = (typeof crtScanned !== 'undefined' && crtScanned > 0) ? crtScanned : asxCrtSignals.length * 3;
-      updateAsxScanKPIs();
+    // Show progress in rows area
+    if (asxCrtSignals.length > 0) {
       renderAsxCrtRows();
-      const t2 = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
-      const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-      set('asx-stat-time', t2 + ' AWST');
-      set('asx-stat-total', asxCrtSignals.length);
-      const stats = document.getElementById('asx-stats'); if(stats) stats.style.display='flex';
-      if (asxCrtSignals.length > 0) showToast('ASX CRT Scan complete', asxCrtSignals.length + ' signals found · ' + asxCrtSignals.filter(s=>gradeSignal(s.finalConfidence||0)==='A+'||gradeSignal(s.finalConfidence||0)==='A').length + ' A/A+ grade', 'success', 5000);
+    } else {
+      const rowsEl = document.getElementById('asx-crt-rows');
+      if (rowsEl) rowsEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Scanning ASX... ' + scanned + '/' + total + ' stocks</div><div style="font-size:11px;color:var(--text3);margin-top:4px">' + asxCrtSignals.length + ' signals found</div></div>';
     }
-  }, 350);
+
+    await new Promise(r => setTimeout(r, 50));
+  }
+
+  // Done
+  _asxCrtScanning = false;
+  if (prog) prog.style.display = 'none';
+  asxCrtSignals.sort((a, b) => (b.finalConfidence || 0) - (a.finalConfidence || 0));
+  updateAsxScanKPIs();
+  renderAsxCrtRows();
+  const t2 = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('asx-stat-time', t2 + ' AWST');
+  set('asx-stat-total', asxCrtSignals.length);
+  const stats = document.getElementById('asx-stats'); if(stats) stats.style.display='flex';
+  if (asxCrtSignals.length > 0) showToast('ASX CRT Scan complete', asxCrtSignals.length + ' signals found · ' + asxCrtSignals.filter(s=>gradeSignal(s.finalConfidence||0)==='A+'||gradeSignal(s.finalConfidence||0)==='A').length + ' A/A+ grade', 'success', 5000);
+  else {
+    const rowsEl = document.getElementById('asx-crt-rows');
+    if (rowsEl) rowsEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">No setups found across ' + scanned + ' stocks.</div>';
+  }
 }
 
 
