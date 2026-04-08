@@ -55,95 +55,169 @@ async function ensureYfSession() {
   return { crumb: null, cookie: null, ts: 0 };
 }
 
-// Infer likely upcoming catalysts based on sector/industry/description
+// ── Date estimation helpers ──
+function nextQuarterEnd() {
+  // ASX quarters end Mar 31, Jun 30, Sep 30, Dec 31
+  // Appendix 5B due ~1 month after quarter end
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth(); // 0-based
+  const qEnds = [new Date(y,2,31), new Date(y,5,30), new Date(y,8,30), new Date(y,11,31),
+                  new Date(y+1,2,31)];
+  // Due date = quarter end + ~31 days
+  for (const qe of qEnds) {
+    const due = new Date(qe.getTime() + 31*86400000);
+    if (due > now) return { qEnd: qe.toISOString().slice(0,10), due: due.toISOString().slice(0,10) };
+  }
+  return null;
+}
+
+function nextEarningsSeason(isBankFY) {
+  // Most ASX companies: Jun FY → half-year results Feb, full-year results Aug
+  // Banks/some: Dec HY → half-year results Feb, full-year results Aug (similar)
+  const now = new Date();
+  const y = now.getFullYear();
+  // Reporting windows: mid-Feb and mid-Aug
+  const windows = [
+    { d: new Date(y,1,15), label: 'H1 Results Season' },
+    { d: new Date(y,7,15), label: 'FY Results Season' },
+    { d: new Date(y+1,1,15), label: 'H1 Results Season' },
+  ];
+  for (const w of windows) {
+    // Reporting season spans ~4 weeks from this date
+    const end = new Date(w.d.getTime() + 28*86400000);
+    if (end > now) return { date: w.d.toISOString().slice(0,10), end: end.toISOString().slice(0,10), label: w.label };
+  }
+  return null;
+}
+
+function nextRBADates() {
+  // 2026 RBA meeting dates (announced by RBA)
+  const dates = ['2026-02-18','2026-04-01','2026-05-20','2026-07-08','2026-08-19','2026-10-07','2026-11-25','2026-12-09',
+                 '2027-02-02','2027-03-17','2027-05-05','2027-06-30'];
+  const now = new Date().toISOString().slice(0,10);
+  const upcoming = dates.filter(d => d >= now);
+  return upcoming.slice(0, 2); // next 2
+}
+
+function estimateCapitalRaise(cashRunwayMonths) {
+  if (!cashRunwayMonths) return null;
+  // Companies typically raise ~3-6 months before running out
+  const raiseInMonths = Math.max(1, cashRunwayMonths - 3);
+  const est = new Date();
+  est.setMonth(est.getMonth() + raiseInMonths);
+  return est.toISOString().slice(0,10);
+}
+
+// Infer likely upcoming catalysts with estimated dates
 function inferCatalysts(sector, industry, desc, flags) {
   const s = (sector || '').toLowerCase();
   const i = (industry || '').toLowerCase();
   const d = (desc || '').toLowerCase();
   const cats = [];
+  const nq = nextQuarterEnd();
+  const ne = nextEarningsSeason();
 
   // Mining / Resources
   if (s.includes('basic material') || i.includes('mining') || i.includes('gold') || i.includes('metal') ||
       i.includes('copper') || i.includes('iron') || i.includes('coal') || i.includes('silver') ||
       d.includes('exploration') || d.includes('mining') || d.includes('drill') || d.includes('mineral')) {
-    cats.push({ type: 'Drill Results', icon: '⛏', desc: 'Assay results from current drilling programs' });
-    cats.push({ type: 'Resource Estimate', icon: '📐', desc: 'Updated JORC resource / reserve estimates' });
+    cats.push({ type: 'Drill Results', icon: '⛏', desc: 'Assay results from current drilling programs', est: 'Ongoing — results released as received from lab', timing: 'ongoing' });
+    cats.push({ type: 'Resource Estimate', icon: '📐', desc: 'Updated JORC resource / reserve estimates', est: 'Typically post drill campaign — check ASX announcements', timing: 'variable' });
     if (d.includes('feasibility') || d.includes('study') || d.includes('scoping'))
-      cats.push({ type: 'Feasibility Study', icon: '📊', desc: 'DFS/PFS/Scoping study results' });
+      cats.push({ type: 'Feasibility Study', icon: '📊', desc: 'DFS/PFS/Scoping study results', est: '6-18 months from announcement of study commencement', timing: 'variable' });
     if (d.includes('production') || d.includes('processing') || d.includes('plant'))
-      cats.push({ type: 'Production Update', icon: '🏭', desc: 'Quarterly production & cost report' });
-    cats.push({ type: 'Commodity Price', icon: '📈', desc: 'Underlying commodity price movements' });
+      cats.push({ type: 'Production Update', icon: '🏭', desc: 'Quarterly production & cost report', est: nq ? 'Due by ' + nq.due : 'Next quarter end + 1 month', timing: 'quarterly', date: nq ? nq.due : null });
+    cats.push({ type: 'Commodity Price', icon: '📈', desc: 'Underlying commodity price movements', est: 'Continuous — macro-driven', timing: 'ongoing' });
   }
 
   // Lithium / Battery / Rare Earths
   if (i.includes('lithium') || i.includes('rare earth') || d.includes('lithium') || d.includes('battery') ||
       d.includes('rare earth') || d.includes('graphite') || d.includes('cobalt') || d.includes('nickel')) {
-    cats.push({ type: 'Offtake Agreement', icon: '🤝', desc: 'Binding offtake or supply agreements with EV/battery makers' });
-    cats.push({ type: 'EV Demand Data', icon: '🔋', desc: 'Global EV sales data impacting lithium/battery demand' });
+    cats.push({ type: 'Offtake Agreement', icon: '🤝', desc: 'Binding offtake or supply agreements with EV/battery makers', est: 'Typically announced post-DFS or during construction phase', timing: 'variable' });
+    cats.push({ type: 'EV Demand Data', icon: '🔋', desc: 'Global EV sales data impacting lithium/battery demand', est: 'Monthly — China EV sales released ~10th of each month', timing: 'monthly' });
   }
 
   // Oil & Gas
   if (i.includes('oil') || i.includes('gas') || i.includes('petroleum') || i.includes('energy') ||
       d.includes('oil') || d.includes('petroleum') || d.includes('natural gas')) {
-    cats.push({ type: 'Well Results', icon: '🛢', desc: 'Exploration well results & flow rates' });
-    cats.push({ type: 'Oil/Gas Price', icon: '⛽', desc: 'Brent/WTI crude & LNG price movements' });
-    cats.push({ type: 'Production Report', icon: '📋', desc: 'Quarterly production & reserves update' });
+    cats.push({ type: 'Well Results', icon: '🛢', desc: 'Exploration well results & flow rates', est: 'Released upon completion — check current drilling schedule', timing: 'ongoing' });
+    cats.push({ type: 'Oil/Gas Price', icon: '⛽', desc: 'Brent/WTI crude & LNG price movements', est: 'Continuous — OPEC meetings quarterly', timing: 'ongoing' });
+    cats.push({ type: 'Production Report', icon: '📋', desc: 'Quarterly production & reserves update', est: nq ? 'Due by ' + nq.due : 'Next quarter end + 1 month', timing: 'quarterly', date: nq ? nq.due : null });
   }
 
   // Biotech / Pharma / Healthcare
   if (s.includes('healthcare') || i.includes('biotech') || i.includes('pharma') || i.includes('drug') ||
       i.includes('medical') || i.includes('diagnostic') || d.includes('clinical') || d.includes('fda') ||
       d.includes('therapeutic') || d.includes('trial') || d.includes('regulatory')) {
-    cats.push({ type: 'Clinical Trial Results', icon: '🧬', desc: 'Phase I/II/III trial data readouts' });
-    cats.push({ type: 'FDA/TGA Approval', icon: '✅', desc: 'Regulatory approval or submission milestones' });
-    cats.push({ type: 'Partnership Deal', icon: '🤝', desc: 'Licensing, collaboration or distribution agreements' });
+    cats.push({ type: 'Clinical Trial Results', icon: '🧬', desc: 'Phase I/II/III trial data readouts', est: 'Check company pipeline — data typically at medical conferences (ASCO Jun, ASH Dec, AACR Apr)', timing: 'variable' });
+    cats.push({ type: 'FDA/TGA Approval', icon: '✅', desc: 'Regulatory approval or submission milestones', est: 'FDA PDUFA dates published — TGA timelines 6-12 months from submission', timing: 'variable' });
+    cats.push({ type: 'Partnership Deal', icon: '🤝', desc: 'Licensing, collaboration or distribution agreements', est: 'Often announced at JP Morgan Healthcare Conference (Jan) or ASCO (Jun)', timing: 'variable' });
     if (d.includes('device') || d.includes('implant'))
-      cats.push({ type: 'Device Approval', icon: '🏥', desc: 'Medical device regulatory clearance (FDA 510k/CE Mark)' });
+      cats.push({ type: 'Device Approval', icon: '🏥', desc: 'Medical device regulatory clearance (FDA 510k/CE Mark)', est: 'FDA 510k ~3-6 months from submission, PMA ~12 months', timing: 'variable' });
   }
 
   // Technology / Software
   if (s.includes('technology') || i.includes('software') || i.includes('saas') || i.includes('internet') ||
       i.includes('cloud') || d.includes('platform') || d.includes('saas') || d.includes('ai ')) {
-    cats.push({ type: 'Contract Win', icon: '📝', desc: 'New enterprise contracts or government deals' });
-    cats.push({ type: 'ARR/MRR Update', icon: '💰', desc: 'Annual/monthly recurring revenue milestones' });
-    cats.push({ type: 'Product Launch', icon: '🚀', desc: 'New product releases or feature launches' });
+    cats.push({ type: 'Contract Win', icon: '📝', desc: 'New enterprise contracts or government deals', est: 'Ongoing — announced as material contracts are signed', timing: 'ongoing' });
+    cats.push({ type: 'ARR/MRR Update', icon: '💰', desc: 'Annual/monthly recurring revenue milestones', est: nq ? 'Quarterly update due ~' + nq.due : 'Quarterly with 4C lodgement', timing: 'quarterly', date: nq ? nq.due : null });
+    cats.push({ type: 'Product Launch', icon: '🚀', desc: 'New product releases or feature launches', est: 'Check company roadmap — often announced at results or conferences', timing: 'variable' });
   }
 
   // Cannabis
   if (i.includes('cannabis') || i.includes('marijuana') || d.includes('cannabis')) {
-    cats.push({ type: 'Regulatory Change', icon: '⚖', desc: 'State/federal cannabis regulation updates' });
-    cats.push({ type: 'License Grant', icon: '📜', desc: 'New cultivation or distribution licenses' });
+    cats.push({ type: 'Regulatory Change', icon: '⚖', desc: 'State/federal cannabis regulation updates', est: 'Ongoing — legislative calendar dependent', timing: 'variable' });
+    cats.push({ type: 'License Grant', icon: '📜', desc: 'New cultivation or distribution licenses', est: 'Application-dependent — typically 3-6 month approval process', timing: 'variable' });
   }
 
   // Real Estate / REITs
   if (s.includes('real estate') || i.includes('reit') || d.includes('property') || d.includes('real estate')) {
-    cats.push({ type: 'Acquisition', icon: '🏢', desc: 'Property acquisitions or disposals' });
-    cats.push({ type: 'Occupancy Update', icon: '📊', desc: 'Occupancy rates & rental income updates' });
-    cats.push({ type: 'Distribution', icon: '💰', desc: 'Quarterly/half-year distribution announcements' });
+    cats.push({ type: 'Acquisition', icon: '🏢', desc: 'Property acquisitions or disposals', est: 'Ongoing — announced as transactions settle', timing: 'ongoing' });
+    cats.push({ type: 'Occupancy Update', icon: '📊', desc: 'Occupancy rates & rental income updates', est: ne ? ne.label + ' ~' + ne.date : 'With half/full year results', timing: 'half-yearly', date: ne ? ne.date : null });
+    cats.push({ type: 'Distribution', icon: '💰', desc: 'Quarterly/half-year distribution announcements', est: ne ? 'With ' + ne.label + ' ~' + ne.date : 'With results', timing: 'half-yearly', date: ne ? ne.date : null });
   }
 
   // Financial
   if (s.includes('financial') || i.includes('bank') || i.includes('insurance') || i.includes('capital')) {
-    cats.push({ type: 'Rate Decision', icon: '🏦', desc: 'RBA / central bank interest rate decisions' });
-    cats.push({ type: 'Loan Book Update', icon: '📈', desc: 'Credit quality & loan growth data' });
+    const rba = nextRBADates();
+    cats.push({ type: 'Rate Decision', icon: '🏦', desc: 'RBA interest rate decision', est: rba.length ? 'Next: ' + rba[0] + (rba[1] ? ', then ' + rba[1] : '') : 'See RBA schedule', timing: 'scheduled', date: rba[0] || null });
+    cats.push({ type: 'Loan Book Update', icon: '📈', desc: 'Credit quality & loan growth data', est: ne ? 'With ' + ne.label + ' ~' + ne.date : 'With half/full year results', timing: 'half-yearly', date: ne ? ne.date : null });
   }
 
   // Agriculture
   if (i.includes('agri') || i.includes('farm') || d.includes('agriculture') || d.includes('crop') || d.includes('cattle')) {
-    cats.push({ type: 'Harvest Report', icon: '🌾', desc: 'Seasonal crop yield or livestock data' });
-    cats.push({ type: 'Weather Impact', icon: '🌧', desc: 'Drought/flood/weather event impacts on production' });
+    cats.push({ type: 'Harvest Report', icon: '🌾', desc: 'Seasonal crop yield or livestock data', est: 'Seasonal — Australian harvest Oct-Jan, planting Apr-Jun', timing: 'seasonal' });
+    cats.push({ type: 'Weather Impact', icon: '🌧', desc: 'Drought/flood/weather event impacts on production', est: 'BOM seasonal outlook updated quarterly', timing: 'ongoing' });
   }
 
   // Universal catalysts
-  cats.push({ type: 'Quarterly Report', icon: '📑', desc: 'Next quarterly activities & cashflow report (Appendix 5B)' });
-  if (flags.isPreRevenue || flags.isBurningCash)
-    cats.push({ type: 'Capital Raise', icon: '⚠', desc: 'Potential placement, SPP, or rights issue to fund operations' });
-  if (flags.revenue && flags.revenue > 10000000)
-    cats.push({ type: 'Earnings Report', icon: '📊', desc: 'Half-year or full-year earnings results' });
-  if (flags.dividendYield && flags.dividendYield > 0)
-    cats.push({ type: 'Dividend Declaration', icon: '💰', desc: 'Next interim or final dividend announcement' });
+  cats.push({ type: 'Quarterly Report', icon: '📑', desc: 'Appendix 5B quarterly cashflow report', est: nq ? 'Q ending ' + nq.qEnd + ' — due by ' + nq.due : 'Due ~1 month after quarter end', timing: 'quarterly', date: nq ? nq.due : null });
 
-  return cats.slice(0, 8); // cap at 8
+  if (flags.isPreRevenue || flags.isBurningCash) {
+    const capDate = estimateCapitalRaise(flags.cashRunwayMonths);
+    cats.push({ type: 'Capital Raise', icon: '⚠', desc: 'Potential placement, SPP, or rights issue to fund operations',
+      est: flags.cashRunwayMonths ? 'Est ~' + (capDate || 'unknown') + ' (runway ' + flags.cashRunwayMonths + ' months)' : 'Timing depends on cash burn rate — monitor quarterly 5B',
+      timing: 'risk', date: capDate });
+  }
+
+  if (flags.revenue && flags.revenue > 10000000)
+    cats.push({ type: 'Earnings Report', icon: '📊', desc: 'Half-year or full-year earnings results', est: ne ? ne.label + ' — ~' + ne.date + ' to ' + ne.end : 'Feb (H1) or Aug (FY) results season', timing: 'half-yearly', date: ne ? ne.date : null });
+
+  if (flags.dividendYield && flags.dividendYield > 0)
+    cats.push({ type: 'Dividend Declaration', icon: '💰', desc: 'Next interim or final dividend announcement', est: ne ? 'With ' + ne.label + ' ~' + ne.date : 'Announced with results — Feb (interim) or Aug (final)', timing: 'half-yearly', date: ne ? ne.date : null });
+
+  // Sort: scheduled dates first, then ongoing, then variable
+  const order = { scheduled: 0, quarterly: 1, 'half-yearly': 2, monthly: 3, seasonal: 4, ongoing: 5, variable: 6, risk: 7 };
+  cats.sort((a, b) => {
+    // Items with a date come first, sorted by date
+    if (a.date && b.date) return a.date.localeCompare(b.date);
+    if (a.date && !b.date) return -1;
+    if (!a.date && b.date) return 1;
+    return (order[a.timing] || 9) - (order[b.timing] || 9);
+  });
+
+  return cats.slice(0, 10); // cap at 10
 }
 
 async function fetchFundamentals(ticker) {
@@ -395,7 +469,7 @@ async function fetchFundamentals(ticker) {
     website: ap.website || null,
     longBusinessSummary: ap.longBusinessSummary ? ap.longBusinessSummary.slice(0, 300) : null,
     // Industry-specific upcoming catalysts (inferred from sector/industry)
-    likelyCatalysts: inferCatalysts(ap.sector, ap.industry, ap.longBusinessSummary || '', { isPreRevenue, isBurningCash, revenue, dividendYield: divYield }),
+    likelyCatalysts: inferCatalysts(ap.sector, ap.industry, ap.longBusinessSummary || '', { isPreRevenue, isBurningCash, cashRunwayMonths, revenue, dividendYield: divYield }),
     // Scores
     valueScore: valueScore,
     qualityScore: qualityScore,

@@ -7694,14 +7694,25 @@ async function runAsxIntel() {
     });
   }
 
-  // Industry-specific likely catalysts
+  // Industry-specific likely catalysts with estimated dates
   if (f.likelyCatalysts && f.likelyCatalysts.length) {
     h += '<div style="font-size:11px;font-weight:600;color:var(--text2);margin:10px 0 6px">Upcoming Catalysts to Watch</div>';
     f.likelyCatalysts.forEach(c => {
-      h += '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;margin-bottom:3px;background:var(--bg4);border-radius:5px">'
-        + '<div style="font-size:14px;flex-shrink:0;margin-top:1px">' + c.icon + '</div>'
-        + '<div><div style="font-size:10px;font-weight:700;color:var(--accent)">' + c.type + '</div>'
-        + '<div style="font-size:10px;color:var(--text3)">' + c.desc + '</div></div></div>';
+      // Color-code the left border by timing type
+      const tCol = c.timing === 'risk' ? 'var(--red)' : c.timing === 'scheduled' ? 'var(--accent)' : c.timing === 'quarterly' || c.timing === 'half-yearly' ? 'var(--green)' : c.timing === 'ongoing' ? 'var(--amber)' : 'var(--text4)';
+      // Calculate days away if we have a date
+      let dateTag = '';
+      if (c.date) {
+        const dAway = Math.round((new Date(c.date) - new Date()) / 86400000);
+        const dLabel = dAway > 0 ? dAway + 'd away' : dAway === 0 ? 'TODAY' : Math.abs(dAway) + 'd ago';
+        dateTag = '<span style="font-size:9px;padding:2px 6px;border-radius:3px;background:' + (dAway <= 14 ? 'var(--red)' : dAway <= 60 ? 'var(--amber)' : 'var(--bg5)') + ';color:' + (dAway <= 14 ? '#fff' : dAway <= 60 ? '#000' : 'var(--text2)') + ';font-weight:700;white-space:nowrap">' + c.date + ' · ' + dLabel + '</span>';
+      }
+      h += '<div style="display:flex;align-items:flex-start;gap:8px;padding:7px 10px;margin-bottom:3px;background:var(--bg4);border-radius:5px;border-left:3px solid ' + tCol + '">'
+        + '<div style="font-size:14px;flex-shrink:0;margin-top:2px">' + c.icon + '</div>'
+        + '<div style="flex:1"><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap"><span style="font-size:10px;font-weight:700;color:var(--accent)">' + c.type + '</span>' + dateTag + '</div>'
+        + '<div style="font-size:10px;color:var(--text3);margin-top:2px">' + c.desc + '</div>'
+        + (c.est ? '<div style="font-size:9px;color:var(--text4);margin-top:2px;font-style:italic">⏱ ' + c.est + '</div>' : '')
+        + '</div></div>';
     });
   }
   if (!catalysts.length && (!f.likelyCatalysts || !f.likelyCatalysts.length)) {
