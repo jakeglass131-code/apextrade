@@ -6,8 +6,8 @@
              3. Double Purge 1-Candle (FBOS on first purge, TRUE BOS within forming)
              4. Normal 1-Candle      (sweep + TBOS within one forming candle)
 
-    TFs:     12M (TBOS=Monthly)  9M (TBOS=Weekly)  6M (TBOS=Weekly)
-             3M  (TBOS=Monthly)  1M (TBOS=2-Day aggregated)
+    TFs:     12M (TBOS=Monthly)  9M (TBOS=3W)  6M (TBOS=2W)
+             3M  (TBOS=4D, pref 1W)  1M (TBOS=2D, pref 3D)
 
     Data:    TradingView primary (native resolutions), Yahoo Finance fallback
     ═══════════════════════════════════════════════════════════════════════ */
@@ -62,7 +62,14 @@ async function scanTicker(ticker) {
   if (mo.length < 12) throw new Error('insufficient data (' + mo.length + ' months)');
 
   /* build period candles from monthly data */
-  var day2   = buildNDayCandles(dy, 2);   // 2-day aggregated for 1M TBOS
+  /* build aggregated candles for TBOS timeframes */
+  var day2   = buildNCandles(dy, 2);    // 2D  — 1M primary TBOS
+  var day3   = buildNCandles(dy, 3);    // 3D  — 1M preferred TBOS
+  var day4   = buildNCandles(dy, 4);    // 4D  — 3M primary TBOS
+  var wk2    = buildNCandles(wk, 2);    // 2W  — 6M TBOS
+  var wk3    = buildNCandles(wk, 3);    // 3W  — 9M TBOS
+
+  /* build period candles from monthly data */
   var yearly = grp(mo, ky);               // 12M CRT candles
   var nineMo = grp(mo, k9);               // 9M  CRT candles
   var halfYr = grp(mo, kh);               // 6M  CRT candles
@@ -71,13 +78,13 @@ async function scanTicker(ticker) {
   /* add end-of-period timestamps */
   addEndT(yearly); addEndT(nineMo); addEndT(halfYr); addEndT(qtrly); addEndT(mo);
 
-  /* 5 timeframe models ── CRT candle | TBOS timeframe | entry TFs | scan depth | pivot len */
+  /* 5 timeframe models ── CRT candle | TBOS timeframe | entry TFs | scan depth | pivot len | preferred TBOS */
   var MODELS = [
     { label: '12M CRT', crt: yearly, tbos: mo,   eTF: ['3W','2W'], back: 3, piv: 2 },
-    { label: '9M CRT',  crt: nineMo, tbos: wk,   eTF: ['2W','1W'], back: 4, piv: 2 },
-    { label: '6M CRT',  crt: halfYr, tbos: wk,   eTF: ['2W','1W'], back: 4, piv: 2 },
-    { label: '3M CRT',  crt: qtrly,  tbos: mo,   eTF: ['2D','3D'], back: 6, piv: 2 },
-    { label: '1M CRT',  crt: mo,     tbos: day2,  eTF: ['1D','4H'], back: 8, piv: 3 }
+    { label: '9M CRT',  crt: nineMo, tbos: wk3,  eTF: ['2W','1W'], back: 4, piv: 2 },
+    { label: '6M CRT',  crt: halfYr, tbos: wk2,  eTF: ['2W','1W'], back: 4, piv: 2 },
+    { label: '3M CRT',  crt: qtrly,  tbos: day4, eTF: ['2D','3D'], back: 6, piv: 2, tbosPref: wk },
+    { label: '1M CRT',  crt: mo,     tbos: day2, eTF: ['1D','4H'], back: 8, piv: 3, tbosPref: day3 }
   ];
 
   var signals = [];
@@ -104,6 +111,30 @@ async function scanTicker(ticker) {
       var bear = detectDirection(c1, after, T, swL, false, m.label, m.eTF);
       for (var b = 0; b < bull.length; b++) signals.push(bull[b]);
       for (var r = 0; r < bear.length; r++) signals.push(bear[r]);
+    }
+
+    /* ── preferred TBOS enrichment (e.g. 3M also checks 1W, 1M also checks 3D) ── */
+    if (m.tbosPref && m.tbosPref.length >= 5) {
+      var _prefSwH = findSwings(m.tbosPref, 'high', m.piv);
+      var _prefSwL = findSwings(m.tbosPref, 'low',  m.piv);
+      for (var _pi = 0; _pi < signals.length; _pi++) {
+        var _ps = signals[_pi];
+        if (_ps.model !== m.label || !_ps._sweepMomentTs || _ps.tbosPrefLevel != null) continue;
+        var _pLong  = _ps.direction === 'LONG';
+        var _prefSw = _pLong ? _prefSwH : _prefSwL;
+        var _prefLv = findLastSwingBefore(_prefSw, _ps._sweepMomentTs);
+        if (_prefLv === null) continue;
+        _ps.tbosPrefLevel = r4(_prefLv);
+        var _prefTc = findTbosAfter(m.tbosPref, _ps._sweepMomentTs, _prefLv, _pLong);
+        if (_prefTc.confirmed) {
+          _ps.tbosPrefConfirmed = true;
+          _ps.tbosPrefDate = _prefTc.date;
+          _ps.confidence = Math.min(_ps.confidence + 5, 95);
+        } else {
+          _ps.tbosPrefConfirmed = false;
+          _ps.tbosPrefDate = null;
+        }
+      }
     }
   }
 
@@ -212,14 +243,14 @@ function detectDirection(c1, afterCandles, tbosCandles, tbosSwings, isLong, mode
       var afterTs = p.candle.endT || p.candle.t;
       var tc = findTbosAfter(tbosCandles, afterTs, tbosLevel, isLong);
       if ((tc.confirmed && tc.age <= 12) || tc.forming) {
-        signals.push(buildSig('Classic CRT', modelLabel, isLong, c1, p, null, tbosLevel, tc, entryTFs));
+        signals.push(buildSig('Classic CRT', modelLabel, isLong, c1, p, null, tbosLevel, tc, entryTFs, sweepMoment));
       }
     } else {
       /* MODEL 4: Normal 1-Candle CRT — forming sweep, TBOS within */
       var within = tbosRange(tbosCandles, p.candle.t, Date.now());
       var tc4    = findTbosInSet(within, tbosLevel, isLong);
       if (tc4.confirmed) {
-        signals.push(buildSig('Normal 1-Candle CRT', modelLabel, isLong, c1, p, null, tbosLevel, tc4, entryTFs));
+        signals.push(buildSig('Normal 1-Candle CRT', modelLabel, isLong, c1, p, null, tbosLevel, tc4, entryTFs, sweepMoment));
       }
     }
     return signals;
@@ -238,7 +269,7 @@ function detectDirection(c1, afterCandles, tbosCandles, tbosSwings, isLong, mode
         var aTs = purges[vi].candle.endT || purges[vi].candle.t;
         var tcv = findTbosAfter(tbosCandles, aTs, tbosLevel, isLong);
         if ((tcv.confirmed && tcv.age <= 12) || tcv.forming) {
-          signals.push(buildSig('Classic CRT', modelLabel, isLong, c1, purges[vi], null, tbosLevel, tcv, entryTFs));
+          signals.push(buildSig('Classic CRT', modelLabel, isLong, c1, purges[vi], null, tbosLevel, tcv, entryTFs, sweepMoment));
         }
         break;
       }
@@ -248,7 +279,7 @@ function detectDirection(c1, afterCandles, tbosCandles, tbosSwings, isLong, mode
       var w2   = tbosRange(tbosCandles, lastPurge.candle.t, Date.now());
       var tc1c = findTbosInSet(w2, tbosLevel, isLong);
       if (tc1c.confirmed) {
-        signals.push(buildSig('Normal 1-Candle CRT', modelLabel, isLong, c1, lastPurge, null, tbosLevel, tc1c, entryTFs));
+        signals.push(buildSig('Normal 1-Candle CRT', modelLabel, isLong, c1, lastPurge, null, tbosLevel, tc1c, entryTFs, sweepMoment));
       }
     }
     return signals;
@@ -262,7 +293,7 @@ function detectDirection(c1, afterCandles, tbosCandles, tbosSwings, isLong, mode
     var afterTs2 = lastPurge.candle.endT || lastPurge.candle.t;
     var tc2 = findTbosAfter(tbosCandles, afterTs2, tbosLevel, isLong);
     if ((tc2.confirmed && tc2.age <= 12) || tc2.forming) {
-      signals.push(buildSig('Double Purge CRT', modelLabel, isLong, c1, lastPurge, firstPurge, tbosLevel, tc2, entryTFs));
+      signals.push(buildSig('Double Purge CRT', modelLabel, isLong, c1, lastPurge, firstPurge, tbosLevel, tc2, entryTFs, sweepMoment));
     }
   } else {
     /* MODEL 3: Double Purge 1-Candle CRT
@@ -275,7 +306,7 @@ function detectDirection(c1, afterCandles, tbosCandles, tbosSwings, isLong, mode
       var w3      = tbosRange(tbosCandles, lpStart, Date.now());
       var trueBos = findTbosInSet(w3, tbosLevel, isLong);
       if (trueBos.confirmed) {
-        signals.push(buildSig('Double Purge 1-Candle CRT', modelLabel, isLong, c1, lastPurge, firstPurge, tbosLevel, trueBos, entryTFs));
+        signals.push(buildSig('Double Purge 1-Candle CRT', modelLabel, isLong, c1, lastPurge, firstPurge, tbosLevel, trueBos, entryTFs, sweepMoment));
       }
     }
   }
@@ -429,7 +460,7 @@ function scoreConfidence(modelType, purgeCount, tbosConf, sweep, c1, isLong) {
 
 /* ═══════════════════════  SIGNAL BUILDER  ════════════════════════ */
 
-function buildSig(type, modelLabel, isLong, c1, sweep, firstPurge, tbosLevel, tbosConf, entryTFs) {
+function buildSig(type, modelLabel, isLong, c1, sweep, firstPurge, tbosLevel, tbosConf, entryTFs, sweepMomentTs) {
   var dir    = isLong ? 'LONG' : 'SHORT';
   var status = tbosConf.confirmed ? 'CONFIRMED' : (tbosConf.forming ? 'FORMING' : 'SWEEP_ACTIVE');
 
@@ -458,7 +489,8 @@ function buildSig(type, modelLabel, isLong, c1, sweep, firstPurge, tbosLevel, tb
     tbosDate:          tbosConf.date || null,
     tbosAge:           tbosConf.age,
     purgeCount:        firstPurge ? 2 : 1,
-    entryTFs:          entryTFs
+    entryTFs:          entryTFs,
+    _sweepMomentTs:    sweepMomentTs || null
   };
 }
 
@@ -497,11 +529,11 @@ function addEndT(arr) {
   }
 }
 
-/* Build N-day aggregated candles (2-day for 1M TBOS) */
-function buildNDayCandles(daily, n) {
+/* Build N-period aggregated candles (works on daily, weekly, or any candle array) */
+function buildNCandles(candles, n) {
   var out = [];
-  for (var i = 0; i < daily.length; i += n) {
-    var chunk = daily.slice(i, i + n);
+  for (var i = 0; i < candles.length; i += n) {
+    var chunk = candles.slice(i, i + n);
     if (!chunk.length) continue;
     var c = { t: chunk[0].t, date: chunk[0].date, o: chunk[0].o, h: chunk[0].h, l: chunk[0].l, c: chunk[chunk.length - 1].c };
     for (var j = 1; j < chunk.length; j++) {
