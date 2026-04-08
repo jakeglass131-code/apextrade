@@ -559,7 +559,7 @@ function yf(sym, iv, rg) {
       return ts.map(function (t, i) {
         return {
           t: t * 1000,
-          date: new Date(t * 1000).toISOString().slice(0, 10),
+          date: new Date(t * 1000).toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' }),
           o: q.open  && q.open[i],
           h: q.high  && q.high[i],
           l: q.low   && q.low[i],

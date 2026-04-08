@@ -18,7 +18,7 @@ exports.handler = async (event) => {
         if(!r.ok)return;const d=await r.json();
         const res=d.chart&&d.chart.result&&d.chart.result[0];if(!res)return;
         const ts=res.timestamp||[],q=res.indicators&&res.indicators.quote&&res.indicators.quote[0]||{};
-        results[t]=ts.map((tm,i)=>({t:tm*1000,date:new Date(tm*1000).toISOString().slice(0,10),o:q.open&&q.open[i],h:q.high&&q.high[i],l:q.low&&q.low[i],c:q.close&&q.close[i],v:q.volume&&q.volume[i]||0})).filter(c=>c.o!=null&&c.c!=null);
+        results[t]=ts.map((tm,i)=>({t:tm*1000,date:new Date(tm*1000).toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'}),o:q.open&&q.open[i],h:q.high&&q.high[i],l:q.low&&q.low[i],c:q.close&&q.close[i],v:q.volume&&q.volume[i]||0})).filter(c=>c.o!=null&&c.c!=null);
       }catch(e){}
     }));
     return{statusCode:200,headers:H,body:JSON.stringify(results)};
@@ -48,7 +48,7 @@ exports.handler = async (event) => {
     const res = d.chart&&d.chart.result&&d.chart.result[0];
     if(!res)throw new Error('no data');
     const ts=res.timestamp||[],q=res.indicators&&res.indicators.quote&&res.indicators.quote[0]||{};
-    const candles=ts.map((t,i)=>({t:t*1000,date:new Date(t*1000).toISOString().slice(0,10),o:q.open&&q.open[i],h:q.high&&q.high[i],l:q.low&&q.low[i],c:q.close&&q.close[i],v:q.volume&&q.volume[i]||0})).filter(c=>c.o!=null&&c.c!=null);
+    const candles=ts.map((t,i)=>({t:t*1000,date:new Date(t*1000).toLocaleDateString('en-CA',{timeZone:'Australia/Sydney'}),o:q.open&&q.open[i],h:q.high&&q.high[i],l:q.low&&q.low[i],c:q.close&&q.close[i],v:q.volume&&q.volume[i]||0})).filter(c=>c.o!=null&&c.c!=null);
     return{statusCode:200,headers:H,body:JSON.stringify({ticker,interval:iv,range:rg,count:candles.length,candles,source:'yahoo'})};
   }catch(e){
     return{statusCode:200,headers:H,body:JSON.stringify({ticker,error:e.message,candles:[]})};
