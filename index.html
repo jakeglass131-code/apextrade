@@ -647,6 +647,35 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .toast-title { font-size:12px; font-weight:700; color:var(--text); }
 .toast-sub { font-size:11px; color:var(--text3); margin-top:2px; }
 
+/* Simulated data warning banner */
+.sim-banner {
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  padding:8px 20px;
+  background:linear-gradient(90deg, rgba(245,158,11,.18), rgba(244,63,94,.12));
+  border-bottom:1px solid rgba(245,158,11,.35);
+  font-size:12px; font-weight:600; color:var(--amber);
+  flex-shrink:0; position:relative; z-index:9;
+}
+.sim-banner-close {
+  position:absolute; right:14px; top:50%; transform:translateY(-50%);
+  background:transparent; border:none; color:var(--text3); cursor:pointer;
+  font-size:16px; padding:2px 6px; border-radius:4px; transition:color .15s;
+}
+.sim-banner-close:hover { color:var(--text); }
+
+/* Updated-at timestamp style */
+.updated-at {
+  font-size:9px; color:var(--text4); font-family:var(--fm);
+  white-space:nowrap;
+}
+
+/* Session countdown in topbar */
+.session-cd {
+  font-size:8px; color:var(--text3); font-family:var(--fm);
+  letter-spacing:.02em; white-space:nowrap; margin-top:1px;
+}
+.session-pill { display:flex; flex-direction:column; align-items:center; line-height:1.15; }
+
 /* Signal confidence arc */
 .conf-arc { position:relative; width:64px; height:64px; }
 .conf-arc svg { transform:rotate(-90deg); }
@@ -877,14 +906,20 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <div class="logo">Apex<em>Trade</em></div>
   <div class="topbar-r">
     <div class="session-bar" id="session-bar">
-      <span class="session-pill closed" id="sess-asx">ASX</span>
-      <span class="session-pill closed" id="sess-lon">LON</span>
-      <span class="session-pill closed" id="sess-ny">NY</span>
+      <span class="session-pill closed" id="sess-asx"><span id="sess-asx-label">ASX</span><span class="session-cd" id="sess-asx-cd"></span></span>
+      <span class="session-pill closed" id="sess-lon"><span id="sess-lon-label">LON</span><span class="session-cd" id="sess-lon-cd"></span></span>
+      <span class="session-pill closed" id="sess-ny"><span id="sess-ny-label">NY</span><span class="session-cd" id="sess-ny-cd"></span></span>
     </div>
     <div id="dstatus" class="live">LIVE</div>
     <div class="live-pill"><div class="lpulse"></div>LIVE</div>
     <div id="clock"></div>
   </div>
+</div>
+
+<!-- Simulated data warning banner (shown when no TD key) -->
+<div class="sim-banner" id="sim-data-banner" style="display:none">
+  <span>&#9888; SIMULATED DATA &#8212; Add Twelve Data key in Settings for live prices</span>
+  <button class="sim-banner-close" onclick="document.getElementById('sim-data-banner').style.display='none'" title="Dismiss">&#10005;</button>
 </div>
 
 <div class="layout">
