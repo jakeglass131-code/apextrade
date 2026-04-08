@@ -72,6 +72,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .sbb span{font-size:9px;letter-spacing:.02em;font-family:var(--fd);font-weight:600;text-align:center;line-height:1.1}
 .sbadge{position:absolute;top:3px;right:3px;min-width:14px;height:14px;border-radius:7px;background:var(--accent);color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;font-weight:700}
 .sdiv{width:26px;height:1px;background:var(--border);margin:4px 0}
+.kb-hint{position:absolute;bottom:2px;right:4px;font-size:8px;color:var(--text4);opacity:0.5;font-family:var(--fm);font-weight:600;line-height:1;pointer-events:none}
+.sbb:hover .kb-hint{opacity:0.85;color:var(--text2)}
 
 /* PAGES */
 .page{display:none;flex-direction:column;flex:1;overflow:hidden}
@@ -317,7 +319,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 /* Heatmap grid */
 .sector-heatmap{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .sh-card{border-radius:10px;padding:14px 16px;cursor:pointer;transition:all .2s;position:relative;overflow:hidden;border:1px solid transparent}
-.sh-card:hover{transform:translateY(-1px)}
+.sh-card:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.3)}
 .sh-card.lead{background:rgba(0,212,168,.15);border-color:rgba(0,212,168,.3)}
 .sh-card.pos{background:rgba(45,142,255,.08);border-color:rgba(45,142,255,.15)}
 .sh-card.flat{background:rgba(122,138,160,.06);border-color:rgba(122,138,160,.12)}
@@ -373,60 +375,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .mf-bear{position:absolute;right:50%;top:0;height:100%;border-radius:4px 0 0 4px}
 .mf-label{font-size:10px;min-width:60px;text-align:right;font-weight:600}
 
-/* ═══════════════════════════════
-   SECTOR / MONEY FLOW STYLES
-═══════════════════════════════ */
-.sector-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
-.sector-card{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:13px 15px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
-.sector-card:hover{border-color:var(--border3)}
-.sector-card::before{content:'';position:absolute;bottom:0;left:0;right:0;height:3px}
-.sector-card.lead::before{background:var(--green)}
-.sector-card.weak::before{background:var(--amber)}
-.sector-card.lag::before{background:var(--red)}
-.sc-name{font-size:11px;color:var(--text2);margin-bottom:4px;font-weight:500}
-.sc-chg{font-family:var(--fd);font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1}
-.sc-meta{display:flex;gap:8px;margin-top:5px}
-.sc-tag{font-size:9px;padding:1px 6px;border-radius:3px;font-weight:600}
-.sc-bar{height:3px;border-radius:1px;margin-top:6px;background:var(--bg5)}
-.sc-fill{height:100%;border-radius:1px}
-.leaderboard{width:100%;border-collapse:collapse}
-.leaderboard th{padding:8px 14px;text-align:left;font-size:10px;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;border-bottom:1px solid var(--border2);background:var(--bg4);font-weight:600}
-.leaderboard td{padding:9px 14px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text2)}
-.leaderboard tr:last-child td{border-bottom:none}
-.leaderboard tr:hover td{background:var(--bg4)}
-.lb-rank{font-size:11px;font-weight:700;width:24px;text-align:center}
-.lb-name{font-weight:600;color:var(--text)}
-.lb-bar-wrap{width:100px}
-.lb-bar-bg{background:var(--bg5);border-radius:2px;height:5px}
-.lb-bar-fill{height:5px;border-radius:2px}
-.lb-rs{font-size:11px;font-weight:700;text-align:right;min-width:70px}
-.rs-line-wrap{padding:14px 16px}
-.rs-stock{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
-.rs-stock:last-child{border-bottom:none}
-.rs-sym{font-size:12px;font-weight:600;color:var(--text);min-width:80px}
-.rs-sector{font-size:10px;color:var(--text3);min-width:100px}
-.rs-chart{flex:1;height:28px;position:relative}
-.rs-svg{width:100%;height:100%}
-.rs-val{font-size:11px;font-weight:700;min-width:52px;text-align:right}
-.rs-trend{font-size:9px;padding:1px 6px;border-radius:3px;font-weight:600;flex-shrink:0}
-/* RRG */
-.rrg-wrap{padding:16px;display:flex;gap:16px;align-items:flex-start;flex-direction:column}
-.rrg-chart{flex-shrink:0;width:100%}
-.rrg-legend{width:100%}
-.rrg-quad-label{font-size:10px;font-weight:600;letter-spacing:.05em}
-.rrg-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
-.rrg-item:last-child{border-bottom:none}
-.rrg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.rrg-sym{font-size:12px;font-weight:600;color:var(--text);min-width:100px}
-.rrg-quad{font-size:10px;font-weight:600;min-width:80px}
-.rrg-action{font-size:10px;color:var(--text2)}
-/* Outperformer filter row */
-.outperf{display:grid;grid-template-columns:110px 90px 90px 80px 1fr 90px;gap:10px;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s}
-.outperf:hover{background:var(--bg4)}
-.outperf:last-child{border-bottom:none}
-.outperf-sym{font-size:13px;font-weight:600;color:var(--text)}
-.outperf-sect{font-size:10px;color:var(--text3);margin-top:1px}
-
+/* duplicate SECTOR / MONEY FLOW CSS removed (classes already defined above) */
 /* ═══════════ UPGRADED SCANNER ═══════════ */
 .scan-row-new{
   display:grid;
@@ -925,34 +874,48 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   <button class="sbb active" id="sb-dash" onclick="nav('dash')">
     <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
     <span>Today</span>
+  
+    <span class="kb-hint">1</span>
   </button>
   <button class="sbb" id="sb-asx" onclick="nav('asx')">
     <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/><polyline points="7 10 10 7 13 10 17 6"/></svg>
     <span>ASX</span>
     <div class="sbadge" id="asx-badge" style="display:none">0</div>
+  
+    <span class="kb-hint">2</span>
   </button>
   <button class="sbb" id="sb-futures" onclick="nav('futures')">
     <svg viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
     <span>Futures</span>
     <div class="sbadge" id="futures-badge" style="display:none">0</div>
+  
+    <span class="kb-hint">3</span>
   </button>
   <div class="sdiv"></div>
   <button class="sbb" id="sb-sectors" onclick="nav('sectors')">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10H12z"/><path d="M12 12L2 12a10 10 0 0 0 10 10z"/></svg>
     <span>Sectors</span>
+  
+    <span class="kb-hint">4</span>
   </button>
   <button class="sbb" id="sb-smt" onclick="nav('smt')">
     <svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
     <span>SMT</span>
+  
+    <span class="kb-hint">5</span>
   </button>
   <button class="sbb" id="sb-log" onclick="nav('log')">
     <svg viewBox="0 0 24 24"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
     <span>Alerts</span>
     <div class="sbadge" id="alert-badge" style="display:none">0</div>
+  
+    <span class="kb-hint">6</span>
   </button>
   <button class="sbb" id="sb-settings" onclick="nav('settings')">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     <span>Settings</span>
+  
+    <span class="kb-hint">7</span>
   </button>
 </div>
 
@@ -982,7 +945,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <div class="panel" id="overnight-panel">
       <div class="phead">
         <div class="ptitle">Overnight · Global indices</div>
-        <div class="pmeta" id="overnight-time">Loading...</div>
+        <div style="display:flex;align-items:center;gap:8px"><div class="pmeta" id="overnight-time">Loading...</div><div class="updated-at" id="upd-overnight"></div></div>
       </div>
       <div id="overnight-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:var(--border)">
         <!-- populated by fetchOvernightData() -->
@@ -1875,102 +1838,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 </div><!-- end layout -->
 
 
-<!-- ═══════════════ PAGE: SECTOR INTELLIGENCE (secondary) ═══════════════ -->
-<div class="page" id="page-sectorintel" style="display:none">
-  <div class="ph">
-    <div><div class="ph-t">Sector Intelligence</div><div class="ph-s">GICS sector heatmap · RS lines · Relative Rotation Graph · Money flow</div></div>
-    <div class="ph-r">
-      <select id="rrg-bench" class="btn" style="padding:6px 10px;font-size:11px" onchange="renderRRG()">
-        <option value="asx">vs ASX 200</option>
-        <option value="sp500">vs S&P 500</option>
-      </select>
-      <button class="btn g" onclick="refreshSectorData()">Refresh</button>
-    </div>
-  </div>
-  <!-- Global timeframe selector -->
-  <div class="global-tf-bar" style="display:flex;align-items:center;gap:4px;padding:6px 20px;border-bottom:1px solid var(--border2);background:var(--bg2);flex-shrink:0">
-    <span style="font-size:10px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">TF</span>
-    <button class="tf-btn"        data-tf="1D"  onclick="setGlobalTF('1D',this)">1D</button>
-    <button class="tf-btn active" data-tf="1W"  onclick="setGlobalTF('1W',this)">1W</button>
-    <button class="tf-btn"        data-tf="1M"  onclick="setGlobalTF('1M',this)">1M</button>
-    <button class="tf-btn"        data-tf="3M"  onclick="setGlobalTF('3M',this)">3M</button>
-    <button class="tf-btn"        data-tf="6M"  onclick="setGlobalTF('6M',this)">6M</button>
-    <button class="tf-btn"        data-tf="1Y"  onclick="setGlobalTF('1Y',this)">1Y</button>
-    <button class="tf-btn"        data-tf="YTD" onclick="setGlobalTF('YTD',this)">YTD</button>
-  </div>
-  <div class="scroll">
+<!-- duplicate page-sectorintel removed (was creating duplicate IDs) -->
 
-    <!-- Sector heatmap cards -->
-    <div style="font-size:10px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;font-weight:600;margin-bottom:8px">Today's sector performance — ASX / Global</div>
-    <div class="sector-heatmap" id="sector-heatmap">
-      <!-- populated by JS -->
-    </div>
-
-    <!-- Leaderboard + Money Flow -->
-    <div class="g2">
-      <div class="panel">
-        <div class="phead"><div class="ptitle">Sector leaderboard</div><div style="display:flex;gap:6px">
-          <span id="lb-tab-d" class="btn" style="font-size:10px;padding:3px 8px;cursor:pointer;background:var(--green3);color:var(--green);border-color:rgba(0,232,150,.3)" onclick="setLbPeriod('d')">Day</span>
-          <span id="lb-tab-w" class="btn" style="font-size:10px;padding:3px 8px;cursor:pointer" onclick="setLbPeriod('w')">Week</span>
-          <span id="lb-tab-m" class="btn" style="font-size:10px;padding:3px 8px;cursor:pointer" onclick="setLbPeriod('m')">Month</span>
-        </div></div>
-        <div style="display:grid;grid-template-columns:28px 1fr 70px 70px 70px 90px;padding:7px 16px 5px;border-bottom:1px solid var(--border2)">
-          <div style="font-size:9px;color:var(--text4)">#</div>
-          <div style="font-size:9px;color:var(--text4);letter-spacing:.07em;text-transform:uppercase">Sector</div>
-          <div style="font-size:9px;color:var(--text4);text-align:right;letter-spacing:.07em">Day</div>
-          <div style="font-size:9px;color:var(--text4);text-align:right;letter-spacing:.07em">Week</div>
-          <div style="font-size:9px;color:var(--text4);text-align:right;letter-spacing:.07em">Month</div>
-          <div style="font-size:9px;color:var(--text4);letter-spacing:.07em">Flow</div>
-        </div>
-        <div id="sector-leaderboard"></div>
-      </div>
-
-      <div class="panel">
-        <div class="phead"><div class="ptitle">Money flow by sector</div><div class="pmeta">Inflow ← Centre → Outflow</div></div>
-        <div id="money-flow"></div>
-      </div>
-    </div>
-
-    <!-- RS Lines -->
-    <div class="panel">
-      <div class="phead"><div class="ptitle">Relative strength lines — your holdings vs sector</div><div class="pmeta">RS making new highs = institutional accumulation</div></div>
-      <div class="rs-chart-wrap">
-        <div style="display:grid;grid-template-columns:80px 70px 1fr 70px;gap:10px;padding:4px 0 8px;border-bottom:1px solid var(--border2);font-size:9px;color:var(--text4);letter-spacing:.07em;text-transform:uppercase">
-          <div>Symbol</div><div>RS vs sector</div><div>RS line (30d)</div><div>Signal</div>
-        </div>
-        <div id="rs-lines"></div>
-      </div>
-    </div>
-
-    <!-- RRG -->
-    <div class="panel">
-      <div class="phead"><div class="ptitle">Relative Rotation Graph (RRG)</div><div class="pmeta">Where is money moving? Tail = 4-week direction</div></div>
-      <div class="rrg-wrap">
-        <svg id="rrg-svg" class="rrg-svg" viewBox="0 0 680 420"></svg>
-        <div style="display:flex;gap:20px;margin-top:10px;font-size:10px;color:var(--text3);flex-wrap:wrap">
-          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(0,232,150,.4);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Leading — ride these</span>
-          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(255,176,32,.4);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Weakening — tighten stops</span>
-          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(255,61,90,.3);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Lagging — avoid</span>
-          <span><span style="display:inline-block;width:10px;height:10px;background:rgba(77,166,255,.3);border-radius:2px;vertical-align:middle;margin-right:4px"></span>Improving — watch for reversals</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Outperformer Scanner -->
-    <div class="panel">
-      <div class="phead"><div class="ptitle">Outperformer filter — stock > sector</div><div class="pmeta g">Strongest names in strong sectors</div></div>
-      <div style="display:grid;grid-template-columns:100px 80px 80px 80px 1fr 80px;padding:7px 16px 5px;border-bottom:1px solid var(--border2)">
-        <div style="font-size:9px;color:var(--text4);letter-spacing:.07em;text-transform:uppercase">Stock</div>
-        <div style="font-size:9px;color:var(--text4);text-align:right;letter-spacing:.07em">Stock %</div>
-        <div style="font-size:9px;color:var(--text4);text-align:right;letter-spacing:.07em">Sector %</div>
-        <div style="font-size:9px;color:var(--text4);text-align:right;letter-spacing:.07em">Edge</div>
-        <div style="font-size:9px;color:var(--text4);letter-spacing:.07em">Status</div>
-        <div style="font-size:9px;color:var(--text4);text-align:right;letter-spacing:.07em">Signal</div>
-      </div>
-      <div id="outperformer-list"></div>
-    </div>
-
-  </div>
+</div>
 </div>
 
 <!-- NEWS MODAL -->
@@ -2815,6 +2685,9 @@ function nav(p) {
   if (p !== 'settings') { _settingsUnlocked = false; }
   // Stop ASX price engine when leaving ASX tab (saves API calls)
   if (p !== 'asx') { stopAsxPriceEngine(); }
+  // Clear page-specific timers to stop background fetches for invisible pages
+  _pageTimerIds.forEach(function(id) { clearInterval(id); });
+  _pageTimerIds = [];
   document.querySelectorAll('.page').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('.sbb').forEach(x => x.classList.remove('active'));
   const pg = document.getElementById('page-' + p);
@@ -2930,6 +2803,9 @@ let fetchBusy = false;
 let prevCloseFetched = false;
 let priceTimer= null;
 let newsTimer = null;
+let sectorRefreshTimer = null;
+let intelRefreshTimer = null;
+let _pageTimerIds = [];  // track page-specific timers for cleanup
 
 // Init prices from base values
 for (const [sym, inst] of Object.entries(INSTRUMENTS)) {
@@ -3467,6 +3343,7 @@ function updateScannerUI(results) {
   set('stat-short', shorts);
   set('stat-conf', avgConf + '%');
   set('stat-time', t + ' AWST');
+  _setUpdatedAt('upd-scan-results');
 
   if (filtered.length === 0) {
     scanBody.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3)">
@@ -3863,7 +3740,7 @@ function renderNewsPlaceholder() {
   ];
   renderNewsItems(fallbackItems.map(i => ({...i})));
   const ift = document.getElementById('intel-feed-time');
-  if (ift) ift.textContent = 'Curated · Live feeds loading in background';
+  if (ift) ift.innerHTML = '<span style="color:var(--amber)">📋 Cached</span> · Live feeds loading in background';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -4293,7 +4170,46 @@ function renderOutperformers() {
   }).join('');
 }
 
-function highlightSector(name) { console.log('Sector:', name); }
+function highlightSector(name) {
+  var sector = SECTORS.find(function(s){ return s.name === name; });
+  if (!sector) return;
+  var topStocks = [];
+  if (typeof EQUITY_GROUPS !== 'undefined') {
+    var eg = EQUITY_GROUPS.find(function(g){ return g.name === name; });
+    if (eg) topStocks = eg.tickers.slice(0, 5);
+  }
+  if (topStocks.length === 0 && typeof COMMODITY_GROUPS !== 'undefined') {
+    var cg = COMMODITY_GROUPS.find(function(g){ return g.name === name; });
+    if (cg) topStocks = cg.tickers.slice(0, 5);
+  }
+  if (topStocks.length === 0) {
+    topStocks = HOLDINGS.filter(function(h){ return h.sector === name; }).map(function(h){ return h.sym.replace('.ASX',''); });
+  }
+  var existing = document.getElementById('sector-drilldown-popup');
+  if (existing) existing.remove();
+  var popup = document.createElement('div');
+  popup.id = 'sector-drilldown-popup';
+  popup.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(14,17,23,.97);border:1px solid var(--border3);border-radius:12px;padding:16px 20px;z-index:1000;min-width:220px;max-width:320px;box-shadow:0 12px 40px rgba(0,0,0,.6);backdrop-filter:blur(16px)';
+  var tf = (typeof globalTF !== 'undefined') ? globalTF : '1W';
+  var val = (sector.perf && sector.perf[tf] != null) ? +sector.perf[tf] : sector.day;
+  var col = val >= 0 ? 'var(--green)' : 'var(--red)';
+  popup.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+    + '<div style="font-size:14px;font-weight:800;color:var(--text)">' + (sector.icon||'') + ' ' + name + '</div>'
+    + '<div style="font-size:14px;font-weight:800;color:' + col + '">' + (val>=0?'+':'') + val.toFixed(2) + '%</div></div>'
+    + '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Top Stocks</div>'
+    + (topStocks.length > 0
+      ? topStocks.map(function(t){ return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);cursor:pointer;font-size:12px" onclick="window.open(\x27https://www.tradingview.com/chart/?symbol=ASX:' + t + '\x27,\x27_blank\x27)">'
+        + '<span style="font-weight:600;color:var(--text)">' + t + '</span>'
+        + '<span style="color:var(--accent);font-size:10px">Open chart</span></div>'; }).join('')
+      : '<div style="color:var(--text3);font-size:11px;padding:8px 0">No stock data</div>')
+    + '<div style="margin-top:10px;text-align:center"><button onclick="document.getElementById(\x27sector-drilldown-popup\x27).remove()" style="font-size:10px;padding:4px 14px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer">Close</button></div>';
+  document.body.appendChild(popup);
+  setTimeout(function() {
+    document.addEventListener('click', function _closeSDP(e) {
+      if (!popup.contains(e.target)) { popup.remove(); document.removeEventListener('click', _closeSDP); }
+    });
+  }, 100);
+}
 
 // ═══════════════════════════════════════════════════════
 // COMMODITY ROTATION GRAPH — Multi-Factor Analysis Engine
@@ -6502,6 +6418,9 @@ function updateFutStrengthMeters() {
   const comItems = comSyms.map(i => ({ label: i.label, pct: tfPctChange(i.sym) }))
     .sort((a, b) => b.pct - a.pct);
   _renderStrengthBar(comItems, document.getElementById('fut-com-strength'));
+  _setUpdatedAt('upd-fut-fx');
+  _setUpdatedAt('upd-fut-idx');
+  _setUpdatedAt('upd-fut-com');
 }
 
 // Load journal
@@ -6631,7 +6550,7 @@ async function getAsxTickers(){
   return _asxTickerCache;
 }
 var crtScanned=0;
-async function startCrtScan(){if(crtScanning)return;crtScanning=true;crtAbort=false;crtSignals=[];crtScanned=0;document.getElementById('crt-scan-btn').style.display='none';document.getElementById('crt-stop-btn').style.display='flex';document.getElementById('crt-progress-bar').style.display='block';var st=document.getElementById('crt-stats');if(st)st.style.display='grid';document.getElementById('crt-signals-grid').innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px;text-align:center;grid-column:1/-1">Fetching ASX stock list...</div>';var tickers=await getAsxTickers();var total=tickers.length;crtScanned=0;updateCrtStats(0,0,0,0,total);document.getElementById('crt-signals-grid').innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px;text-align:center;grid-column:1/-1">Scanning '+total+' ASX stocks...</div>';var BATCH=5,CONC=3;for(let i=0;i<total;i+=BATCH*CONC){if(crtAbort)break;var crtPromises=[];for(let ci=0;ci<CONC;ci++){var cStart=i+ci*BATCH;if(cStart>=total)break;(function(bt){crtPromises.push(fetch(PROXY+'/crt-engine?tickers='+bt.map(function(s){return s.ticker;}).join(','),{signal:AbortSignal.timeout(25000)}).then(function(r){return r.json();}).then(function(d){if(d.results)d.results.forEach(function(r){processScanResult(r.ticker,r);});}).catch(function(){}));})(tickers.slice(cStart,Math.min(cStart+BATCH,total)));}await Promise.all(crtPromises);crtScanned=Math.min(i+BATCH*CONC,total);var pct=Math.round(crtScanned/total*100);document.getElementById('crt-progress-fill').style.width=pct+'%';document.getElementById('crt-progress-pct').textContent=pct+'%';document.getElementById('crt-progress-text').textContent='Scanning '+crtScanned+'/'+total+' · '+crtSignals.length+' signals found';updateCrtStats(crtScanned,crtSignals.length,crtSignals.filter(function(s){return s.direction==='LONG';}).length,crtSignals.filter(function(s){return s.direction==='SHORT';}).length,total);await new Promise(function(r){setTimeout(r,50);});}crtScanning=false;document.getElementById('crt-scan-btn').style.display='flex';document.getElementById('crt-stop-btn').style.display='none';document.getElementById('crt-progress-text').textContent='Complete · '+crtScanned+' stocks scanned · '+crtSignals.length+' signals';var sbBadge=document.querySelector('#sb-scanner .sbadge');if(sbBadge){sbBadge.style.display='flex';sbBadge.textContent=crtSignals.length;}var statSum=document.getElementById('crt-stat-summary');if(statSum)statSum.style.display='block';if(crtSignals.length>0){showToast('CRT Scanner',crtScanned+' stocks scanned · '+crtSignals.length+' setups found','success',5000);saveSignalHistory(crtSignals);updateDashScanSummary(crtScanned,crtSignals);generateScanSummary(crtScanned,crtSignals);}else document.getElementById('crt-signals-grid').innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;grid-column:1/-1">No setups found across '+crtScanned+' stocks.</div>';}
+async function startCrtScan(){if(crtScanning)return;crtScanning=true;crtAbort=false;crtSignals=[];crtScanned=0;document.getElementById('crt-scan-btn').style.display='none';document.getElementById('crt-stop-btn').style.display='flex';document.getElementById('crt-progress-bar').style.display='block';var st=document.getElementById('crt-stats');if(st)st.style.display='grid';document.getElementById('crt-signals-grid').innerHTML='<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:12px"><div class="skel skel-block" style="height:100px"></div><div class="skel skel-block" style="height:100px"></div><div class="skel skel-block" style="height:100px"></div><div style="grid-column:1/-1;text-align:center;color:var(--text3);font-size:12px;padding:8px">Fetching ASX stock list...</div></div>';var tickers=await getAsxTickers();var total=tickers.length;crtScanned=0;updateCrtStats(0,0,0,0,total);document.getElementById('crt-signals-grid').innerHTML='<div style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;padding:12px"><div class="skel skel-block" style="height:100px"></div><div class="skel skel-block" style="height:100px"></div><div class="skel skel-block" style="height:100px"></div><div class="skel skel-block" style="height:100px"></div><div class="skel skel-block" style="height:100px"></div><div class="skel skel-block" style="height:100px"></div><div style="grid-column:1/-1;text-align:center;color:var(--text3);font-size:12px;padding:8px">Scanning '+total+' ASX stocks...</div>';var BATCH=5,CONC=3;for(let i=0;i<total;i+=BATCH*CONC){if(crtAbort)break;var crtPromises=[];for(let ci=0;ci<CONC;ci++){var cStart=i+ci*BATCH;if(cStart>=total)break;(function(bt){crtPromises.push(fetch(PROXY+'/crt-engine?tickers='+bt.map(function(s){return s.ticker;}).join(','),{signal:AbortSignal.timeout(25000)}).then(function(r){return r.json();}).then(function(d){if(d.results)d.results.forEach(function(r){processScanResult(r.ticker,r);});}).catch(function(){}));})(tickers.slice(cStart,Math.min(cStart+BATCH,total)));}await Promise.all(crtPromises);crtScanned=Math.min(i+BATCH*CONC,total);var pct=Math.round(crtScanned/total*100);document.getElementById('crt-progress-fill').style.width=pct+'%';document.getElementById('crt-progress-pct').textContent=pct+'%';document.getElementById('crt-progress-text').textContent='Scanning '+crtScanned+'/'+total+' · '+crtSignals.length+' signals found';updateCrtStats(crtScanned,crtSignals.length,crtSignals.filter(function(s){return s.direction==='LONG';}).length,crtSignals.filter(function(s){return s.direction==='SHORT';}).length,total);await new Promise(function(r){setTimeout(r,50);});}crtScanning=false;document.getElementById('crt-scan-btn').style.display='flex';document.getElementById('crt-stop-btn').style.display='none';document.getElementById('crt-progress-text').textContent='Complete · '+crtScanned+' stocks scanned · '+crtSignals.length+' signals';var sbBadge=document.querySelector('#sb-scanner .sbadge');if(sbBadge){sbBadge.style.display='flex';sbBadge.textContent=crtSignals.length;}var statSum=document.getElementById('crt-stat-summary');if(statSum)statSum.style.display='block';if(crtSignals.length>0){showToast('CRT Scanner',crtScanned+' stocks scanned · '+crtSignals.length+' setups found','success',5000);saveSignalHistory(crtSignals);updateDashScanSummary(crtScanned,crtSignals);generateScanSummary(crtScanned,crtSignals);}else document.getElementById('crt-signals-grid').innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;grid-column:1/-1">No setups found across '+crtScanned+' stocks.</div>';}
 function processScanResult(ticker,data){if(!data||!data.signals||!data.signals.length)return;for(var i=0;i<data.signals.length;i++){var sig=data.signals[i];var ml=mlScreener.find(function(s){return s.ticker===ticker;})||mlData[ticker];var mlScore=ml?getCrtMlScore(ml,sig.direction):0;var baseConf=sig.confidence||sig.baseConfidence||60;var final=Math.min(Math.round(baseConf+mlScore),99);
 // Regime adjustment
 var regime=window._marketRegime;
@@ -6681,13 +6600,20 @@ var tagsHtml=tags.length?'<div style="display:flex;flex-wrap:wrap;gap:4px;margin
 // ── EMA chain ──
 var emaKeys=[8,13,21,34,55,89,144];var emaHtml='';
 if(sig.emaLevels&&sig.emaStatus){var statusCol=sig.emaStatus==='ALIGNED'?'var(--green)':sig.emaStatus==='PARTIAL'?'var(--amber)':'var(--text3)';emaHtml='<div style="background:var(--bg4);border-radius:6px;padding:8px 12px;margin-top:8px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><span style="font-size:9px;color:var(--text3);font-weight:600;text-transform:uppercase">EMA STATUS</span><span style="font-size:10px;font-weight:700;color:'+statusCol+'">'+sig.emaStatus+'</span></div><div style="font-size:10px;font-family:var(--fm)">'+emaKeys.map(function(k,i){var v=sig.emaLevels['ema'+k];var col=v&&sig.price&&v<sig.price?'var(--green)':'var(--red)';return'<span style="color:'+col+';font-weight:'+(i<3?'700':'400')+'">'+k+'</span>';}).join(' <span style="color:var(--text4)">></span> ')+'</div></div>';}
-// ── Trade levels ──
+// ── Trade levels (computed via computeCrtLevels) ──
 var levelsHtml='';
-if(sig.entry||sig.stopLoss||sig.target){var entryPct=sig.entry&&sig.price?((sig.entry-sig.price)/sig.price*100).toFixed(1):'';var stopPct=sig.stopLoss&&sig.price?((sig.stopLoss-sig.price)/sig.price*100).toFixed(1):'';var targetPct=sig.target&&sig.price?((sig.target-sig.price)/sig.price*100).toFixed(1):'';levelsHtml='<div style="border-top:1px solid var(--border);padding:10px 16px"><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11px"><div style="display:flex;justify-content:space-between"><span style="color:var(--text3);font-weight:600">ENTRY</span><span style="color:#fff;font-weight:700;font-family:var(--fm)">'+(sig.entry?'$'+sig.entry.toFixed(3):'—')+'</span></div><div style="display:flex;justify-content:space-between"><span style="color:var(--red);font-weight:600">STOP</span><span style="color:var(--red);font-weight:700;font-family:var(--fm)">'+(sig.stopLoss?'$'+sig.stopLoss.toFixed(3):'—')+(stopPct?' <span style="font-size:9px;color:var(--text3)">'+stopPct+'%</span>':'')+'</span></div></div>';
-if(sig.trailingStop){levelsHtml+='<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:6px;padding:5px 8px;background:var(--bg4);border-radius:4px"><span style="color:var(--amber);font-weight:600">TRAILING STOP</span><span style="font-family:var(--fm);font-weight:700;color:var(--amber)">$'+sig.trailingStop.toFixed(4)+' <span style="font-size:9px;color:var(--text3)">EMA 8 - 1x ATR ('+(sig.trailPct||'')+'%)</span></span></div>';}
-if(sig.target){levelsHtml+='<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:6px"><span style="color:var(--text3);font-weight:600">TARGET (R1)</span><span style="color:var(--green);font-weight:700;font-family:var(--fm)">$'+sig.target.toFixed(3)+(targetPct?' <span style="font-size:9px;color:var(--text3)">'+targetPct+'%</span>':'')+'</span></div>';}
-if(sig.rr){levelsHtml+='<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:4px"><span style="color:var(--text3);font-weight:600">R:R</span><span style="font-weight:800;font-family:var(--fm);color:'+(sig.rr>=1.5?'var(--green)':sig.rr>=1?'var(--amber)':'var(--red)')+'">'+sig.rr+':1</span></div>';}
-levelsHtml+='</div>';}
+var _lvl=computeCrtLevels(sig);var _fP=function(v){return v?'$'+parseFloat(v).toFixed(3):'--';};var _rrD=_lvl.rr>0?_lvl.rr.toFixed(1)+':1':(sig.rr?sig.rr+':1':'--');var _rrC=(_lvl.rr>=2||(sig.rr&&sig.rr>=2))?'var(--green)':(_lvl.rr>=1||(sig.rr&&sig.rr>=1))?'var(--amber)':'var(--text3)';
+if(_lvl.entry>0||sig.entry||sig.stopLoss||sig.target){
+levelsHtml='<div class="crt-levels-grid">';
+levelsHtml+='<div class="lvl-cell"><div class="lvl-label" style="color:var(--text3)">ENTRY</div><div class="lvl-val" style="color:#fff">'+_fP(_lvl.entry)+'</div></div>';
+levelsHtml+='<div class="lvl-cell"><div class="lvl-label" style="color:var(--red)">STOP LOSS</div><div class="lvl-val" style="color:var(--red)">'+_fP(_lvl.stop)+'</div></div>';
+levelsHtml+='<div class="lvl-cell"><div class="lvl-label" style="color:'+_rrC+'">R:R RATIO</div><div class="lvl-val" style="color:'+_rrC+';font-size:14px">'+_rrD+'</div></div>';
+levelsHtml+='<div class="lvl-cell"><div class="lvl-label" style="color:var(--green)">TP1 (1R)</div><div class="lvl-val" style="color:var(--green)">'+_fP(_lvl.tp1)+'</div></div>';
+levelsHtml+='<div class="lvl-cell"><div class="lvl-label" style="color:var(--green)">TP2 (2R)</div><div class="lvl-val" style="color:var(--green)">'+_fP(_lvl.tp2)+'</div></div>';
+levelsHtml+='<div class="lvl-cell"><div class="lvl-label" style="color:var(--green)">TP3 (3R)</div><div class="lvl-val" style="color:var(--green)">'+_fP(_lvl.tp3)+'</div></div>';
+levelsHtml+='</div>';
+if(sig.trailingStop){levelsHtml+='<div style="display:flex;justify-content:space-between;font-size:11px;padding:5px 12px;background:var(--bg4);border-top:1px solid var(--border)"><span style="color:var(--amber);font-weight:600">TRAILING STOP</span><span style="font-family:var(--fm);font-weight:700;color:var(--amber)">$'+sig.trailingStop.toFixed(4)+' <span style="font-size:9px;color:var(--text3)">EMA 8 - 1x ATR ('+( sig.trailPct||'')+'%)</span></span></div>';}
+}
 // ── Volume + Structure ──
 var volHtml='';
 if(sig.rvol!=null){var volCol=sig.rvol>=1.5?'var(--green)':sig.rvol>=0.8?'var(--text2)':'var(--red)';volHtml='<div style="border-top:1px solid var(--border);padding:8px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:11px"><div><span style="color:var(--text3)">VOLUME </span><span style="color:'+volCol+';font-weight:700;font-family:var(--fm)">'+sig.rvol+'x</span> <span style="color:'+volCol+';font-size:10px">'+sig.volStatus+'</span></div><div><span style="color:var(--text3)">STRUCTURE </span><span style="color:'+(sig.structure==='HH/HL'?'var(--green)':sig.structure==='LH/LL'?'var(--red)':'var(--amber)')+';font-weight:700">'+sig.structure+'</span> <span style="color:var(--text3);font-size:10px">'+sig.trend+'</span></div></div>';}
@@ -7298,7 +7224,7 @@ setInterval(function() {
 }, 900000);
 
 // Auto-refresh: if on intel page, re-run full analysis every 5 minutes
-setInterval(() => {
+intelRefreshTimer = setInterval(() => {
   const intelActive = document.getElementById('page-intel')?.classList.contains('active');
   if (intelActive) {
     runAllIntelAnalysis();
@@ -7309,9 +7235,11 @@ setInterval(() => {
 
 // Build sector page + auto-refresh every 60s during market hours
 refreshSectorData();
-setInterval(function() {
-  // Auto-refresh sectors if page is visible
+sectorRefreshTimer = setInterval(function() {
+  // Auto-refresh sectors if page is visible and sector page is active
   if (document.hidden) return;
+  var sp = document.getElementById('page-sectors');
+  if (!sp || !sp.classList.contains('active')) return;
   refreshSectorData();
 }, 60000);
 
@@ -7458,8 +7386,8 @@ function filterScanner() {
   if (sel) sel.value = activeScanMarket;
   const dsel = document.getElementById('scan-dir-filter');
   if (dsel) dsel.value = activeScanDir;
-  // Call original if it exists in outer scope (defined earlier in the file)
-  if (typeof _origFilterScanner === 'function') _origFilterScanner();
+  // Route to the active view's filter logic
+  if (activeScanView === 'bullish') { filterBullish(); }
 }
 
 // Legacy toggleCrtMode shim
@@ -7877,6 +7805,7 @@ RULES:
 // Run on page load and when navigating to dash
 document.addEventListener('DOMContentLoaded', () => {
   setTimeout(fetchOvernightData, 800);
+  if (typeof renderPresetChips === 'function') renderPresetChips();
 });
 
 
@@ -9126,6 +9055,31 @@ function exportCrtCsv() {
   a.click();
   showToast('Exported', asxCrtSignals.length + ' signals saved as CSV', 'success');
 }
+
+// Export scanner log - combines ASX CRT signals + general CRT signals
+function exportScannerLog() {
+  var allSigs = [];
+  if (typeof asxCrtSignals !== 'undefined' && asxCrtSignals.length) allSigs = allSigs.concat(asxCrtSignals);
+  if (typeof crtSignals !== 'undefined' && crtSignals.length) {
+    crtSignals.forEach(function(s) {
+      if (!allSigs.find(function(x) { return x.ticker === s.ticker && x.model === s.model; })) allSigs.push(s);
+    });
+  }
+  if (!allSigs.length) { showToast('No data', 'Run a scan first to generate signals', 'warning'); return; }
+  var rows = [['Ticker','Direction','Grade','Confidence','Price','Stop%','TBOS Level','Model','Age']];
+  allSigs.forEach(function(s) {
+    var conf = s.finalConfidence || s.baseConfidence || 0;
+    var stopP = s.tbosLevel && s.price ? Math.abs((s.price - s.tbosLevel) / s.price * 100).toFixed(1) + '%' : '';
+    rows.push([s.ticker, s.direction, typeof gradeSignal === 'function' ? gradeSignal(conf) : '', conf + '%', s.price || '', stopP, s.tbosLevel || '', s.model || '', s.tbosAge || '']);
+  });
+  var csv = rows.map(function(r) { return r.join(','); }).join('\n');
+  var a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'scanner_log_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+  showToast('Exported', allSigs.length + ' signals saved as CSV', 'success');
+}
+
 
 function updateAsxScanKPIs() {
   const sigs = asxCrtSignals;
