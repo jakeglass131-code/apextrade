@@ -16,6 +16,7 @@ const MODULES = [
   'earningsTrend',
   'balanceSheetHistory',
   'incomeStatementHistory',
+  'cashflowStatementHistory',
   'assetProfile',
   'price',
   'calendarEvents',
@@ -52,6 +53,97 @@ async function ensureYfSession() {
     }
   } catch (e) { /* fall through */ }
   return { crumb: null, cookie: null, ts: 0 };
+}
+
+// Infer likely upcoming catalysts based on sector/industry/description
+function inferCatalysts(sector, industry, desc, flags) {
+  const s = (sector || '').toLowerCase();
+  const i = (industry || '').toLowerCase();
+  const d = (desc || '').toLowerCase();
+  const cats = [];
+
+  // Mining / Resources
+  if (s.includes('basic material') || i.includes('mining') || i.includes('gold') || i.includes('metal') ||
+      i.includes('copper') || i.includes('iron') || i.includes('coal') || i.includes('silver') ||
+      d.includes('exploration') || d.includes('mining') || d.includes('drill') || d.includes('mineral')) {
+    cats.push({ type: 'Drill Results', icon: '⛏', desc: 'Assay results from current drilling programs' });
+    cats.push({ type: 'Resource Estimate', icon: '📐', desc: 'Updated JORC resource / reserve estimates' });
+    if (d.includes('feasibility') || d.includes('study') || d.includes('scoping'))
+      cats.push({ type: 'Feasibility Study', icon: '📊', desc: 'DFS/PFS/Scoping study results' });
+    if (d.includes('production') || d.includes('processing') || d.includes('plant'))
+      cats.push({ type: 'Production Update', icon: '🏭', desc: 'Quarterly production & cost report' });
+    cats.push({ type: 'Commodity Price', icon: '📈', desc: 'Underlying commodity price movements' });
+  }
+
+  // Lithium / Battery / Rare Earths
+  if (i.includes('lithium') || i.includes('rare earth') || d.includes('lithium') || d.includes('battery') ||
+      d.includes('rare earth') || d.includes('graphite') || d.includes('cobalt') || d.includes('nickel')) {
+    cats.push({ type: 'Offtake Agreement', icon: '🤝', desc: 'Binding offtake or supply agreements with EV/battery makers' });
+    cats.push({ type: 'EV Demand Data', icon: '🔋', desc: 'Global EV sales data impacting lithium/battery demand' });
+  }
+
+  // Oil & Gas
+  if (i.includes('oil') || i.includes('gas') || i.includes('petroleum') || i.includes('energy') ||
+      d.includes('oil') || d.includes('petroleum') || d.includes('natural gas')) {
+    cats.push({ type: 'Well Results', icon: '🛢', desc: 'Exploration well results & flow rates' });
+    cats.push({ type: 'Oil/Gas Price', icon: '⛽', desc: 'Brent/WTI crude & LNG price movements' });
+    cats.push({ type: 'Production Report', icon: '📋', desc: 'Quarterly production & reserves update' });
+  }
+
+  // Biotech / Pharma / Healthcare
+  if (s.includes('healthcare') || i.includes('biotech') || i.includes('pharma') || i.includes('drug') ||
+      i.includes('medical') || i.includes('diagnostic') || d.includes('clinical') || d.includes('fda') ||
+      d.includes('therapeutic') || d.includes('trial') || d.includes('regulatory')) {
+    cats.push({ type: 'Clinical Trial Results', icon: '🧬', desc: 'Phase I/II/III trial data readouts' });
+    cats.push({ type: 'FDA/TGA Approval', icon: '✅', desc: 'Regulatory approval or submission milestones' });
+    cats.push({ type: 'Partnership Deal', icon: '🤝', desc: 'Licensing, collaboration or distribution agreements' });
+    if (d.includes('device') || d.includes('implant'))
+      cats.push({ type: 'Device Approval', icon: '🏥', desc: 'Medical device regulatory clearance (FDA 510k/CE Mark)' });
+  }
+
+  // Technology / Software
+  if (s.includes('technology') || i.includes('software') || i.includes('saas') || i.includes('internet') ||
+      i.includes('cloud') || d.includes('platform') || d.includes('saas') || d.includes('ai ')) {
+    cats.push({ type: 'Contract Win', icon: '📝', desc: 'New enterprise contracts or government deals' });
+    cats.push({ type: 'ARR/MRR Update', icon: '💰', desc: 'Annual/monthly recurring revenue milestones' });
+    cats.push({ type: 'Product Launch', icon: '🚀', desc: 'New product releases or feature launches' });
+  }
+
+  // Cannabis
+  if (i.includes('cannabis') || i.includes('marijuana') || d.includes('cannabis')) {
+    cats.push({ type: 'Regulatory Change', icon: '⚖', desc: 'State/federal cannabis regulation updates' });
+    cats.push({ type: 'License Grant', icon: '📜', desc: 'New cultivation or distribution licenses' });
+  }
+
+  // Real Estate / REITs
+  if (s.includes('real estate') || i.includes('reit') || d.includes('property') || d.includes('real estate')) {
+    cats.push({ type: 'Acquisition', icon: '🏢', desc: 'Property acquisitions or disposals' });
+    cats.push({ type: 'Occupancy Update', icon: '📊', desc: 'Occupancy rates & rental income updates' });
+    cats.push({ type: 'Distribution', icon: '💰', desc: 'Quarterly/half-year distribution announcements' });
+  }
+
+  // Financial
+  if (s.includes('financial') || i.includes('bank') || i.includes('insurance') || i.includes('capital')) {
+    cats.push({ type: 'Rate Decision', icon: '🏦', desc: 'RBA / central bank interest rate decisions' });
+    cats.push({ type: 'Loan Book Update', icon: '📈', desc: 'Credit quality & loan growth data' });
+  }
+
+  // Agriculture
+  if (i.includes('agri') || i.includes('farm') || d.includes('agriculture') || d.includes('crop') || d.includes('cattle')) {
+    cats.push({ type: 'Harvest Report', icon: '🌾', desc: 'Seasonal crop yield or livestock data' });
+    cats.push({ type: 'Weather Impact', icon: '🌧', desc: 'Drought/flood/weather event impacts on production' });
+  }
+
+  // Universal catalysts
+  cats.push({ type: 'Quarterly Report', icon: '📑', desc: 'Next quarterly activities & cashflow report (Appendix 5B)' });
+  if (flags.isPreRevenue || flags.isBurningCash)
+    cats.push({ type: 'Capital Raise', icon: '⚠', desc: 'Potential placement, SPP, or rights issue to fund operations' });
+  if (flags.revenue && flags.revenue > 10000000)
+    cats.push({ type: 'Earnings Report', icon: '📊', desc: 'Half-year or full-year earnings results' });
+  if (flags.dividendYield && flags.dividendYield > 0)
+    cats.push({ type: 'Dividend Declaration', icon: '💰', desc: 'Next interim or final dividend announcement' });
+
+  return cats.slice(0, 8); // cap at 8
 }
 
 async function fetchFundamentals(ticker) {
@@ -99,6 +191,7 @@ async function fetchFundamentals(ticker) {
   const pr = result.price || {};
   const ce = result.calendarEvents || {};
   const udh = (result.upgradeDowngradeHistory && result.upgradeDowngradeHistory.history) || [];
+  const cf = (result.cashflowStatementHistory && result.cashflowStatementHistory.cashflowStatements) || [];
 
   // Extract raw values (Yahoo wraps numbers in {raw, fmt} objects)
   const raw = (obj) => obj && obj.raw !== undefined ? obj.raw : null;
@@ -106,15 +199,35 @@ async function fetchFundamentals(ticker) {
   // Balance sheet metrics (most recent)
   const latestBS = bs[0] || {};
   const totalAssets = raw(latestBS.totalAssets);
-  const totalDebt = raw(latestBS.longTermDebt) || 0;
-  const totalCash = raw(latestBS.cash) || 0;
+  const totalDebt = raw(latestBS.longTermDebt) || raw(latestBS.totalDebt) || 0;
+  const shortTermDebt = raw(latestBS.shortLongTermDebt) || raw(latestBS.shortTermBorrowings) || 0;
+  // Cash: try multiple fields — Yahoo is inconsistent
+  const totalCash = raw(latestBS.cash) || raw(latestBS.cashAndCashEquivalents) || raw(latestBS.cashAndShortTermInvestments) || raw(fd.totalCash) || 0;
   const totalEquity = raw(latestBS.totalStockholderEquity);
+  const currentAssets = raw(latestBS.totalCurrentAssets) || 0;
+  const currentLiab = raw(latestBS.totalCurrentLiabilities) || 0;
+  const currentRatio = currentLiab > 0 ? currentAssets / currentLiab : null;
 
   // Income statement
   const latestIS = is[0] || {};
   const revenue = raw(latestIS.totalRevenue);
   const netIncome = raw(latestIS.netIncome);
   const grossProfit = raw(latestIS.grossProfit);
+
+  // Cash flow statement
+  const latestCF = cf[0] || {};
+  const prevCF = cf[1] || {};
+  const operatingCashFlow = raw(latestCF.totalCashFromOperatingActivities);
+  const capex = raw(latestCF.capitalExpenditures); // usually negative
+  const freeCashFlow = raw(fd.freeCashflow) || (operatingCashFlow != null && capex != null ? operatingCashFlow + capex : null);
+  const prevOperatingCF = raw(prevCF.totalCashFromOperatingActivities);
+
+  // Cash burn & runway (for pre-revenue / loss-making companies)
+  const isPreRevenue = !revenue || revenue < 1000000; // < $1M revenue
+  const isBurningCash = operatingCashFlow != null && operatingCashFlow < 0;
+  const quarterlyBurn = isBurningCash ? Math.abs(operatingCashFlow) / 4 : null; // annualized / 4
+  const monthlyBurn = isBurningCash ? Math.abs(operatingCashFlow) / 12 : null;
+  const cashRunwayMonths = monthlyBurn && totalCash > 0 ? Math.round(totalCash / monthlyBurn) : null;
 
   // EPS growth from earningsTrend
   let epsGrowth = null;
@@ -191,6 +304,22 @@ async function fetchFundamentals(ticker) {
     else if (profitMargin < 0) { qualityScore -= 8; signals.push('Loss-making'); }
   }
 
+  // Cash flow scoring
+  if (operatingCashFlow !== null) {
+    if (operatingCashFlow > 0) { qualityScore += 8; signals.push('Cash flow positive'); }
+    else {
+      qualityScore -= 5;
+      if (cashRunwayMonths !== null) {
+        if (cashRunwayMonths < 6) { qualityScore -= 10; signals.push('⚠ Cash runway < 6 months'); }
+        else if (cashRunwayMonths < 12) { qualityScore -= 5; signals.push('Low runway ~' + cashRunwayMonths + ' months'); }
+        else { signals.push('Runway ~' + cashRunwayMonths + ' months'); }
+      }
+    }
+  }
+
+  // Pre-revenue penalty/flag
+  if (isPreRevenue) { signals.push('Pre-revenue / exploration stage'); }
+
   const totalScore = valueScore + qualityScore;
   const grade = totalScore >= 60 ? 'A+' : totalScore >= 45 ? 'A' : totalScore >= 30 ? 'B' : totalScore >= 15 ? 'C' : 'D';
 
@@ -221,14 +350,24 @@ async function fetchFundamentals(ticker) {
     dividendYield: divYield,
     dividendRate: raw(sd.dividendRate),
     payoutRatio: raw(sd.payoutRatio),
-    // Balance sheet
+    // Balance sheet & cash
     totalAssets: totalAssets,
     totalDebt: totalDebt,
+    shortTermDebt: shortTermDebt,
     totalCash: totalCash,
     totalEquity: totalEquity,
     debtToEquity: debtToEquity,
+    currentRatio: currentRatio,
     revenue: revenue,
     netIncome: netIncome,
+    // Cash flow
+    operatingCashFlow: operatingCashFlow,
+    freeCashFlow: freeCashFlow,
+    capex: capex,
+    isPreRevenue: isPreRevenue,
+    isCashFlowPositive: operatingCashFlow != null ? operatingCashFlow > 0 : null,
+    monthlyBurn: monthlyBurn,
+    cashRunwayMonths: cashRunwayMonths,
     // Analyst
     targetMeanPrice: raw(fd.targetMeanPrice),
     targetHighPrice: raw(fd.targetHighPrice),
@@ -255,6 +394,8 @@ async function fetchFundamentals(ticker) {
     fullTimeEmployees: ap.fullTimeEmployees || null,
     website: ap.website || null,
     longBusinessSummary: ap.longBusinessSummary ? ap.longBusinessSummary.slice(0, 300) : null,
+    // Industry-specific upcoming catalysts (inferred from sector/industry)
+    likelyCatalysts: inferCatalysts(ap.sector, ap.industry, ap.longBusinessSummary || '', { isPreRevenue, isBurningCash, revenue, dividendYield: divYield }),
     // Scores
     valueScore: valueScore,
     qualityScore: qualityScore,

@@ -7486,81 +7486,115 @@ async function runAsxIntel() {
     + (f.signals && f.signals.length ? '<div style="margin-top:8px">' + f.signals.map(s => '<div style="font-size:10px;padding:3px 8px;margin:2px 0;border-radius:4px;background:var(--bg5);color:var(--text2)">• ' + s + '</div>').join('') + '</div>' : '')
     + '</div>';
 
-  // ── DETAIL PANEL (right) ──
+  // ── DETAIL PANEL (right) — comprehensive analysis ──
+  const _b = (l,v) => '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">' + l + '</div><div style="font-size:15px;font-weight:700;color:' + v[1] + '">' + v[0] + '</div></div>';
+  const _vc = (v, good, bad) => [v == null ? '—' : typeof v === 'number' ? v : v, v == null ? 'var(--text3)' : (typeof good === 'number' && v >= good) ? 'var(--green)' : (typeof bad === 'number' && v <= bad) ? 'var(--red)' : 'var(--text)'];
+  const _sec = (t) => '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">' + t + '</div>';
   let h = '';
 
-  // Section 1: Valuation
-  h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Valuation</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">P/E (TTM)</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.pe, 0, 40) + '">' + fmt(f.pe) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">FWD P/E</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.forwardPE, 0, 35) + '">' + fmt(f.forwardPE) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">P/B</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.pb, 0, 5) + '">' + fmt(f.pb, 2) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">P/S</div><div style="font-size:16px;font-weight:700;color:var(--text)">' + fmt(f.ps, 2) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EV/EBITDA</div><div style="font-size:16px;font-weight:700;color:var(--text)">' + fmt(f.evToEbitda) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">DIV YIELD</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.dividendYield, 0.04, -1) + '">' + fmtPct(f.dividendYield) + '</div></div>'
+  // ── 1: COMPANY OVERVIEW ──
+  h += _sec('Company Overview');
+  if (f.longBusinessSummary) {
+    h += '<div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5">' + f.longBusinessSummary + (f.longBusinessSummary.length >= 295 ? '...' : '') + '</div>';
+  }
+  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">'
+    + '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(99,102,241,.12);color:var(--accent);font-weight:600">' + f.sector + '</span>'
+    + '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(99,102,241,.08);color:var(--text2)">' + f.industry + '</span>'
+    + (f.fullTimeEmployees ? '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--bg5);color:var(--text3)">' + f.fullTimeEmployees.toLocaleString() + ' employees</span>' : '')
+    + (f.isPreRevenue ? '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(245,158,11,.12);color:var(--amber);font-weight:600">Pre-Revenue</span>' : '')
+    + (f.isCashFlowPositive === true ? '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(16,185,129,.12);color:var(--green);font-weight:600">Cash Flow +ve</span>' : '')
+    + (f.isCashFlowPositive === false ? '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(239,68,68,.12);color:var(--red);font-weight:600">Cash Burn</span>' : '')
     + '</div>';
 
-  // Section 2: Profitability & Growth
-  h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Profitability & Growth</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">ROE</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.roe, 0.15, 0) + '">' + fmtPct(f.roe) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">ROA</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.roa, 0.08, 0) + '">' + fmtPct(f.roa) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">MARGIN</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.profitMargin, 0.10, 0) + '">' + fmtPct(f.profitMargin) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EPS (TTM)</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.epsTrailing, 0, 0) + '">$' + fmt(f.epsTrailing, 2) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EPS FWD</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.epsForward, 0, 0) + '">$' + fmt(f.epsForward, 2) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EPS GROWTH</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.epsGrowth, 0.05, -0.05) + '">' + fmtPct(f.epsGrowth) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">REV GROWTH</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.revenueGrowth, 0.05, -0.05) + '">' + fmtPct(f.revenueGrowth) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EARN GROWTH</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.earningsGrowth, 0.05, -0.05) + '">' + fmtPct(f.earningsGrowth) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">PAYOUT</div><div style="font-size:16px;font-weight:700;color:var(--text)">' + fmtPct(f.payoutRatio) + '</div></div>'
+  // ── 2: VALUATION ──
+  h += _sec('Valuation');
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
+    + _b('P/E (TTM)', [fmt(f.pe), valCol(f.pe, 0, 40)])
+    + _b('FWD P/E', [fmt(f.forwardPE), valCol(f.forwardPE, 0, 35)])
+    + _b('P/B', [fmt(f.pb, 2), valCol(f.pb, 0, 5)])
+    + _b('P/S', [fmt(f.ps, 2), 'var(--text)'])
+    + _b('EV/EBITDA', [fmt(f.evToEbitda), 'var(--text)'])
+    + _b('DIV YIELD', [fmtPct(f.dividendYield), valCol(f.dividendYield, 0.04, -1)])
     + '</div>';
 
-  // Section 3: Balance Sheet
-  h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Balance Sheet & Financial Health</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">TOTAL ASSETS</div><div style="font-size:14px;font-weight:700;color:var(--text)">' + fmtM(f.totalAssets) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">TOTAL DEBT</div><div style="font-size:14px;font-weight:700;color:' + valCol(f.debtToEquity, -1, 1.5) + '">' + fmtM(f.totalDebt) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">CASH</div><div style="font-size:14px;font-weight:700;color:var(--green)">' + fmtM(f.totalCash) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EQUITY</div><div style="font-size:14px;font-weight:700;color:var(--text)">' + fmtM(f.totalEquity) + '</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">DEBT/EQUITY</div><div style="font-size:14px;font-weight:700;color:' + valCol(f.debtToEquity, -1, 1.0) + '">' + fmt(f.debtToEquity, 2) + 'x</div></div>'
-    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">REVENUE</div><div style="font-size:14px;font-weight:700;color:var(--text)">' + fmtM(f.revenue) + '</div></div>'
+  // ── 3: PROFITABILITY & GROWTH ──
+  h += _sec('Profitability & Growth');
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
+    + _b('ROE', [fmtPct(f.roe), valCol(f.roe, 0.15, 0)])
+    + _b('ROA', [fmtPct(f.roa), valCol(f.roa, 0.08, 0)])
+    + _b('MARGIN', [fmtPct(f.profitMargin), valCol(f.profitMargin, 0.10, 0)])
+    + _b('EPS (TTM)', ['$' + fmt(f.epsTrailing, 2), valCol(f.epsTrailing, 0, 0)])
+    + _b('EPS FWD', ['$' + fmt(f.epsForward, 2), valCol(f.epsForward, 0, 0)])
+    + _b('EPS GROWTH', [fmtPct(f.epsGrowth), valCol(f.epsGrowth, 0.05, -0.05)])
+    + _b('REV GROWTH', [fmtPct(f.revenueGrowth), valCol(f.revenueGrowth, 0.05, -0.05)])
+    + _b('EARN GROWTH', [fmtPct(f.earningsGrowth), valCol(f.earningsGrowth, 0.05, -0.05)])
+    + _b('PAYOUT', [fmtPct(f.payoutRatio), 'var(--text)'])
     + '</div>';
 
-  // Section 4: Dividends
-  if (f.dividendYield && f.dividendYield > 0) {
-    h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Dividend Profile</div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
-      + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">YIELD</div><div style="font-size:16px;font-weight:700;color:var(--green)">' + fmtPct(f.dividendYield) + '</div></div>'
-      + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">ANNUAL RATE</div><div style="font-size:16px;font-weight:700;color:var(--text)">$' + fmt(f.dividendRate, 2) + '</div></div>'
-      + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">PAYOUT RATIO</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.payoutRatio, -1, 0.8) + '">' + fmtPct(f.payoutRatio) + '</div></div>'
+  // ── 4: CASH POSITION & FINANCIAL HEALTH ──
+  h += _sec('Cash Position & Financial Health');
+  // Cash status banner for cash-burning companies
+  if (f.isCashFlowPositive === false && f.totalCash) {
+    const runwayCol = f.cashRunwayMonths != null ? (f.cashRunwayMonths < 6 ? 'var(--red)' : f.cashRunwayMonths < 12 ? 'var(--amber)' : 'var(--green)') : 'var(--amber)';
+    const runwayPct = f.cashRunwayMonths ? Math.min(100, (f.cashRunwayMonths / 24) * 100) : 0;
+    h += '<div style="background:' + (f.cashRunwayMonths && f.cashRunwayMonths < 12 ? 'rgba(239,68,68,.08)' : 'rgba(245,158,11,.06)') + ';border:1px solid ' + (f.cashRunwayMonths && f.cashRunwayMonths < 12 ? 'rgba(239,68,68,.2)' : 'rgba(245,158,11,.15)') + ';border-radius:8px;padding:12px;margin-bottom:10px">'
+      + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      + '<div style="font-size:11px;font-weight:700;color:' + runwayCol + '">CASH RUNWAY</div>'
+      + '<div style="font-size:18px;font-weight:800;color:' + runwayCol + '">' + (f.cashRunwayMonths != null ? f.cashRunwayMonths + ' months' : 'Unknown') + '</div></div>'
+      + '<div style="height:6px;background:var(--bg5);border-radius:3px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:' + runwayPct + '%;background:' + runwayCol + ';border-radius:3px"></div></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:10px">'
+      + '<div><span style="color:var(--text4)">Cash Balance</span><div style="color:var(--green);font-weight:700">' + fmtM(f.totalCash) + '</div></div>'
+      + '<div><span style="color:var(--text4)">Monthly Burn</span><div style="color:var(--red);font-weight:700">-' + fmtM(f.monthlyBurn) + '</div></div>'
+      + '<div><span style="color:var(--text4)">Op Cash Flow</span><div style="color:var(--red);font-weight:700">' + fmtM(f.operatingCashFlow) + '</div></div></div>'
+      + (f.cashRunwayMonths && f.cashRunwayMonths < 12 ? '<div style="font-size:10px;color:var(--red);margin-top:8px;font-weight:600">Capital raise likely within ' + f.cashRunwayMonths + ' months — dilution risk</div>' : '')
       + '</div>';
   }
 
-  // Section 5: Catalyst Pipeline
-  h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Catalyst Pipeline</div>';
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
+    + _b('CASH', [fmtM(f.totalCash), 'var(--green)'])
+    + _b('TOTAL DEBT', [fmtM(f.totalDebt), f.totalDebt > 0 ? 'var(--red)' : 'var(--text)'])
+    + _b('NET CASH', [fmtM((f.totalCash||0) - (f.totalDebt||0)), ((f.totalCash||0) - (f.totalDebt||0)) >= 0 ? 'var(--green)' : 'var(--red)'])
+    + _b('OP CASH FLOW', [fmtM(f.operatingCashFlow), f.operatingCashFlow != null ? (f.operatingCashFlow >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--text3)'])
+    + _b('FREE CASH FLOW', [fmtM(f.freeCashFlow), f.freeCashFlow != null ? (f.freeCashFlow >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--text3)'])
+    + _b('CAPEX', [fmtM(f.capex), 'var(--text)'])
+    + _b('TOTAL ASSETS', [fmtM(f.totalAssets), 'var(--text)'])
+    + _b('EQUITY', [fmtM(f.totalEquity), f.totalEquity != null ? (f.totalEquity > 0 ? 'var(--text)' : 'var(--red)') : 'var(--text3)'])
+    + _b('CURRENT RATIO', [f.currentRatio != null ? fmt(f.currentRatio, 2) + 'x' : '—', f.currentRatio != null ? (f.currentRatio > 1.5 ? 'var(--green)' : f.currentRatio < 1 ? 'var(--red)' : 'var(--amber)') : 'var(--text3)'])
+    + _b('D/E RATIO', [f.debtToEquity != null ? fmt(f.debtToEquity, 2) + 'x' : '—', valCol(f.debtToEquity, -1, 1.0)])
+    + _b('REVENUE', [fmtM(f.revenue), 'var(--text)'])
+    + _b('NET INCOME', [fmtM(f.netIncome), f.netIncome != null ? (f.netIncome >= 0 ? 'var(--green)' : 'var(--red)') : 'var(--text3)'])
+    + '</div>';
+
+  // ── 5: DIVIDENDS ──
+  if (f.dividendYield && f.dividendYield > 0) {
+    h += _sec('Dividend Profile');
+    h += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
+      + _b('YIELD', [fmtPct(f.dividendYield), 'var(--green)'])
+      + _b('ANNUAL RATE', ['$' + fmt(f.dividendRate, 2), 'var(--text)'])
+      + _b('PAYOUT RATIO', [fmtPct(f.payoutRatio), valCol(f.payoutRatio, -1, 0.8)])
+      + '</div>';
+  }
+
+  // ── 6: CATALYST PIPELINE ──
+  h += _sec('Catalyst Pipeline');
   const catalysts = [];
   const today = new Date().toISOString().slice(0, 10);
-  // Earnings dates
   if (f.earningsDate && f.earningsDate.length) {
     f.earningsDate.forEach(d => {
       const isPast = d < today;
-      catalysts.push({ date: d, type: 'Earnings', label: isPast ? 'Last Earnings' : 'Next Earnings', icon: isPast ? '📊' : '📅', color: isPast ? 'var(--text3)' : 'var(--accent)', detail: f.earningsEstimate != null ? 'Est EPS $' + f.earningsEstimate.toFixed(2) + (f.revenueEstimate ? ' · Rev ' + (f.revenueEstimate >= 1e9 ? '$'+(f.revenueEstimate/1e9).toFixed(1)+'B' : '$'+(f.revenueEstimate/1e6).toFixed(0)+'M') : '') : '' });
+      catalysts.push({ date: d, label: isPast ? 'Last Earnings' : 'Next Earnings', icon: isPast ? '📊' : '📅', color: isPast ? 'var(--text3)' : 'var(--accent)', detail: f.earningsEstimate != null ? 'Est EPS $' + f.earningsEstimate.toFixed(2) + (f.revenueEstimate ? ' · Rev ' + (f.revenueEstimate >= 1e9 ? '$'+(f.revenueEstimate/1e9).toFixed(1)+'B' : '$'+(f.revenueEstimate/1e6).toFixed(0)+'M') : '') : '' });
     });
   }
-  // Ex-dividend date
   if (f.exDividendDate) {
     const isPast = f.exDividendDate < today;
-    catalysts.push({ date: f.exDividendDate, type: 'Dividend', label: isPast ? 'Last Ex-Div' : 'Next Ex-Div', icon: '💰', color: isPast ? 'var(--text3)' : 'var(--green)', detail: f.dividendRate ? '$' + f.dividendRate.toFixed(2) + '/share' : '' });
+    catalysts.push({ date: f.exDividendDate, label: isPast ? 'Last Ex-Div' : 'Next Ex-Div', icon: '💰', color: isPast ? 'var(--text3)' : 'var(--green)', detail: f.dividendRate ? '$' + f.dividendRate.toFixed(2) + '/share' : '' });
   }
-  // Dividend pay date
   if (f.dividendPayDate) {
     const isPast = f.dividendPayDate < today;
-    catalysts.push({ date: f.dividendPayDate, type: 'Payment', label: isPast ? 'Last Div Payment' : 'Div Payment Due', icon: '🏦', color: isPast ? 'var(--text3)' : 'var(--green)', detail: '' });
+    catalysts.push({ date: f.dividendPayDate, label: isPast ? 'Last Div Payment' : 'Div Payment Due', icon: '🏦', color: isPast ? 'var(--text3)' : 'var(--green)', detail: '' });
   }
-  // Sort catalysts by date
   catalysts.sort((a, b) => a.date.localeCompare(b.date));
-
   if (catalysts.length) {
-    h += '<div style="margin-bottom:12px">';
     catalysts.forEach(c => {
       const daysAway = Math.round((new Date(c.date) - new Date()) / 86400000);
       const daysLabel = daysAway > 0 ? daysAway + 'd away' : daysAway === 0 ? 'TODAY' : Math.abs(daysAway) + 'd ago';
@@ -7569,14 +7603,26 @@ async function runAsxIntel() {
         + '<div style="flex:1"><div style="font-size:11px;font-weight:700;color:var(--text)">' + c.label + '</div>'
         + '<div style="font-size:10px;color:var(--text3)">' + c.date + ' · ' + daysLabel + (c.detail ? ' · ' + c.detail : '') + '</div></div></div>';
     });
-    h += '</div>';
-  } else {
-    h += '<div style="font-size:11px;color:var(--text3);padding:12px;background:var(--bg4);border-radius:6px;margin-bottom:12px">No upcoming earnings or dividend dates available</div>';
   }
+
+  // Industry-specific likely catalysts
+  if (f.likelyCatalysts && f.likelyCatalysts.length) {
+    h += '<div style="font-size:11px;font-weight:600;color:var(--text2);margin:10px 0 6px">Upcoming Catalysts to Watch</div>';
+    f.likelyCatalysts.forEach(c => {
+      h += '<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 10px;margin-bottom:3px;background:var(--bg4);border-radius:5px">'
+        + '<div style="font-size:14px;flex-shrink:0;margin-top:1px">' + c.icon + '</div>'
+        + '<div><div style="font-size:10px;font-weight:700;color:var(--accent)">' + c.type + '</div>'
+        + '<div style="font-size:10px;color:var(--text3)">' + c.desc + '</div></div></div>';
+    });
+  }
+  if (!catalysts.length && (!f.likelyCatalysts || !f.likelyCatalysts.length)) {
+    h += '<div style="font-size:11px;color:var(--text3);padding:12px;background:var(--bg4);border-radius:6px">No catalyst data available</div>';
+  }
+  h += '<div style="margin-bottom:16px"></div>';
 
   // Analyst changes (upgrades/downgrades)
   if (f.analystChanges && f.analystChanges.length) {
-    h += '<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">Recent Analyst Actions</div>';
+    h += _sec('Recent Analyst Actions');
     f.analystChanges.forEach(a => {
       const actCol = a.action === 'upgrade' ? 'var(--green)' : a.action === 'downgrade' ? 'var(--red)' : 'var(--amber)';
       const actIcon = a.action === 'upgrade' ? '⬆' : a.action === 'downgrade' ? '⬇' : '↔';
@@ -7589,72 +7635,87 @@ async function runAsxIntel() {
     h += '<div style="margin-bottom:16px"></div>';
   }
 
-  // Section 6: Macro & Sector Context
-  h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Macro & Sector Context</div>';
-  h += '<div style="background:var(--bg4);border-radius:8px;padding:12px;margin-bottom:16px">';
-  // Business summary
-  if (f.longBusinessSummary) {
-    h += '<div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5">' + f.longBusinessSummary + (f.longBusinessSummary.length >= 295 ? '...' : '') + '</div>';
-  }
-  // Sector + Industry tag line
-  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
-    + '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(99,102,241,.12);color:var(--accent);font-weight:600">' + f.sector + '</span>'
-    + '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(99,102,241,.08);color:var(--text2)">' + f.industry + '</span>'
-    + (f.fullTimeEmployees ? '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--bg5);color:var(--text3)">' + f.fullTimeEmployees.toLocaleString() + ' employees</span>' : '')
-    + '</div>';
-  // Analyst target range bar
+  // ── 7: ANALYST TARGETS ──
   if (f.targetLowPrice && f.targetHighPrice && f.price) {
+    h += _sec('Analyst Consensus & Target');
     const lo = f.targetLowPrice, hi = f.targetHighPrice, cur = f.price, mid = f.targetMeanPrice || ((lo+hi)/2);
     const range = hi - lo || 1;
     const curPct = Math.max(0, Math.min(100, ((cur - lo) / range) * 100));
     const midPct = Math.max(0, Math.min(100, ((mid - lo) / range) * 100));
-    h += '<div style="margin-top:8px"><div style="font-size:10px;color:var(--text4);margin-bottom:4px">ANALYST TARGET RANGE</div>'
-      + '<div style="position:relative;height:24px;background:linear-gradient(90deg,rgba(239,68,68,.15),rgba(245,158,11,.1),rgba(16,185,129,.15));border-radius:4px;margin-bottom:4px">'
+    h += '<div style="background:var(--bg4);border-radius:8px;padding:12px;margin-bottom:16px">'
+      + '<div style="font-size:10px;color:var(--text4);margin-bottom:6px">ANALYST TARGET RANGE (' + (f.numberOfAnalysts || 0) + ' analysts)</div>'
+      + '<div style="position:relative;height:28px;background:linear-gradient(90deg,rgba(239,68,68,.15),rgba(245,158,11,.1),rgba(16,185,129,.15));border-radius:4px;margin-bottom:4px">'
       + '<div style="position:absolute;left:' + curPct + '%;top:0;bottom:0;width:2px;background:var(--text);z-index:2" title="Current $' + cur.toFixed(2) + '"></div>'
-      + '<div style="position:absolute;left:' + midPct + '%;top:2px;width:8px;height:8px;border-radius:50%;background:var(--accent);transform:translateX(-4px);z-index:2" title="Mean target $' + mid.toFixed(2) + '"></div>'
+      + '<div style="position:absolute;left:' + midPct + '%;top:4px;width:10px;height:10px;border-radius:50%;background:var(--accent);transform:translateX(-5px);z-index:2" title="Mean $' + mid.toFixed(2) + '"></div>'
       + '</div>'
       + '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text4)">'
       + '<span>Low $' + lo.toFixed(2) + '</span>'
       + '<span style="color:var(--accent)">Mean $' + mid.toFixed(2) + '</span>'
       + '<span>High $' + hi.toFixed(2) + '</span></div></div>';
   }
-  // Investment thesis summary
-  h += '<div style="margin-top:10px;padding:8px 10px;border-radius:6px;background:var(--bg5);border:1px solid var(--border2)">'
-    + '<div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:4px">INVESTMENT THESIS</div>';
-  const bullPoints = [], bearPoints = [];
-  if (f.pe && f.pe < 15) bullPoints.push('Attractive valuation at ' + f.pe.toFixed(1) + 'x earnings');
-  if (f.pe && f.pe > 30) bearPoints.push('Expensive at ' + f.pe.toFixed(1) + 'x earnings');
-  if (f.roe && f.roe > 0.15) bullPoints.push('Strong returns on equity (' + (f.roe*100).toFixed(0) + '%)');
-  if (f.roe && f.roe < 0) bearPoints.push('Negative return on equity');
-  if (f.dividendYield && f.dividendYield > 0.04) bullPoints.push('Solid ' + (f.dividendYield*100).toFixed(1) + '% dividend yield');
-  if (f.debtToEquity != null && f.debtToEquity < 0.5) bullPoints.push('Conservative balance sheet (D/E ' + f.debtToEquity.toFixed(2) + ')');
-  if (f.debtToEquity != null && f.debtToEquity > 1.5) bearPoints.push('Heavy debt load (D/E ' + f.debtToEquity.toFixed(2) + ')');
-  if (f.revenueGrowth && f.revenueGrowth > 0.1) bullPoints.push('Revenue growing ' + (f.revenueGrowth*100).toFixed(0) + '% YoY');
-  if (f.revenueGrowth && f.revenueGrowth < -0.05) bearPoints.push('Revenue declining ' + (f.revenueGrowth*100).toFixed(0) + '% YoY');
-  if (f.profitMargin && f.profitMargin > 0.15) bullPoints.push('Healthy profit margins (' + (f.profitMargin*100).toFixed(0) + '%)');
-  if (f.profitMargin != null && f.profitMargin < 0) bearPoints.push('Currently loss-making');
-  if (f.earningsGrowth && f.earningsGrowth > 0.1) bullPoints.push('Earnings growth accelerating');
-  if (f.earningsGrowth && f.earningsGrowth < -0.1) bearPoints.push('Earnings in decline');
+
+  // ── 8: INVESTMENT THESIS ──
+  h += _sec('Investment Thesis');
+  h += '<div style="background:var(--bg4);border-radius:8px;padding:12px;margin-bottom:16px">';
+  const bullPoints = [], bearPoints = [], riskFlags = [];
+  // Valuation
+  if (f.pe && f.pe < 12) bullPoints.push('Attractively valued at ' + f.pe.toFixed(1) + 'x earnings (below market avg)');
+  else if (f.pe && f.pe < 18) bullPoints.push('Fairly valued at ' + f.pe.toFixed(1) + 'x earnings');
+  if (f.pe && f.pe > 30) bearPoints.push('Expensive at ' + f.pe.toFixed(1) + 'x earnings — premium pricing needs justification');
+  if (f.pb && f.pb < 1) bullPoints.push('Trading below book value (P/B ' + f.pb.toFixed(2) + ') — potential deep value');
+  // Profitability
+  if (f.roe && f.roe > 0.20) bullPoints.push('Exceptional return on equity (' + (f.roe*100).toFixed(0) + '%) — high-quality compounder');
+  else if (f.roe && f.roe > 0.12) bullPoints.push('Solid returns on equity (' + (f.roe*100).toFixed(0) + '%)');
+  if (f.roe && f.roe < 0) bearPoints.push('Negative return on equity — destroying shareholder value');
+  if (f.profitMargin && f.profitMargin > 0.20) bullPoints.push('Strong margins (' + (f.profitMargin*100).toFixed(0) + '%) — pricing power or cost discipline');
+  if (f.profitMargin != null && f.profitMargin < 0) bearPoints.push('Loss-making (margin ' + (f.profitMargin*100).toFixed(0) + '%) — needs path to profitability');
+  // Growth
+  if (f.revenueGrowth && f.revenueGrowth > 0.20) bullPoints.push('Revenue surging ' + (f.revenueGrowth*100).toFixed(0) + '% YoY');
+  else if (f.revenueGrowth && f.revenueGrowth > 0.05) bullPoints.push('Revenue growing ' + (f.revenueGrowth*100).toFixed(0) + '% YoY');
+  if (f.revenueGrowth && f.revenueGrowth < -0.05) bearPoints.push('Revenue declining ' + Math.abs(f.revenueGrowth*100).toFixed(0) + '% YoY — shrinking business');
+  if (f.earningsGrowth && f.earningsGrowth > 0.15) bullPoints.push('Earnings accelerating (' + (f.earningsGrowth*100).toFixed(0) + '% growth)');
+  if (f.earningsGrowth && f.earningsGrowth < -0.10) bearPoints.push('Earnings declining ' + Math.abs(f.earningsGrowth*100).toFixed(0) + '% — deteriorating profitability');
+  // Dividends
+  if (f.dividendYield && f.dividendYield > 0.05) bullPoints.push('High ' + (f.dividendYield*100).toFixed(1) + '% yield — attractive income stream');
+  else if (f.dividendYield && f.dividendYield > 0.03) bullPoints.push('Solid ' + (f.dividendYield*100).toFixed(1) + '% dividend with franking credits');
+  if (f.payoutRatio && f.payoutRatio > 0.9) bearPoints.push('Payout ratio ' + (f.payoutRatio*100).toFixed(0) + '% — dividend may not be sustainable');
+  // Balance sheet
+  if (f.debtToEquity != null && f.debtToEquity < 0.3) bullPoints.push('Clean balance sheet with minimal debt (D/E ' + f.debtToEquity.toFixed(2) + ')');
+  if (f.debtToEquity != null && f.debtToEquity > 1.5) bearPoints.push('Heavily leveraged (D/E ' + f.debtToEquity.toFixed(2) + ') — vulnerable to rate rises');
+  // Cash flow
+  if (f.isCashFlowPositive === true && f.freeCashFlow && f.freeCashFlow > 0) bullPoints.push('Generating positive free cash flow (' + fmtM(f.freeCashFlow) + ')');
+  if (f.isCashFlowPositive === false) {
+    bearPoints.push('Negative operating cash flow — burning ' + fmtM(Math.abs(f.operatingCashFlow || 0)) + '/yr');
+    if (f.cashRunwayMonths && f.cashRunwayMonths < 12) riskFlags.push('Cash runway under 12 months — capital raise imminent, expect dilution');
+    else if (f.cashRunwayMonths && f.cashRunwayMonths < 24) riskFlags.push('Cash runway ~' + f.cashRunwayMonths + ' months — may need to raise capital in next 12-18 months');
+  }
+  if (f.isPreRevenue) bearPoints.push('Pre-revenue stage — speculative, value depends entirely on exploration/development success');
+  if (f.currentRatio != null && f.currentRatio < 1) riskFlags.push('Current ratio below 1.0 (' + f.currentRatio.toFixed(2) + ') — may struggle to meet short-term obligations');
+  // Analyst sentiment
   const upside2 = f.price && f.targetMeanPrice ? ((f.targetMeanPrice - f.price) / f.price * 100) : null;
-  if (upside2 && upside2 > 15) bullPoints.push('Analysts see +' + upside2.toFixed(0) + '% upside');
-  if (upside2 && upside2 < -10) bearPoints.push('Analysts see ' + upside2.toFixed(0) + '% downside');
+  if (upside2 && upside2 > 20) bullPoints.push('Analysts see +' + upside2.toFixed(0) + '% upside to mean target $' + f.targetMeanPrice.toFixed(2));
+  if (upside2 && upside2 < -10) bearPoints.push('Trading above analyst mean target — ' + Math.abs(upside2).toFixed(0) + '% downside risk');
 
   if (bullPoints.length) {
-    h += '<div style="font-size:10px;color:var(--green);font-weight:600;margin-bottom:2px">BULL CASE</div>';
-    bullPoints.forEach(p => { h += '<div style="font-size:10px;color:var(--text2);padding-left:10px">+ ' + p + '</div>'; });
+    h += '<div style="font-size:10px;color:var(--green);font-weight:700;margin-bottom:3px">BULL CASE</div>';
+    bullPoints.forEach(p => { h += '<div style="font-size:10px;color:var(--text2);padding:2px 0 2px 12px;line-height:1.4">+ ' + p + '</div>'; });
   }
   if (bearPoints.length) {
-    h += '<div style="font-size:10px;color:var(--red);font-weight:600;margin:4px 0 2px">BEAR CASE</div>';
-    bearPoints.forEach(p => { h += '<div style="font-size:10px;color:var(--text2);padding-left:10px">- ' + p + '</div>'; });
+    h += '<div style="font-size:10px;color:var(--red);font-weight:700;margin:6px 0 3px">BEAR CASE</div>';
+    bearPoints.forEach(p => { h += '<div style="font-size:10px;color:var(--text2);padding:2px 0 2px 12px;line-height:1.4">- ' + p + '</div>'; });
+  }
+  if (riskFlags.length) {
+    h += '<div style="font-size:10px;color:var(--amber);font-weight:700;margin:6px 0 3px">KEY RISKS</div>';
+    riskFlags.forEach(p => { h += '<div style="font-size:10px;color:var(--text2);padding:2px 0 2px 12px;line-height:1.4">! ' + p + '</div>'; });
   }
   if (!bullPoints.length && !bearPoints.length) {
     h += '<div style="font-size:10px;color:var(--text3)">Insufficient data for thesis generation</div>';
   }
-  h += '</div></div>';
+  h += '</div>';
 
-  // Section 7: CRT Technicals (if any signals)
+  // ── 9: CRT TECHNICALS ──
   if (sigs.length > 0) {
-    h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">CRT Technical Setups (' + sigs.length + ' active)</div>';
+    h += _sec('CRT Technical Setups (' + sigs.length + ' active)');
     sigs.sort((a,b) => (b.confidence||0) - (a.confidence||0));
     sigs.forEach(sig => {
       const dc = sig.direction === 'LONG' ? 'var(--green)' : 'var(--red)';
@@ -7670,8 +7731,8 @@ async function runAsxIntel() {
         + '<div><span style="color:var(--text4)">Sweep</span><div style="color:var(--text)">' + (sig.sweepDate||'—') + '</div></div></div></div>';
     });
   } else {
-    h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">CRT Technical Setups</div>'
-      + '<div style="font-size:11px;color:var(--text3);padding:12px;background:var(--bg4);border-radius:6px;margin-bottom:16px">No active CRT setups across any timeframe model</div>';
+    h += _sec('CRT Technical Setups');
+    h += '<div style="font-size:11px;color:var(--text3);padding:12px;background:var(--bg4);border-radius:6px;margin-bottom:16px">No active CRT setups across any timeframe model</div>';
   }
 
   detailEl.innerHTML = h;
