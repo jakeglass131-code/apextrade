@@ -1194,8 +1194,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         <input id="asx-min-vol" value="100000" type="number" style="width:100px;background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text);font-family:var(--fm)">
       </div>
       <div>
+        <div style="font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-bottom:4px">CRT TIMEFRAME</div>
+        <select id="asx-crt-tf" onchange="renderAsxCrtRows()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text)">
+          <option value="all">All Timeframes</option>
+          <option value="12M CRT">12M CRT</option>
+          <option value="9M CRT">9M CRT</option>
+          <option value="6M CRT">6M CRT</option>
+          <option value="3M CRT">3M CRT</option>
+          <option value="1M CRT">1M CRT</option>
+        </select>
+      </div>
+      <div>
         <div style="font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-bottom:4px">DIRECTION</div>
-        <select id="asx-crt-dir" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text)">
+        <select id="asx-crt-dir" onchange="renderAsxCrtRows()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text)">
           <option value="all">Both</option>
           <option value="LONG">Longs only</option>
           <option value="SHORT">Shorts only</option>
@@ -1240,6 +1251,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <button class="filter-pill" id="asx-f-b"    onclick="applyAsxFilter('B')">B</button>
       <button class="filter-pill" id="asx-f-long" onclick="applyAsxFilter('long')">LONGS</button>
       <button class="filter-pill" id="asx-f-short" onclick="applyAsxFilter('short')">SHORTS</button>
+      <span style="margin-left:8px;font-size:10px;color:var(--text3);font-weight:700">TF</span>
+      <button class="filter-pill" id="asx-f-tf-all" onclick="applyAsxTfFilter('all')">ALL TF</button>
+      <button class="filter-pill" id="asx-f-tf-12m" onclick="applyAsxTfFilter('12M CRT')">12M</button>
+      <button class="filter-pill" id="asx-f-tf-9m" onclick="applyAsxTfFilter('9M CRT')">9M</button>
+      <button class="filter-pill" id="asx-f-tf-6m" onclick="applyAsxTfFilter('6M CRT')">6M</button>
+      <button class="filter-pill" id="asx-f-tf-3m" onclick="applyAsxTfFilter('3M CRT')">3M</button>
+      <button class="filter-pill" id="asx-f-tf-1m" onclick="applyAsxTfFilter('1M CRT')">1M</button>
       <div style="flex:1"></div>
       <span style="font-size:10px;color:var(--text3);font-weight:700;margin-right:4px">SORT</span>
       <button class="filter-pill active" id="asx-sort-score" onclick="applyAsxSort('score')">Score</button>
@@ -2692,7 +2710,7 @@ function nav(p) {
   if (p === 'asx')     {
     fetchAsxNews();
     startAsxPriceEngine(); // start live ASX price streaming
-    if (typeof fundData !== 'undefined' && fundData.length === 0) setTimeout(runFundamentalsAgent, 800);
+    // Fundamentals agent no longer auto-starts — user triggers scans manually
   }
   if (p === 'futures') {
     updateFutMomBar(); fetchFutNews();
@@ -6031,7 +6049,51 @@ function updateDashScanSummary(scanned, signals) {
     if (el('dash-scan-time')) el('dash-scan-time').textContent = 'Last scan: ' + d.time + ' — ' + d.count + ' results';
   } catch (e) {}
 })();
-async function getAsxTickers(){try{var r=await fetch(PROXY+'/asx-list');if(r.ok){var d=await r.json();if(d.stocks&&d.stocks.length>100)return d.stocks;}}catch(e){}return['BHP','CBA','CSL','NAB','WBC','ANZ','WES','MQG','RIO','FMG','WOW','GMG','REA','TLS','XRO','ALL','STO','WDS','QAN','COH','MIN','LYC','PLS','EVN','NST','WHC','IGO','S32','ORA','NHC','SFR','AWC','ILU','NXT','CQR','BWP','ARF','SGP','GPT','MGR','SCG','DXS','CHC','BAP','APE','GNC','CIA','CHN','DEG','WAF','DRR','GOR','RSG','SBM','PRU','CMR','RRL','OGC','SAR','SLR','CYL','BGL','MML','RMS','PNV','RHC','SHL','EBO','MVF','HLS','QBE','SUN','IAG','AMP','NCM','PDN','BOE','LOT','PEN','YAL','SMR','GCY','KAR','RED','SVL','ALK','CMW','VEA','IPL','PPT','PMV','DMP','RMD','WEB','IEL','NEA','ALU','MFG','CTD','FLT','CPU','APA','JHX','TCL','AMC','LLC'].map(function(x){return{ticker:x,name:x};});}
+var _asxTickerCache = null;
+async function getAsxTickers(){
+  // Return in-memory cache if we already have it
+  if (_asxTickerCache && _asxTickerCache.length > 100) return _asxTickerCache;
+  // Check localStorage cache (valid for 24h)
+  try {
+    var cached = JSON.parse(localStorage.getItem('apex_asx_tickers') || 'null');
+    if (cached && cached.stocks && cached.stocks.length > 500 && Date.now() - cached.time < 86400000) {
+      _asxTickerCache = cached.stocks;
+      return _asxTickerCache;
+    }
+  } catch(e){}
+  // Fetch from asx-list endpoint with retry
+  for (var attempt = 0; attempt < 2; attempt++) {
+    try {
+      var r = await fetch(PROXY + '/asx-list', { signal: AbortSignal.timeout(12000) });
+      if (r.ok) {
+        var d = await r.json();
+        if (d.stocks && d.stocks.length > 100) {
+          _asxTickerCache = d.stocks;
+          try { localStorage.setItem('apex_asx_tickers', JSON.stringify({ stocks: d.stocks, time: Date.now() })); } catch(e){}
+          return _asxTickerCache;
+        }
+      }
+    } catch(e){}
+    await new Promise(function(r){ setTimeout(r, 1000); });
+  }
+  // Fallback: ASX 300 core + small/mid caps
+  var t=['BHP','CBA','CSL','NAB','WBC','ANZ','WES','MQG','RIO','FMG','WOW','GMG','REA','TLS','XRO','ALL','STO','WDS','QAN','COH',
+    'MIN','LYC','PLS','EVN','NST','WHC','IGO','S32','ORA','NHC','SFR','AWC','ILU','NXT','CQR','BWP','ARF','HDN','SGP','GPT',
+    'MGR','SCG','DXS','CHC','BAP','APE','GNC','CIA','CHN','DEG','WAF','DRR','GOR','RSG','SBM','PRU','CMR','RRL','OGC','SAR',
+    'SLR','CYL','BGL','MML','RMS','PNV','RHC','SHL','EBO','MVF','HLS','QBE','SUN','IAG','AMP','NCM','PDN','BOE','LOT','PEN',
+    'YAL','SMR','GCY','KAR','RED','SVL','ALK','CMW','VEA','IPL','PPT','PMV','DMP','RMD','WEB','IEL','NEA','ALU','MFG','CTD',
+    'FLT','CPU','APA','JHX','TCL','AMC','LLC','JBH','CAR','SEK','TPG','HVN','LOV','ALD','BSL','OZL','NWS','WOR','DOW','ELD',
+    'CGF','BEN','BOQ','HUB','APX','BKW','NEC','MP1','AD8','TNE','WTC','ALQ','GQG','PME','SDR','SDF','CXO','LTR','TLX',
+    'AKE','NMT','SYR','TYR','NIC','AGY','FFX','LKE','INR','NVX','BRN','VUL','ASN','IMU','RAC','EML','SPT','ZIP',
+    'SZL','VNT','OFX','HUM','GUD','ARB','CIP','WGX','GLN','LEL','MVR','ACL','ERD','TTM','DYL','BMN','GTR','ASM',
+    'AIS','IVZ','RLT','KGN','TPW','RDY','GRR','SRL','BC8','DTR','COI','A11','FRS','MHJ','EVO','AOF','BRG','ABB','HPI','IPD',
+    'LIC','AMI','BPT','ORG','ORI','BXB','ASX','RWC','SGR','AZJ','MPL','TAH','OSH','NUF','BLD','SKC','IRE',
+    'APM','TLC','CEN','AIA','PSI','LNK','IFL','PBH','RGN','CLW','HMC','VCX','ABP','LFG','GMA','CQE','GOZ',
+    'NSR','PXA','REP','SM1','NHF','CWY','EDV','LGL','DGL','CGC','BSA','WGN','DDR','SSM','KMD','AX1','NCK','SHV','BIN','SPL',
+    'DSE','CUV','OBL','GDG','LBL','CCX','INA','MOZ','FCL','MAD','VOC','UNI','ALC','CDA','FPH','BRB','NTO','EMV','NAN','PRN'];
+  _asxTickerCache = t.map(function(x){ return { ticker: x, name: x }; });
+  return _asxTickerCache;
+}
 var crtScanned=0;
 async function startCrtScan(){if(crtScanning)return;crtScanning=true;crtAbort=false;crtSignals=[];crtScanned=0;document.getElementById('crt-scan-btn').style.display='none';document.getElementById('crt-stop-btn').style.display='flex';document.getElementById('crt-progress-bar').style.display='block';var st=document.getElementById('crt-stats');if(st)st.style.display='grid';document.getElementById('crt-signals-grid').innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px;text-align:center;grid-column:1/-1">Fetching ASX stock list...</div>';var tickers=await getAsxTickers();var total=tickers.length;crtScanned=0;updateCrtStats(0,0,0,0,total);document.getElementById('crt-signals-grid').innerHTML='<div style="padding:20px;color:var(--text3);font-size:12px;text-align:center;grid-column:1/-1">Scanning '+total+' ASX stocks...</div>';var BATCH=5,CONC=3;for(var i=0;i<total;i+=BATCH*CONC){if(crtAbort)break;var crtPromises=[];for(var ci=0;ci<CONC;ci++){var cStart=i+ci*BATCH;if(cStart>=total)break;(function(bt){crtPromises.push(fetch(PROXY+'/crt-engine?tickers='+bt.map(function(s){return s.ticker;}).join(','),{signal:AbortSignal.timeout(25000)}).then(function(r){return r.json();}).then(function(d){if(d.results)d.results.forEach(function(r){processScanResult(r.ticker,r);});}).catch(function(){}));})(tickers.slice(cStart,Math.min(cStart+BATCH,total)));}await Promise.all(crtPromises);crtScanned=Math.min(i+BATCH*CONC,total);var pct=Math.round(crtScanned/total*100);document.getElementById('crt-progress-fill').style.width=pct+'%';document.getElementById('crt-progress-pct').textContent=pct+'%';document.getElementById('crt-progress-text').textContent='Scanning '+crtScanned+'/'+total+' · '+crtSignals.length+' signals found';updateCrtStats(crtScanned,crtSignals.length,crtSignals.filter(function(s){return s.direction==='LONG';}).length,crtSignals.filter(function(s){return s.direction==='SHORT';}).length,total);await new Promise(function(r){setTimeout(r,50);});}crtScanning=false;document.getElementById('crt-scan-btn').style.display='flex';document.getElementById('crt-stop-btn').style.display='none';document.getElementById('crt-progress-text').textContent='Complete · '+crtScanned+' stocks scanned · '+crtSignals.length+' signals';var sbBadge=document.querySelector('#sb-scanner .sbadge');if(sbBadge){sbBadge.style.display='flex';sbBadge.textContent=crtSignals.length;}var statSum=document.getElementById('crt-stat-summary');if(statSum)statSum.style.display='block';if(crtSignals.length>0){showToast('CRT Scanner',crtScanned+' stocks scanned · '+crtSignals.length+' setups found','success',5000);saveSignalHistory(crtSignals);updateDashScanSummary(crtScanned,crtSignals);generateScanSummary(crtScanned,crtSignals);}else document.getElementById('crt-signals-grid').innerHTML='<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px;grid-column:1/-1">No setups found across '+crtScanned+' stocks.</div>';}
 function processScanResult(ticker,data){if(!data||!data.signals||!data.signals.length)return;for(var i=0;i<data.signals.length;i++){var sig=data.signals[i];var ml=mlScreener.find(function(s){return s.ticker===ticker;})||mlData[ticker];var mlScore=ml?getCrtMlScore(ml,sig.direction):0;var baseConf=sig.confidence||sig.baseConfidence||60;var final=Math.min(Math.round(baseConf+mlScore),99);
@@ -7168,7 +7230,7 @@ function renderBehavioralHeatmap() {
 // ASX PAGE
 // ══════════════════════════════════════════
 function setAsxTab(tab) {
-  ['intel','crt'].forEach(t => {
+  ['intel','crt','bullish'].forEach(t => {
     const btn   = document.getElementById('asx-tab-' + t);
     const panel = document.getElementById('asx-panel-' + t);
     const ctrl  = document.getElementById('asx-ctrl-' + t);
@@ -7178,14 +7240,15 @@ function setAsxTab(tab) {
   });
   const stats = document.getElementById('asx-stats');
   if (stats) stats.style.display = tab !== 'intel' ? 'flex' : 'none';
-  // Auto-load fundamentals when intel tab opens
+  // Load cached fundamentals when intel tab opens (no auto-scan)
   if (tab === 'intel' && typeof fundData !== 'undefined' && fundData.length === 0 && typeof FUND_PROXY !== 'undefined') {
     fetch(FUND_PROXY + '?action=get&limit=100').then(r => r.json()).then(d => {
       if (d.results?.length > 0) {
         fundData = d.results; if (typeof renderFundamentals === 'function') renderFundamentals();
         const s = document.getElementById('fund-status');
         if (s && typeof fundTimeSince === 'function') s.innerHTML = '<span style="color:var(--green)">✓</span> ' + d.count + ' stocks · ' + fundTimeSince(new Date(d.lastRun));
-      } else { if (typeof runFundamentalsAgent === 'function') setTimeout(runFundamentalsAgent, 800); }
+      }
+      // No auto-start of fundamentals agent — user triggers manually
     }).catch(() => {});
   }
 }
@@ -7669,6 +7732,10 @@ function renderAsxCrtRows() {
     sigs = sigs.filter(s => s.direction === 'SHORT');
   }
 
+  // Timeframe filter from dropdown
+  const tfSel = document.getElementById('asx-crt-tf')?.value || 'all';
+  if (tfSel !== 'all') sigs = sigs.filter(s => s.model === tfSel);
+
   // Direction filter from dropdown
   const dirSel = document.getElementById('asx-crt-dir')?.value || 'all';
   if (dirSel !== 'all') sigs = sigs.filter(s => s.direction === dirSel);
@@ -7691,6 +7758,18 @@ function applyAsxFilter(f) {
   asxCrtFilter = f;
   document.querySelectorAll('[id^="asx-f-"]').forEach(b => b.classList.remove('active'));
   const btn = document.getElementById('asx-f-' + f.toLowerCase().replace('+','p'));
+  if (btn) btn.classList.add('active');
+  renderAsxCrtRows();
+}
+
+function applyAsxTfFilter(tf) {
+  // Sync the dropdown to match the pill
+  const sel = document.getElementById('asx-crt-tf');
+  if (sel) sel.value = tf;
+  // Highlight active pill
+  document.querySelectorAll('[id^="asx-f-tf-"]').forEach(b => b.classList.remove('active'));
+  const key = tf === 'all' ? 'all' : tf.replace(' CRT','').toLowerCase();
+  const btn = document.getElementById('asx-f-tf-' + key);
   if (btn) btn.classList.add('active');
   renderAsxCrtRows();
 }
