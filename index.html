@@ -1154,7 +1154,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
             <div style="text-align:center;padding:32px 16px;color:var(--text3)">
               <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">Select a stock above</div>
               <div style="font-size:11px;margin-bottom:14px">RSI · MACD · Bollinger · Volume · MTF · CRT</div>
-              <button onclick="runAsxIntel()" class="btn g" style="font-size:11px">Analyse BHP.ASX</button>
+              <button onclick="runAsxIntel()" class="btn g" style="font-size:11px">Analyse</button>
             </div>
           </div>
         </div>
@@ -7408,20 +7408,60 @@ document.addEventListener('click', function(e) {
   if (!e.target.closest('#asx-ctrl-intel')) hideAsxSymDropdown();
 });
 
-function runAsxIntel() {
-  const sym = document.getElementById('asx-intel-sym')?.value || 'BHP.ASX';
-  const sel = document.getElementById('intel-symbol-select');
-  if (sel) sel.value = sym;
-  if (typeof runIntelAnalysis === 'function') {
-    runIntelAnalysis();
-    setTimeout(() => {
-      const s = document.getElementById('intel-score-panel');
-      const d = document.getElementById('intel-detail-panel');
-      const as = document.getElementById('asx-intel-score');
-      const ad = document.getElementById('asx-intel-detail');
-      if (s && as) as.innerHTML = s.innerHTML;
-      if (d && ad) ad.innerHTML = d.innerHTML;
-    }, 2000);
+async function runAsxIntel() {
+  const raw = (document.getElementById('asx-intel-sym')?.value || '').trim().toUpperCase();
+  if (!raw) { showToast('Enter a ticker', 'Type an ASX ticker code to analyse', 'warning'); return; }
+  const ticker = raw.replace('.ASX','').replace('.AX','');
+  const scoreEl = document.getElementById('asx-intel-score');
+  const detailEl = document.getElementById('asx-intel-detail');
+  if (scoreEl) scoreEl.innerHTML = '<div style="text-align:center;padding:40px"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Analysing ' + ticker + '...</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Running CRT engine across all 5 timeframes</div></div>';
+  if (detailEl) detailEl.innerHTML = '';
+  try {
+    const r = await fetch(PROXY + '/crt-engine?ticker=' + ticker, { signal: AbortSignal.timeout(20000) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    if (!data.signals || data.signals.length === 0) {
+      scoreEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:28px;margin-bottom:10px">—</div><div style="font-size:14px;font-weight:700;color:var(--text2)">' + ticker + '</div><div style="font-size:12px;margin-top:6px">No active CRT setups found across any timeframe</div><div style="font-size:11px;margin-top:10px;color:var(--text4)">The stock has no completed sweeps or TBOS confirmations in any of the 5 CRT models right now.</div></div>';
+      return;
+    }
+    // Score panel — top signal summary
+    const best = data.signals.reduce((a,b) => (b.confidence||0) > (a.confidence||0) ? b : a, data.signals[0]);
+    const dirCol = best.direction === 'LONG' ? 'var(--green)' : 'var(--red)';
+    const grade = best.confidence >= 85 ? 'A+' : best.confidence >= 75 ? 'A' : best.confidence >= 60 ? 'B' : 'C';
+    const gradeCol = grade.startsWith('A') ? 'var(--green)' : grade === 'B' ? 'var(--accent)' : 'var(--amber)';
+    scoreEl.innerHTML = '<div style="text-align:center;padding:20px">'
+      + '<div style="font-size:11px;color:var(--text3);letter-spacing:.1em;margin-bottom:4px">CRT ANALYSIS</div>'
+      + '<div style="font-size:22px;font-weight:800;color:var(--text)">' + ticker + '</div>'
+      + '<div style="font-size:42px;font-weight:800;color:' + dirCol + ';margin:10px 0">' + (best.direction === 'LONG' ? '▲' : '▼') + ' ' + best.direction + '</div>'
+      + '<div style="font-size:11px;color:var(--text3);margin-bottom:8px">' + best.model + ' · ' + best.type + '</div>'
+      + '<div style="display:flex;justify-content:center;gap:16px;margin:12px 0">'
+      + '<div><div style="font-size:9px;color:var(--text4)">CONFIDENCE</div><div style="font-size:20px;font-weight:800;color:' + dirCol + '">' + best.confidence + '%</div></div>'
+      + '<div><div style="font-size:9px;color:var(--text4)">GRADE</div><div style="font-size:20px;font-weight:800;color:' + gradeCol + '">' + grade + '</div></div>'
+      + '<div><div style="font-size:9px;color:var(--text4)">STATUS</div><div style="font-size:12px;font-weight:700;color:' + (best.status==='CONFIRMED'?'var(--green)':'var(--amber)') + '">' + best.status + '</div></div>'
+      + '</div>'
+      + '<div style="font-size:11px;color:var(--text3);margin-top:8px">' + data.signals.length + ' signal' + (data.signals.length>1?'s':'') + ' across ' + [...new Set(data.signals.map(s=>s.model))].length + ' timeframe' + '</div>'
+      + '</div>';
+    // Detail panel — all signals breakdown
+    let html = '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">' + ticker + ' — All CRT Signals</div>';
+    data.signals.sort((a,b) => (b.confidence||0) - (a.confidence||0));
+    data.signals.forEach(sig => {
+      const dc = sig.direction === 'LONG' ? 'var(--green)' : 'var(--red)';
+      const sc = sig.status === 'CONFIRMED' ? 'var(--green)' : sig.status === 'FORMING' ? 'var(--amber)' : 'var(--accent)';
+      html += '<div style="border:1px solid var(--border2);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--bg4)">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+        + '<div><span style="font-weight:700;color:' + dc + '">' + sig.direction + '</span> <span style="color:var(--text3);font-size:11px">' + sig.model + '</span></div>'
+        + '<div style="display:flex;gap:6px;align-items:center"><span style="font-size:10px;padding:2px 6px;border-radius:3px;background:' + (sig.status==='CONFIRMED'?'rgba(16,185,129,.12)':'rgba(245,158,11,.12)') + ';color:' + sc + ';font-weight:700">' + sig.status + '</span>'
+        + '<span style="font-size:14px;font-weight:800;color:' + dc + '">' + sig.confidence + '%</span></div></div>'
+        + '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">' + sig.type + '</div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px">'
+        + '<div><span style="color:var(--text4)">CRT Range</span><div style="color:var(--text);font-weight:600">' + (sig.crtLow||'—') + ' – ' + (sig.crtHigh||'—') + '</div></div>'
+        + '<div><span style="color:var(--text4)">TBOS Level</span><div style="color:var(--text);font-weight:600">' + (sig.tbosLevel||'—') + '</div></div>'
+        + '<div><span style="color:var(--text4)">Sweep</span><div style="color:var(--text);font-weight:600">' + (sig.sweepDate||'—') + '</div></div>'
+        + '</div></div>';
+    });
+    detailEl.innerHTML = html;
+  } catch(e) {
+    scoreEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)"><div style="font-size:28px;margin-bottom:10px">⚠</div><div style="font-size:13px;font-weight:600">Analysis failed</div><div style="font-size:11px;color:var(--text3);margin-top:6px">' + e.message + '</div></div>';
   }
 }
 
