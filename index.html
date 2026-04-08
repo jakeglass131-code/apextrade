@@ -8,24 +8,28 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  /* Core backgrounds — deep navy to slate */
-  --bg:#060c18;--bg2:#0a1628;--bg3:#0f1f3d;--bg4:#162447;--bg5:#1d2e56;
-  /* Borders */
-  --border:rgba(100,160,255,0.10);--border2:rgba(100,160,255,0.18);--border3:rgba(100,160,255,0.30);
-  /* Text — white to blue-grey */
-  --text:#f4f7ff;--text2:#a8bcd8;--text3:#5a7aaa;--text4:#2d4a70;
-  /* Accent: electric blue (primary action colour) */
-  --accent:#2d8eff;--accent2:rgba(45,142,255,0.18);--accent3:rgba(45,142,255,0.09);
-  /* Green = profit / up */
-  --green:#00d4a8;--green2:rgba(0,212,168,0.18);--green3:rgba(0,212,168,0.09);
-  /* Red = loss / down */
-  --red:#ff4466;--red2:rgba(255,68,102,0.18);--red3:rgba(255,68,102,0.09);
-  /* Amber = warning / neutral signal */
-  --amber:#ffaa00;--amber2:rgba(255,170,0,0.18);--amber3:rgba(255,170,0,0.09);
-  /* Blue (same as accent for badge use) */
-  --blue:#2d8eff;--blue2:rgba(45,142,255,0.18);--blue3:rgba(45,142,255,0.09);
-  /* Purple = secondary signals */
-  --purple:#7c6fff;--purple2:rgba(124,111,255,0.18);--purple3:rgba(124,111,255,0.09);
+  /* Core backgrounds — warm charcoal with subtle depth */
+  --bg:#08090f;--bg2:#0e1117;--bg3:#141820;--bg4:#1a1f2b;--bg5:#222836;
+  /* Borders — warm slate */
+  --border:rgba(148,163,184,0.08);--border2:rgba(148,163,184,0.14);--border3:rgba(148,163,184,0.25);
+  /* Text — warm white hierarchy */
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;--text4:#334155;
+  /* Accent: warm teal-cyan (primary action colour) */
+  --accent:#06b6d4;--accent2:rgba(6,182,212,0.16);--accent3:rgba(6,182,212,0.08);
+  /* Green = profit / up — vibrant emerald */
+  --green:#10b981;--green2:rgba(16,185,129,0.16);--green3:rgba(16,185,129,0.08);
+  /* Red = loss / down — warm coral */
+  --red:#f43f5e;--red2:rgba(244,63,94,0.16);--red3:rgba(244,63,94,0.08);
+  /* Amber = warning / neutral signal — warm gold */
+  --amber:#f59e0b;--amber2:rgba(245,158,11,0.16);--amber3:rgba(245,158,11,0.08);
+  /* Blue — sky blue for badges */
+  --blue:#38bdf8;--blue2:rgba(56,189,248,0.16);--blue3:rgba(56,189,248,0.08);
+  /* Purple = secondary signals — warm violet */
+  --purple:#a78bfa;--purple2:rgba(167,139,250,0.16);--purple3:rgba(167,139,250,0.08);
+  /* Glow effects */
+  --glow-green:0 0 20px rgba(16,185,129,0.15);
+  --glow-red:0 0 20px rgba(244,63,94,0.15);
+  --glow-accent:0 0 20px rgba(6,182,212,0.12);
   --fd:'Inter',sans-serif;--fm:'JetBrains Mono',monospace;
 }
 body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px;height:100vh;overflow:hidden;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
@@ -41,7 +45,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .up{color:var(--green)}.dn{color:var(--red)}.am{color:var(--amber)}.bl{color:var(--blue)}
 
 /* TOPBAR */
-.topbar{height:44px;background:var(--bg2);border-bottom:1px solid rgba(45,142,255,0.2);box-shadow:0 2px 20px rgba(45,142,255,0.04);display:flex;align-items:center;padding:0 14px;gap:0;flex-shrink:0;overflow:hidden}
+.topbar{height:44px;background:var(--bg2);border-bottom:1px solid var(--border2);box-shadow:0 2px 24px rgba(0,0,0,0.3);display:flex;align-items:center;padding:0 14px;gap:0;flex-shrink:0;overflow:hidden;position:relative;z-index:10}
 .logo{font-family:var(--fd);font-size:17px;font-weight:800;letter-spacing:-0.03em;flex-shrink:0;margin-right:18px}
 .logo em{color:var(--accent);font-style:normal}
 .ticker-wrap{flex:1;overflow:hidden;display:flex;align-items:center;height:100%}
@@ -51,7 +55,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .tick{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);font-family:var(--fm)}
 .tick b{color:var(--text);font-weight:700;font-family:var(--fd)}
 .topbar-r{display:flex;align-items:center;gap:10px;flex-shrink:0;margin-left:14px}
-.live-pill{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--green);background:var(--green3);border:1px solid rgba(0,232,150,0.25);border-radius:99px;padding:3px 8px}
+.live-pill{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--green);background:var(--green3);border:1px solid rgba(16,185,129,0.25);border-radius:99px;padding:3px 8px}
 .lpulse{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.2}}
 #clock{font-size:11px;color:var(--text3)}
@@ -60,10 +64,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 
 /* LAYOUT */
 .layout{display:flex;flex:1;overflow:hidden}
-.sidebar{width:72px;background:var(--bg2);border-right:1px solid rgba(45,142,255,0.15);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:2px;flex-shrink:0}
+.sidebar{width:72px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;align-items:center;padding:10px 0;gap:2px;flex-shrink:0}
 .sbb{width:62px;height:48px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;border:none;background:transparent;color:var(--text4);gap:3px;transition:all .15s;position:relative}
 .sbb:hover{background:var(--bg4);color:var(--text2)}
-.sbb.active{background:var(--accent3);color:var(--accent);border:1px solid rgba(45,142,255,0.25)}
+.sbb.active{background:var(--accent2);color:var(--accent);border:1px solid rgba(6,182,212,0.3);box-shadow:0 0 12px rgba(6,182,212,0.08)}
 .sbb svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
 .sbb span{font-size:9px;letter-spacing:.02em;font-family:var(--fd);font-weight:600;text-align:center;line-height:1.1}
 .sbadge{position:absolute;top:3px;right:3px;min-width:14px;height:14px;border-radius:7px;background:var(--accent);color:#fff;font-size:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;font-weight:700}
@@ -78,19 +82,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .ph-t{font-family:var(--fd);font-size:18px;font-weight:800;letter-spacing:-.03em}
 .ph-s{font-size:11px;color:var(--text3);margin-top:2px}
 .ph-r{display:flex;gap:8px;align-items:center}
-.btn{font-family:var(--fm);font-size:11px;padding:6px 13px;border-radius:6px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s;white-space:nowrap}
-.btn:hover{background:var(--bg4);color:var(--text);border-color:var(--border3)}
-.btn.g{background:var(--accent2);border-color:rgba(45,142,255,0.4);color:var(--accent)}
-.btn.g:hover{background:rgba(45,142,255,0.28)}
-.btn.r{background:var(--red3);border-color:rgba(255,61,90,0.3);color:var(--red)}
+.btn{font-family:var(--fm);font-size:11px;padding:6px 13px;border-radius:8px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .2s;white-space:nowrap}
+.btn:hover{background:var(--bg4);color:var(--text);border-color:var(--border3);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn.g{background:var(--accent2);border-color:rgba(6,182,212,0.35);color:var(--accent)}
+.btn.g:hover{background:rgba(6,182,212,0.25);box-shadow:var(--glow-accent)}
+.btn.r{background:var(--red3);border-color:rgba(244,63,94,0.3);color:var(--red)}
 
 /* SCROLL */
 .scroll{flex:1;overflow-y:auto;padding:16px 20px}
 
-/* CARD / PANEL */
-.panel{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:12px}
+/* CARD / PANEL — glass-morphism */
+.panel{background:rgba(20,24,32,0.65);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid var(--border2);border-radius:12px;overflow:hidden;margin-bottom:12px;transition:border-color .2s,box-shadow .2s}
+.panel:hover{border-color:var(--border3);box-shadow:0 4px 24px rgba(0,0,0,0.2)}
 .panel:last-child{margin-bottom:0}
-.phead{padding:11px 16px;border-bottom:1px solid var(--border2);display:flex;align-items:center;justify-content:space-between;background:var(--bg5)}
+.phead{padding:11px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(34,40,54,0.5)}
 .ptitle{font-family:var(--fd);font-size:13px;font-weight:700;color:var(--text);letter-spacing:-.01em}
 .pmeta{font-size:11px;color:var(--text3)}
 .pmeta.g{color:var(--accent);font-weight:600}
@@ -99,7 +105,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 
 /* METRIC CARDS */
 .metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
-.mc{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:14px 16px;position:relative;overflow:hidden}
+.mc{background:rgba(20,24,32,0.6);backdrop-filter:blur(12px);border:1px solid var(--border2);border-radius:12px;padding:14px 16px;position:relative;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.mc:hover{border-color:var(--border3);box-shadow:0 4px 20px rgba(0,0,0,0.15)}
 .mc-l{font-size:10px;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px;font-weight:500}
 .mc-v{font-family:var(--fd);font-size:25px;font-weight:800;letter-spacing:-.04em;line-height:1}
 .mc-s{font-size:11px;color:var(--text2);margin-top:4px}
@@ -111,17 +118,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .vcol{display:flex;flex-direction:column;gap:12px}
 
 /* ROWS */
-.row{display:flex;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);gap:10px;cursor:pointer;transition:background .1s}
+.row{display:flex;align-items:center;padding:9px 16px;border-bottom:1px solid var(--border);gap:10px;cursor:pointer;transition:background .15s,transform .1s}
 .row:last-child{border-bottom:none}
-.row:hover{background:var(--bg4)}
+.row:hover{background:var(--bg4);transform:translateX(2px)}
 
 /* BADGES */
 .badge{font-size:9px;padding:2px 7px;border-radius:4px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;flex-shrink:0}
-.bg{background:var(--green3);color:var(--green);border:1px solid rgba(0,232,150,0.25)}
-.br{background:var(--red3);color:var(--red);border:1px solid rgba(255,61,90,0.25)}
-.ba{background:var(--amber3);color:var(--amber);border:1px solid rgba(255,176,32,0.25)}
-.bb{background:var(--blue3);color:var(--blue);border:1px solid rgba(77,166,255,0.25)}
-.bp{background:var(--purple3);color:var(--purple);border:1px solid rgba(167,139,255,0.25)}
+.bg{background:var(--green3);color:var(--green);border:1px solid rgba(16,185,129,0.25)}
+.br{background:var(--red3);color:var(--red);border:1px solid rgba(244,63,94,0.25)}
+.ba{background:var(--amber3);color:var(--amber);border:1px solid rgba(245,158,11,0.25)}
+.bb{background:var(--blue3);color:var(--blue);border:1px solid rgba(56,189,248,0.25)}
+.bp{background:var(--purple3);color:var(--purple);border:1px solid rgba(167,139,250,0.25)}
 
 /* CONFIDENCE BAR */
 .cbar{flex:1;background:var(--bg5);border-radius:2px;height:3px}
@@ -146,8 +153,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .sct.h{background:var(--accent3);color:var(--accent)}
 .sct.r{background:var(--red3);color:var(--red)}
 /* seclab handled by utility class above */
-.scanrow{display:grid;grid-template-columns:110px 1fr 110px;gap:12px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .1s;position:relative}
-.scanrow:hover{background:var(--bg4)}
+.scanrow{display:grid;grid-template-columns:110px 1fr 110px;gap:12px;align-items:center;padding:11px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s,transform .1s;position:relative}
+.scanrow:hover{background:var(--bg4);transform:translateX(2px)}
 .scanrow:last-child{border-bottom:none}
 .scanrow::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:2px;border-radius:0 2px 2px 0}
 .scanrow.hi::before{background:var(--red);box-shadow:0 0 8px var(--red)}
@@ -678,10 +685,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 /* Notification toast */
 .toast {
   position:fixed; bottom:24px; right:24px;
-  background:var(--bg3); border:1px solid var(--border2);
-  border-radius:10px; padding:14px 18px;
+  background:rgba(20,24,32,0.85); backdrop-filter:blur(20px); border:1px solid var(--border2);
+  border-radius:12px; padding:14px 18px;
   display:flex; align-items:center; gap:12px;
-  box-shadow:0 8px 32px rgba(0,0,0,.5);
+  box-shadow:0 8px 40px rgba(0,0,0,.5);
   z-index:999; max-width:360px;
   animation:slideIn .3s ease-out;
 }
@@ -815,10 +822,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 
 
 /* Overnight index cards */
-.ovn-card { background:var(--bg3); padding:14px 16px; cursor:default; }
-.ovn-sym { font-size:11px; font-weight:700; color:var(--text); font-family:var(--fd); margin-bottom:2px; }
-.ovn-name { font-size:9px; color:var(--text3); margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em; }
-.ovn-price { font-size:14px; font-weight:700; font-family:var(--fm); color:var(--text); }
+.ovn-card { background:var(--bg3); padding:14px 16px; cursor:default; transition:background .2s,transform .15s; position:relative; overflow:hidden; }
+.ovn-card:hover { background:var(--bg4); transform:translateY(-1px); }
+.ovn-card::after { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--accent),transparent); opacity:0; transition:opacity .3s; }
+.ovn-card:hover::after { opacity:0.5; }
+.ovn-sym { font-size:12px; font-weight:800; color:var(--text); font-family:var(--fd); margin-bottom:2px; letter-spacing:-.02em; }
+.ovn-name { font-size:9px; color:var(--text3); margin-bottom:8px; text-transform:uppercase; letter-spacing:.05em; }
+.ovn-price { font-size:15px; font-weight:700; font-family:var(--fm); color:var(--text); }
 .ovn-chg { font-size:12px; font-weight:700; font-family:var(--fm); margin-top:2px; }
 .ovn-spark { width:100%; height:32px; margin-top:8px; display:block; }
 
@@ -830,7 +840,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 #prediction-body .pred-bull { background:var(--green3); color:var(--green); border:1px solid rgba(0,212,168,.25); }
 #prediction-body .pred-bear { background:var(--red3); color:var(--red); border:1px solid rgba(255,68,102,.25); }
 #prediction-body .pred-neut { background:var(--bg4); color:var(--text3); border:1px solid var(--border2); }
-#prediction-body .pred-verdict { background:var(--bg4); border:1px solid var(--border2); border-radius:10px; padding:16px; margin-top:16px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+#prediction-body .pred-verdict { background:rgba(20,24,32,0.7); backdrop-filter:blur(12px); border:1px solid var(--border2); border-radius:12px; padding:18px; margin-top:16px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
 #prediction-body .pred-v-item { text-align:center; }
 #prediction-body .pred-v-val { font-size:20px; font-weight:800; font-family:var(--fm); }
 #prediction-body .pred-v-lbl { font-size:9px; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
@@ -847,17 +857,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .regime-banner.bull { background:rgba(0,212,168,.07); color:var(--green); border-color:rgba(0,212,168,.2); }
 .regime-banner.neut { background:rgba(255,176,32,.07); color:var(--amber); border-color:rgba(255,176,32,.2); }
 .grade-badge { font-size:10px; font-weight:800; padding:2px 7px; border-radius:4px; font-family:var(--fd); }
-.grade-ap { background:rgba(0,212,168,.2); color:#00d4a8; border:1px solid rgba(0,212,168,.3); }
-.grade-a  { background:rgba(45,142,255,.2); color:#2d8eff; border:1px solid rgba(45,142,255,.3); }
-.grade-b  { background:rgba(255,176,32,.15); color:var(--amber); border:1px solid rgba(255,176,32,.25); }
+.grade-ap { background:rgba(16,185,129,.18); color:#10b981; border:1px solid rgba(16,185,129,.3); }
+.grade-a  { background:rgba(6,182,212,.18); color:#06b6d4; border:1px solid rgba(6,182,212,.3); }
+.grade-b  { background:rgba(245,158,11,.14); color:var(--amber); border:1px solid rgba(245,158,11,.25); }
 .grade-c  { background:var(--bg5); color:var(--text3); border:1px solid var(--border2); }
-.take-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:3px; background:rgba(0,212,168,.15); color:#00d4a8; letter-spacing:.04em; }
-.skip-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:3px; background:rgba(255,68,102,.12); color:var(--red); letter-spacing:.04em; }
-.wait-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:3px; background:rgba(255,176,32,.12); color:var(--amber); letter-spacing:.04em; }
+.take-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:3px; background:rgba(16,185,129,.15); color:#10b981; letter-spacing:.04em; }
+.skip-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:3px; background:rgba(244,63,94,.12); color:var(--red); letter-spacing:.04em; }
+.wait-badge { font-size:9px; font-weight:700; padding:2px 7px; border-radius:3px; background:rgba(245,158,11,.12); color:var(--amber); letter-spacing:.04em; }
 .sig-tag { font-size:9px; padding:2px 7px; border-radius:3px; font-weight:600; white-space:nowrap; }
-.sig-tag-bull  { background:rgba(0,212,168,.12); color:#00d4a8; }
-.sig-tag-bear  { background:rgba(255,68,102,.1); color:var(--red); }
-.sig-tag-warn  { background:rgba(255,176,32,.12); color:var(--amber); }
+.sig-tag-bull  { background:rgba(16,185,129,.12); color:#10b981; }
+.sig-tag-bear  { background:rgba(244,63,94,.1); color:var(--red); }
+.sig-tag-warn  { background:rgba(245,158,11,.12); color:var(--amber); }
 .sig-tag-neut  { background:var(--bg5); color:var(--text4); }
 .sector-tag { font-size:9px; padding:2px 8px; border-radius:3px; font-weight:600; }
 .sec-materials { background:rgba(251,146,60,.15); color:#fb923c; }
@@ -984,17 +994,34 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       </div>
     </div>
 
-    <!-- Scanner + Calendar side-by-side -->
+    <!-- News + Calendar side-by-side -->
     <div class="g2">
+      <!-- Live News Feed -->
       <div class="panel">
-        <div class="phead"><div class="ptitle">Economic calendar</div><div class="pmeta">High-impact events today</div></div>
-        <div class="cal-row"><div class="cal-time">09:30</div><div class="cal-impact" style="background:var(--red)"></div><div class="cal-event">US CPI (MoM)</div><div class="cal-prev" style="min-width:80px">Prev: 0.3%</div><div class="cal-act am">PENDING</div></div>
-        <div class="cal-row"><div class="cal-time">10:00</div><div class="cal-impact" style="background:var(--amber)"></div><div class="cal-event">RBA Meeting Minutes</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act up">Released</div></div>
-        <div class="cal-row"><div class="cal-time">14:30</div><div class="cal-impact" style="background:var(--red)"></div><div class="cal-event">Fed Chair Powell Speech</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act am">PENDING</div></div>
-        <div class="cal-row"><div class="cal-time">16:00</div><div class="cal-impact" style="background:var(--amber)"></div><div class="cal-event">EIA Crude Inventories</div><div class="cal-prev" style="min-width:80px">Prev: −2.1M</div><div class="cal-act am">PENDING</div></div>
-        <div class="cal-row"><div class="cal-time">18:00</div><div class="cal-impact" style="background:var(--text4)"></div><div class="cal-event">ASX 200 Close</div><div class="cal-prev" style="min-width:80px">—</div><div class="cal-act" style="color:var(--text3)">EOD</div></div>
+        <div class="phead">
+          <div class="ptitle">Live news feed</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="pmeta" id="intel-feed-time">Loading...</div>
+            <button class="btn" onclick="fetchNews()" style="font-size:10px;padding:3px 8px">Refresh</button>
+          </div>
+        </div>
+        <div id="news-feed" style="max-height:380px;overflow-y:auto">
+          <div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Fetching live news...</div>
+        </div>
       </div>
-
+      <!-- Economic Calendar -->
+      <div class="panel">
+        <div class="phead">
+          <div class="ptitle">Economic calendar</div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div class="pmeta" id="cal-time">Loading...</div>
+            <button class="btn" onclick="fetchCalendar()" style="font-size:10px;padding:3px 8px">Refresh</button>
+          </div>
+        </div>
+        <div id="calendar-body">
+          <div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Fetching economic calendar...</div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -3591,6 +3618,9 @@ function checkAlerts(results) {
 // ═══════════════════════════════════════════════════════
 // NEWS ENGINE — Multi-source RSS
 // ═══════════════════════════════════════════════════════
+const HIGH_IMPACT = ['GDP','CPI','INTEREST RATE','RATE DECISION','INFLATION','FOMC','FED','RBA','NON-FARM','NFP','JOBS','EMPLOYMENT','EARNINGS','TARIFF','TRADE WAR','RECESSION','CRASH','EMERGENCY','WAR','SANCTIONS'];
+const MED_IMPACT = ['SALES','UNEMPLOYMENT','MANUFACTURING','PMI','HOUSING','RETAIL','CONSUMER','OIL','CRUDE','IRON ORE','GOLD','CHINA','TREASURY','BOND','YIELD','DOLLAR','TRADE BALANCE'];
+
 async function fetchNews() {
   // News fetch chain — proxy-first for reliable CORS, fallback to direct RSS
   const sources = [
@@ -3688,6 +3718,47 @@ function renderNewsPlaceholder() {
   renderNewsItems(fallbackItems.map(i => ({...i})));
   const ift = document.getElementById('intel-feed-time');
   if (ift) ift.textContent = 'Curated · Live feeds loading in background';
+}
+
+// ═══════════════════════════════════════════════════════
+// LIVE ECONOMIC CALENDAR — Forex Factory via Netlify proxy
+// ═══════════════════════════════════════════════════════
+let calendarData = [];
+async function fetchCalendar() {
+  const body = document.getElementById('calendar-body');
+  const timeEl = document.getElementById('cal-time');
+  try {
+    const r = await fetch('/.netlify/functions/calendar', { signal: AbortSignal.timeout(12000) });
+    const data = await r.json();
+    calendarData = data.events || [];
+    if (!calendarData.length) {
+      if (body) body.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">No high-impact events today</div>';
+      if (timeEl) timeEl.textContent = 'No events';
+      return;
+    }
+    if (body) body.innerHTML = calendarData.map(ev => {
+      const impCol = ev.impact === 'high' ? 'var(--red)' : ev.impact === 'medium' ? 'var(--amber)' : 'var(--text4)';
+      const actClass = ev.actual ? 'up' : 'am';
+      const actText = ev.actual || 'PENDING';
+      const prev = ev.previous ? 'Prev: ' + ev.previous : '';
+      const fore = ev.forecast ? 'Exp: ' + ev.forecast : '';
+      const meta = [prev, fore].filter(Boolean).join(' · ') || '—';
+      return `<div class="cal-row">
+        <div class="cal-time">${ev.time || 'TBD'}</div>
+        <div class="cal-impact" style="background:${impCol}"></div>
+        <div class="cal-event">${ev.country ? '<span style="font-weight:700;margin-right:4px">' + ev.country + '</span>' : ''}${ev.title}</div>
+        <div class="cal-prev" style="min-width:100px;font-size:10px;color:var(--text3)">${meta}</div>
+        <div class="cal-act ${actClass}">${actText}</div>
+      </div>`;
+    }).join('');
+    if (timeEl) {
+      const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+      timeEl.textContent = `${calendarData.length} events · ${t} AWST`;
+    }
+  } catch(e) {
+    console.warn('Calendar fetch failed:', e.message);
+    if (body) body.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Calendar unavailable — retrying shortly</div>';
+  }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -6560,7 +6631,26 @@ setTimeout(() => {
 newsTimer = setInterval(function() {
   if (document.hidden) return;
   fetchNews();
+  // Sync news to other tabs
+  syncNewsToTabs();
 }, CFG.newsInterval);
+
+// Sync news across all tab feeds
+function syncNewsToTabs() {
+  const src = document.getElementById('news-feed');
+  if (!src || !src.innerHTML || src.innerHTML.includes('Fetching')) return;
+  ['asx-news-feed','fut-news-feed','sector-news-feed'].forEach(id => {
+    const dst = document.getElementById(id);
+    if (dst) dst.innerHTML = src.innerHTML;
+  });
+}
+
+// Start economic calendar immediately + auto-refresh every 15 min
+fetchCalendar();
+setInterval(function() {
+  if (document.hidden) return;
+  fetchCalendar();
+}, 900000);
 
 // Auto-refresh: if on intel page, re-run full analysis every 5 minutes
 setInterval(() => {
@@ -6735,12 +6825,15 @@ function toggleCrtMode() { setScanView(activeScanView === 'crt' ? 'bullish' : 'c
 // ═══════════════════════════════════════════════════════
 
 const OVERNIGHT_INSTRUMENTS = [
-  { sym:'ES=F',  label:'ES',   name:'S&P 500',       dp:0 },
-  { sym:'YM=F',  label:'DOW',  name:'Dow Jones',     dp:0 },
-  { sym:'GC=F',  label:'GOLD', name:'Gold',          dp:0 },
-  { sym:'CL=F',  label:'WTI',  name:'Crude Oil',     dp:2 },
-  { sym:'BTC-USD',label:'BTC', name:'Bitcoin',       dp:0 },
-  { sym:'DX-Y.NYB',label:'DXY',name:'US Dollar Idx',dp:2 },
+  { sym:'ES=F',    label:'ES',   name:'S&P 500',       dp:0 },
+  { sym:'NQ=F',    label:'NQ',   name:'Nasdaq 100',    dp:0 },
+  { sym:'YM=F',    label:'DOW',  name:'Dow Jones',     dp:0 },
+  { sym:'GC=F',    label:'GOLD', name:'Gold',          dp:0 },
+  { sym:'CL=F',    label:'WTI',  name:'Crude Oil',     dp:2 },
+  { sym:'BTC-USD', label:'BTC',  name:'Bitcoin',       dp:0 },
+  { sym:'DX-Y.NYB',label:'DXY',  name:'US Dollar Idx', dp:2 },
+  { sym:'AUDUSD=X',label:'AUD',  name:'AUD/USD',       dp:4 },
+  { sym:'^AXJO',   label:'ASX',  name:'ASX 200',       dp:0 },
 ];
 
 let overnightData = {};
@@ -6838,8 +6931,8 @@ function renderOvernightGrid() {
       ).join(' ');
       // Fill area under line
       const fillPts = pts + ` ${W},${H} 0,${H}`;
-      const strokeCol = up ? '#00d4a8' : '#ff4466';
-      const fillCol = up ? 'rgba(0,212,168,0.12)' : 'rgba(255,68,102,0.12)';
+      const strokeCol = up ? '#10b981' : '#f43f5e';
+      const fillCol = up ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)';
       // Open price reference line (first close)
       const openY = (H - (closes[0]-mn)/range*H).toFixed(1);
       spark = `<svg style="width:100%;height:44px;margin-top:6px;display:block" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
@@ -7897,6 +7990,13 @@ async function runFundamentalsAgent() {
       const t   = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
       status.innerHTML = '<span style="color:var(--green)">✓</span> ' + fundData.length + ' scored · ' + top + ' A/A+ · ' + t + ' AWST';
       if (typeof showToast==='function') showToast('Value Scan Complete', fundData.length + ' stocks scored · ' + top + ' A/A+ grade', 'success', 5000);
+      // Enrich top 30 with real P/E, P/B, ROE data
+      if (status) status.innerHTML += ' · <span style="color:var(--accent)">enriching fundamentals...</span>';
+      enrichFundamentals().then(() => {
+        const top2 = fundData.filter(d => d.grade==='A+'||d.grade==='A').length;
+        const t2   = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+        if (status) status.innerHTML = '<span style="color:var(--green)">✓</span> ' + fundData.length + ' scored · ' + top2 + ' A/A+ · P/E·P/B·ROE enriched · ' + t2 + ' AWST';
+      });
     } else {
       status.innerHTML = '<span style="color:var(--amber)">⚠</span> allorigins unavailable — try again shortly';
     }
@@ -7922,12 +8022,12 @@ function renderFundamentals() {
     return;
   }
 
-  const gCol = { 'A+':'#00d4a8','A':'#2d8eff','B':'#ffb020','C':'#888','D':'#ff4466' };
-  const gBg  = { 'A+':'rgba(0,212,168,.12)','A':'rgba(45,142,255,.12)','B':'rgba(255,176,32,.1)','C':'var(--bg5)','D':'rgba(255,68,102,.1)' };
+  const gCol = { 'A+':'#10b981','A':'#06b6d4','B':'#f59e0b','C':'#64748b','D':'#f43f5e' };
+  const gBg  = { 'A+':'rgba(16,185,129,.14)','A':'rgba(6,182,212,.14)','B':'rgba(245,158,11,.1)','C':'var(--bg5)','D':'rgba(244,63,94,.1)' };
 
   grid.innerHTML = `
-    <div style="display:grid;grid-template-columns:30px 1fr 62px 52px 52px 58px 64px 54px 58px;padding:5px 16px;background:var(--bg5);border-bottom:1px solid var(--border);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;position:sticky;top:0">
-      <div>#</div><div>Company</div><div style="text-align:right">Price</div><div style="text-align:right">52w Pos</div><div style="text-align:right">12mo</div><div style="text-align:right">3mo</div><div style="text-align:right">Score</div><div style="text-align:right">Grade</div>
+    <div style="display:grid;grid-template-columns:30px 1fr 62px 52px 52px 58px 64px 54px 58px;padding:5px 16px;background:var(--bg5);border-bottom:1px solid var(--border);font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;position:sticky;top:0;z-index:2">
+      <div>#</div><div>Company</div><div style="text-align:right">Price</div><div style="text-align:right">P/E</div><div style="text-align:right">P/B</div><div style="text-align:right">Div %</div><div style="text-align:right">Score</div><div style="text-align:right">Grade</div><div style="text-align:right">Chg</div>
     </div>
     ${data.slice(0,50).map((d,i) => {
       const pe  = d.pe  ? d.pe.toFixed(1)  : '—';
@@ -7963,6 +8063,51 @@ function renderFundamentals() {
         <div style="text-align:right;font-size:11px;font-weight:700;color:${chgCol}">${chg}</div>
       </div>`;
     }).join('')}`;
+}
+
+// ── FUND-DETAIL ENRICHMENT: overlay real P/E, P/B, ROE from Yahoo quoteSummary ──
+async function enrichFundamentals() {
+  if (!fundData.length) return;
+  const tickers = fundData.slice(0, 30).map(d => d.ticker).filter(Boolean);
+  // Batch in groups of 5
+  for (let i = 0; i < tickers.length; i += 5) {
+    const batch = tickers.slice(i, i + 5);
+    try {
+      const r = await fetch('/.netlify/functions/fund-detail', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tickers: batch }),
+        signal: AbortSignal.timeout(15000),
+      });
+      const data = await r.json();
+      if (data.results) {
+        data.results.forEach(fd => {
+          const match = fundData.find(d => d.ticker === fd.ticker);
+          if (match) {
+            match.pe = fd.trailingPE || fd.forwardPE;
+            match.pb = fd.priceToBook;
+            match.divYield = fd.dividendYield;
+            match.roe = fd.roe;
+            match.debtEquity = fd.debtToEquity;
+            match.sector = fd.sector;
+            match.industry = fd.industry;
+            match.valueScore = fd.valueScore;
+            match.qualityScore = fd.qualityScore;
+            match.fundGrade = fd.grade;
+            // Boost score with fundamental data
+            if (fd.valueScore >= 40) match.score += 10;
+            if (fd.qualityScore >= 40) match.score += 8;
+            if (fd.dividendYield > 0.04) match.score += 5;
+            // Re-grade
+            match.grade = match.score >= 55 ? 'A+' : match.score >= 40 ? 'A' : match.score >= 24 ? 'B' : match.score >= 10 ? 'C' : 'D';
+          }
+        });
+        fundData.sort((a, b) => b.score - a.score);
+        renderFundamentals();
+      }
+    } catch(e) { console.warn('Fund-detail batch failed:', e.message); }
+    if (i + 5 < tickers.length) await new Promise(res => setTimeout(res, 300));
+  }
 }
 
 // Auto-load when ASX intel tab opens — merged into setAsxTab above
@@ -9865,6 +10010,61 @@ function scoreTvIndicators(vals) {
     if (adx > 25) { const top = bull >= bear ? 'bull' : 'bear'; if (top === 'bull') bull += 6; else bear += 6; signals.push('ADX ' + adx.toFixed(0) + ' — trending'); }
   }
 
+  // ── MACRO OVERLAY: cross-market correlations ──
+  // Use overnight data for macro context if available
+  if (typeof overnightData !== 'undefined' && Object.keys(overnightData).length) {
+    const dxy = overnightData['DX-Y.NYB']?.chgPct || 0;
+    const gold = overnightData['GC=F']?.chgPct || 0;
+    const oil = overnightData['CL=F']?.chgPct || 0;
+    const btc = overnightData['BTC-USD']?.chgPct || 0;
+    const es = overnightData['ES=F']?.chgPct || 0;
+    const nq = overnightData['NQ=F']?.chgPct || 0;
+
+    // Inverse DXY correlations for forex/gold
+    if (vals._sym === 'XAU/USD' || vals._sym === 'XAG/USD') {
+      if (dxy < -0.2) { bull += 8; signals.push('USD weak → metals bid'); }
+      else if (dxy > 0.3) { bear += 8; signals.push('USD strong → metals pressure'); }
+      if (gold > 0.5) { bull += 6; signals.push('Gold momentum +' + gold.toFixed(1) + '%'); }
+      else if (gold < -0.5) { bear += 6; signals.push('Gold selling ' + gold.toFixed(1) + '%'); }
+    }
+    if (vals._sym === 'AUD/USD') {
+      if (dxy < -0.2) { bull += 8; signals.push('USD weak → AUD bid'); }
+      else if (dxy > 0.3) { bear += 8; signals.push('USD strong → AUD pressure'); }
+      // AUD correlated with risk-on + commodities
+      if (es > 0.3 && gold > 0) { bull += 5; signals.push('Risk-on + commodities ↑'); }
+      else if (es < -0.5) { bear += 5; signals.push('Risk-off → AUD sell'); }
+    }
+    if (vals._sym === 'EUR/USD' || vals._sym === 'GBP/USD') {
+      if (dxy < -0.2) { bull += 7; signals.push('DXY weakness → ' + vals._sym.slice(0,3) + ' bid'); }
+      else if (dxy > 0.3) { bear += 7; signals.push('DXY strength → ' + vals._sym.slice(0,3) + ' pressure'); }
+    }
+    if (vals._sym === 'USD/JPY') {
+      if (dxy > 0.2) { bull += 7; signals.push('USD strong → JPY sell'); }
+      else if (dxy < -0.3) { bear += 7; signals.push('USD weak → JPY bid'); }
+      if (es < -0.5) { bear += 5; signals.push('Risk-off → safe haven JPY'); }
+    }
+    if (vals._sym === 'NQ' || vals._sym === 'ES' || vals._sym === 'YM' || vals._sym === 'RTY') {
+      // Equity indices — BTC as risk proxy
+      if (btc > 1.5) { bull += 6; signals.push('BTC +' + btc.toFixed(1) + '% risk-on'); }
+      else if (btc < -2) { bear += 6; signals.push('BTC ' + btc.toFixed(1) + '% risk-off'); }
+      // VIX proxy: if big equity moves, trend continuation
+      const avgEq = (es + nq) / 2;
+      if (avgEq > 0.5) { bull += 5; signals.push('US futs lead +' + avgEq.toFixed(1) + '%'); }
+      else if (avgEq < -0.5) { bear += 5; signals.push('US futs lead ' + avgEq.toFixed(1) + '%'); }
+    }
+    if (vals._sym === 'USOIL') {
+      if (oil > 0.5) { bull += 8; signals.push('Crude momentum +' + oil.toFixed(1) + '%'); }
+      else if (oil < -0.5) { bear += 8; signals.push('Crude selling ' + oil.toFixed(1) + '%'); }
+      // Equity weakness can drag oil
+      if (es < -0.8) { bear += 4; signals.push('Equity weakness → demand concerns'); }
+    }
+    if (vals._sym === 'DXY') {
+      // DXY inversely correlated with risk assets
+      if (es > 0.5 && gold > 0.3) { bear += 6; signals.push('Risk-on → DXY pressure'); }
+      else if (es < -0.5) { bull += 6; signals.push('Risk-off → DXY haven bid'); }
+    }
+  }
+
   // Normalise
   const total = bull + bear || 1;
   const bullPct = Math.min(Math.round(bull / total * 100), 98);
@@ -9919,7 +10119,7 @@ function updateFutIntelCards() {
     if (!card) return;
     const isBull = d.dir === 'bull', isBear = d.dir === 'bear';
     const confCol = d.conf >= 75 ? 'var(--green)' : d.conf >= 55 ? 'var(--accent)' : 'var(--amber)';
-    card.style.borderColor = isBull ? 'rgba(0,212,168,.35)' : isBear ? 'rgba(255,68,102,.3)' : 'var(--border2)';
+    card.style.borderColor = isBull ? 'rgba(16,185,129,.35)' : isBear ? 'rgba(244,63,94,.3)' : 'var(--border2)';
     card.style.opacity = '1';
     const sent = document.getElementById('fc-sent-' + sid);
     if (sent) { sent.textContent = isBull ? 'Bullish' : isBear ? 'Bearish' : 'Neutral'; sent.className = 'sent ' + (isBull?'sbull':isBear?'sbear':'sneut'); }
@@ -10010,7 +10210,7 @@ async function runFutIntelAll() {
         res.value.data.forEach(row => { lookup[row.s] = row.d; });
         insts.forEach(inst => {
           const vals = lookup[inst._scanKey];
-          if (vals) futIntelData[inst.sym] = scoreTvIndicators(vals);
+          if (vals) { vals._sym = inst.sym; futIntelData[inst.sym] = scoreTvIndicators(vals); }
           else if (!futIntelData[inst.sym]) futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['No TV data — retrying'], price:0, pct:0 };
         });
       } else {
@@ -10044,7 +10244,7 @@ async function runFutIntelAll() {
       if (iData) {
         const merged = [...iData];
         if (pData) { merged[0] = pData[0]; merged[1] = pData[1]; } // overwrite close & change with futures price
-        futIntelData[inst.sym] = scoreTvIndicators(merged);
+        merged._sym = inst.sym; futIntelData[inst.sym] = scoreTvIndicators(merged);
       } else if (pData) {
         // Price only — no intraday indicators available
         futIntelData[inst.sym] = { bull:50, bear:50, conf:40, dir:'neut', signals:['Futures price live — indicators loading'], price: pData[0], pct: pData[1] || 0 };
