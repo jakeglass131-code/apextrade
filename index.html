@@ -7710,38 +7710,35 @@ async function runAsxIntel() {
   h += '<div style="margin-bottom:16px"></div>';
 
   // Analyst changes (upgrades/downgrades) with links
+  const _lnk = (url, label) => '<a href="' + url + '" target="_blank" rel="noopener" style="font-size:9px;padding:4px 10px;border-radius:4px;background:var(--bg5);color:var(--accent);text-decoration:none;border:1px solid var(--border2);transition:background .15s" onmouseover="this.style.background=\'var(--bg4)\'" onmouseout="this.style.background=\'var(--bg5)\'">' + label + ' ↗</a>';
   if (f.analystChanges && f.analystChanges.length) {
     h += _sec('Recent Analyst Actions');
     f.analystChanges.forEach(a => {
       const actCol = a.action === 'upgrade' ? 'var(--green)' : a.action === 'downgrade' ? 'var(--red)' : 'var(--amber)';
       const actIcon = a.action === 'upgrade' ? '⬆' : a.action === 'downgrade' ? '⬇' : '↔';
-      const searchQ = encodeURIComponent(ticker + '.AX ' + a.firm + ' ' + (a.action || '') + ' ' + (a.to || '') + ' ' + (a.date || ''));
+      const searchQ = encodeURIComponent(a.firm + ' ' + ticker + ' ASX ' + (a.action || '') + ' ' + (a.to || '') + ' site:fnarena.com OR site:marketindex.com.au OR site:livewiremarkets.com');
       h += '<a href="https://www.google.com/search?q=' + searchQ + '" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:3px;background:var(--bg4);border-radius:5px;font-size:10px;text-decoration:none;transition:background .15s;cursor:pointer" onmouseover="this.style.background=\'var(--bg5)\'" onmouseout="this.style.background=\'var(--bg4)\'">'
         + '<span style="color:' + actCol + ';font-weight:700">' + actIcon + ' ' + (a.action || 'init').toUpperCase() + '</span>'
         + '<span style="color:var(--text2);font-weight:600">' + a.firm + '</span>'
         + (a.from ? '<span style="color:var(--text4)">' + a.from + ' → ' + a.to + '</span>' : '<span style="color:var(--text3)">' + a.to + '</span>')
         + '<span style="color:var(--text4);margin-left:auto">' + (a.date || '') + '</span>'
-        + '<span style="color:var(--accent);font-size:9px;margin-left:4px">↗</span></a>';
+        + '<span style="color:var(--accent);font-size:9px;margin-left:4px">Find report ↗</span></a>';
     });
-    // Links row: Yahoo Finance analysis + ASX announcements + company website
-    h += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;margin-bottom:16px">'
-      + '<a href="https://au.finance.yahoo.com/quote/' + ticker + '.AX/analysis" target="_blank" rel="noopener" style="font-size:9px;padding:4px 10px;border-radius:4px;background:var(--bg5);color:var(--accent);text-decoration:none;border:1px solid var(--border2)">Yahoo Finance Analysis ↗</a>'
-      + '<a href="https://www2.asx.com.au/markets/company/' + ticker + '" target="_blank" rel="noopener" style="font-size:9px;padding:4px 10px;border-radius:4px;background:var(--bg5);color:var(--accent);text-decoration:none;border:1px solid var(--border2)">ASX Announcements ↗</a>'
-      + '<a href="https://www.google.com/search?q=' + encodeURIComponent(ticker + '.AX analyst report ' + new Date().getFullYear()) + '" target="_blank" rel="noopener" style="font-size:9px;padding:4px 10px;border-radius:4px;background:var(--bg5);color:var(--accent);text-decoration:none;border:1px solid var(--border2)">Search Analyst Reports ↗</a>'
-      + (f.website ? '<a href="' + f.website + '" target="_blank" rel="noopener" style="font-size:9px;padding:4px 10px;border-radius:4px;background:var(--bg5);color:var(--accent);text-decoration:none;border:1px solid var(--border2)">Company Website ↗</a>' : '')
-      + '</div>';
-  } else {
-    // Even without analyst changes, still show the links
-    h += _sec('Research Links');
-    h += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">'
-      + '<a href="https://au.finance.yahoo.com/quote/' + ticker + '.AX/analysis" target="_blank" rel="noopener" style="font-size:9px;padding:4px 10px;border-radius:4px;background:var(--bg5);color:var(--accent);text-decoration:none;border:1px solid var(--border2)">Yahoo Finance Analysis ↗</a>'
-      + '<a href="https://www2.asx.com.au/markets/company/' + ticker + '" target="_blank" rel="noopener" style="font-size:9px;padding:4px 10px;border-radius:4px;background:var(--bg5);color:var(--accent);text-decoration:none;border:1px solid var(--border2)">ASX Announcements ↗</a>'
-      + '<a href="https://www.google.com/search?q=' + encodeURIComponent(ticker + '.AX analyst report ' + new Date().getFullYear()) + '" target="_blank" rel="noopener" style="font-size:9px;padding:4px 10px;border-radius:4px;background:var(--bg5);color:var(--accent);text-decoration:none;border:1px solid var(--border2)">Search Analyst Reports ↗</a>'
-      + '<a href="https://au.finance.yahoo.com/quote/' + ticker + '.AX/" target="_blank" rel="noopener" style="font-size:9px;padding:4px 10px;border-radius:4px;background:var(--bg5);color:var(--accent);text-decoration:none;border:1px solid var(--border2)">Yahoo Finance ↗</a>'
-      + '<a href="https://hotcopper.com.au/asx/' + ticker.toLowerCase() + '" target="_blank" rel="noopener" style="font-size:9px;padding:4px 10px;border-radius:4px;background:var(--bg5);color:var(--accent);text-decoration:none;border:1px solid var(--border2)">HotCopper Forum ↗</a>'
-      + (f.website ? '<a href="' + f.website + '" target="_blank" rel="noopener" style="font-size:9px;padding:4px 10px;border-radius:4px;background:var(--bg5);color:var(--accent);text-decoration:none;border:1px solid var(--border2)">Company Website ↗</a>' : '')
-      + '</div>';
+    h += '<div style="font-size:9px;color:var(--text4);margin-top:4px;padding:0 4px">Full reports are paywalled — links search FNArena, Market Index & Livewire for free summaries</div>';
   }
+
+  // Research links — always shown
+  h += '<div style="font-size:11px;font-weight:600;color:var(--text2);margin:10px 0 6px">Research & Filings</div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">'
+    + _lnk('https://www.marketindex.com.au/asx/' + ticker.toLowerCase(), 'Market Index')
+    + _lnk('https://www.fnarena.com/index.php/stock-research/?broker_search=' + ticker, 'FNArena Broker Reports')
+    + _lnk('https://www2.asx.com.au/markets/company/' + ticker, 'ASX Announcements')
+    + _lnk('https://au.finance.yahoo.com/quote/' + ticker + '.AX/analysis', 'Yahoo Analysis')
+    + _lnk('https://simplywall.st/stocks/au/asx-' + ticker.toLowerCase(), 'Simply Wall St')
+    + _lnk('https://hotcopper.com.au/asx/' + ticker.toLowerCase(), 'HotCopper')
+    + _lnk('https://www.livewiremarkets.com/shares/asx/' + ticker.toLowerCase(), 'Livewire')
+    + (f.website ? _lnk(f.website, 'Company IR') : '')
+    + '</div>';
 
   // ── 7: ANALYST TARGETS ──
   if (f.targetLowPrice && f.targetHighPrice && f.price) {
