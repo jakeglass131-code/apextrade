@@ -968,8 +968,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         <div style="display:flex;align-items:center;gap:8px"><div class="pmeta" id="overnight-time">Loading...</div><div class="updated-at" id="upd-overnight"></div></div>
       </div>
       <div id="overnight-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px;background:var(--border)">
-        <!-- populated by fetchOvernightData() -->
-        <div style="padding:20px;text-align:center;color:var(--text3);grid-column:1/-1;font-size:12px">Fetching overnight data...</div>
+        <!-- skeleton placeholders replaced by fetchOvernightData() -->
+        <div class="overnight-skel-wrap" style="grid-column:1/-1;display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1px">
+          <div style="background:var(--bg3);padding:14px 16px"><div class="skel skel-text" style="width:40px;margin-bottom:8px"></div><div class="skel skel-text" style="width:70px;height:18px;margin-bottom:6px"></div><div class="skel skel-bar" style="width:100%"></div></div>
+          <div style="background:var(--bg3);padding:14px 16px"><div class="skel skel-text" style="width:40px;margin-bottom:8px"></div><div class="skel skel-text" style="width:70px;height:18px;margin-bottom:6px"></div><div class="skel skel-bar" style="width:100%"></div></div>
+          <div style="background:var(--bg3);padding:14px 16px"><div class="skel skel-text" style="width:40px;margin-bottom:8px"></div><div class="skel skel-text" style="width:70px;height:18px;margin-bottom:6px"></div><div class="skel skel-bar" style="width:100%"></div></div>
+          <div style="background:var(--bg3);padding:14px 16px"><div class="skel skel-text" style="width:40px;margin-bottom:8px"></div><div class="skel skel-text" style="width:70px;height:18px;margin-bottom:6px"></div><div class="skel skel-bar" style="width:100%"></div></div>
+          <div style="background:var(--bg3);padding:14px 16px"><div class="skel skel-text" style="width:40px;margin-bottom:8px"></div><div class="skel skel-text" style="width:70px;height:18px;margin-bottom:6px"></div><div class="skel skel-bar" style="width:100%"></div></div>
+          <div style="background:var(--bg3);padding:14px 16px"><div class="skel skel-text" style="width:40px;margin-bottom:8px"></div><div class="skel skel-text" style="width:70px;height:18px;margin-bottom:6px"></div><div class="skel skel-bar" style="width:100%"></div></div>
+        </div>
       </div>
     </div>
 
@@ -995,6 +1002,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
           <div class="ptitle">Live news feed</div>
           <div style="display:flex;align-items:center;gap:8px">
             <div class="pmeta" id="intel-feed-time">Loading...</div>
+            <div class="updated-at" id="upd-news"></div>
             <button class="btn" onclick="fetchNews()" style="font-size:10px;padding:3px 8px">Refresh</button>
           </div>
         </div>
@@ -3481,7 +3489,6 @@ function updateScannerUI(results) {
   set('stat-short', shorts);
   set('stat-conf', avgConf + '%');
   set('stat-time', t + ' AWST');
-  _setUpdatedAt('upd-scan-results');
 
   if (filtered.length === 0) {
     scanBody.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3)">
@@ -4050,6 +4057,7 @@ function saveSettings() {
   if (k) { CFG.newsKey = k; localStorage.setItem('apex_news_key', k); }
 
   calcRisk();
+  _checkSimBanner();
   showToast('Settings Saved', 'All parameters updated · Live prices activating', 'success', 3000);
 }
 
