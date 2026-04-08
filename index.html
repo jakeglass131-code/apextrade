@@ -1361,21 +1361,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         <div class="panel" style="padding:14px 16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <div style="font-size:12px;font-weight:800;color:var(--text)">Currency Strength</div>
-            <div style="font-size:9px;color:var(--text4)">Live from prices</div>
+            <div class="str-tf-label" style="font-size:9px;color:var(--text4)">Today's move</div>
           </div>
           <div id="fut-fx-strength"></div>
         </div>
         <div class="panel" style="padding:14px 16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <div style="font-size:12px;font-weight:800;color:var(--text)">Index Strength</div>
-            <div style="font-size:9px;color:var(--text4)">Live from prices</div>
+            <div class="str-tf-label" style="font-size:9px;color:var(--text4)">Today's move</div>
           </div>
           <div id="fut-idx-strength"></div>
         </div>
         <div class="panel" style="padding:14px 16px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <div style="font-size:12px;font-weight:800;color:var(--text)">Commodity Strength</div>
-            <div style="font-size:9px;color:var(--text4)">Live from prices</div>
+            <div class="str-tf-label" style="font-size:9px;color:var(--text4)">Today's move</div>
           </div>
           <div id="fut-com-strength"></div>
         </div>
@@ -5944,6 +5944,69 @@ function updateMlFlowPanel() {
     </div>` : ''}`;
 }
 
+// ── Price history buffer for TF-aware strength ──
+// Snapshots prices every ~10s so short-term TFs (5m, 15m, 1H) measure recent moves
+const _priceSnapshots = [];  // [{ ts: epochMs, prices: { sym: price, ... } }, ...]
+const _SNAP_INTERVAL = 10000; // 10 seconds between snapshots
+const _MAX_SNAPS = 720;       // 2 hours of history at 10s intervals
+
+function _snapshotPrices() {
+  if (typeof prices === 'undefined') return;
+  _priceSnapshots.push({ ts: Date.now(), prices: { ...prices } });
+  if (_priceSnapshots.length > _MAX_SNAPS) _priceSnapshots.shift();
+}
+setInterval(_snapshotPrices, _SNAP_INTERVAL);
+_snapshotPrices(); // initial snapshot
+
+// TF lookback windows in ms
+const _TF_LOOKBACK = {
+  '5m':  5 * 60000,
+  '15m': 15 * 60000,
+  '1H':  60 * 60000,
+  '4H':  4 * 60 * 60000,
+};
+
+// % change over the globalTF lookback window (falls back to daily pctChange for D/W)
+function tfPctChange(sym) {
+  const tf = typeof globalTF !== 'undefined' ? globalTF : '1W';
+  const lookback = _TF_LOOKBACK[tf];
+
+  // For daily/weekly/monthly — use normal day % change
+  if (!lookback) return pctChange(sym);
+
+  // For short TFs — find the oldest snapshot within the lookback window
+  const cutoff = Date.now() - lookback;
+  let baseSnap = null;
+  for (let i = 0; i < _priceSnapshots.length; i++) {
+    if (_priceSnapshots[i].ts <= cutoff) { baseSnap = _priceSnapshots[i]; }
+    else break;
+  }
+  // If we don't have enough history yet, use the oldest snapshot we have
+  if (!baseSnap && _priceSnapshots.length > 0) baseSnap = _priceSnapshots[0];
+  if (!baseSnap) return pctChange(sym);
+
+  const basePrice = baseSnap.prices[sym];
+  const curPrice = prices[sym];
+  if (!basePrice || !curPrice || basePrice === 0) return pctChange(sym);
+  return (curPrice - basePrice) / basePrice * 100;
+}
+
+// Human-readable label for the strength TF context
+function _strengthTFLabel() {
+  const tf = typeof globalTF !== 'undefined' ? globalTF : '1W';
+  const lookback = _TF_LOOKBACK[tf];
+  if (!lookback) return 'Today\'s move';
+  // Check if we have enough history
+  const oldest = _priceSnapshots.length > 0 ? _priceSnapshots[0].ts : Date.now();
+  const historyMs = Date.now() - oldest;
+  if (historyMs < lookback * 0.5) {
+    const mins = Math.round(historyMs / 60000);
+    return 'Last ' + (mins < 1 ? '<1' : mins) + 'm (building...)';
+  }
+  const map = { '5m': 'Last 5 min', '15m': 'Last 15 min', '1H': 'Last 1 hour', '4H': 'Last 4 hours' };
+  return map[tf] || 'Today\'s move';
+}
+
 // ── Futures strength meters (Forex / Indices / Commodities) ──
 function _renderStrengthBar(items, el) {
   if (!el) return;
@@ -5962,12 +6025,16 @@ function _renderStrengthBar(items, el) {
 }
 
 function updateFutStrengthMeters() {
-  // FOREX: compute currency strength from pair moves
+  // Update TF context labels
+  const tfLabel = _strengthTFLabel();
+  document.querySelectorAll('.str-tf-label').forEach(el => el.textContent = tfLabel);
+
+  // FOREX: compute currency strength from pair moves (TF-aware)
   const currencies = ['DXY','EUR','GBP','AUD','NZD','JPY','CHF','CAD'];
   const cScores = {};
   currencies.forEach(c => cScores[c] = { wins: 0, total: 0 });
   // DXY gets its own % change directly instead of USD net from pairs
-  const dxyPct = pctChange('DXY');
+  const dxyPct = tfPctChange('DXY');
   cScores['DXY'] = { wins: dxyPct, total: Math.abs(dxyPct) };
   const fxPairs = [
     ['EUR/USD','EUR','DXY'],['GBP/USD','GBP','DXY'],['AUD/USD','AUD','DXY'],
@@ -5975,7 +6042,7 @@ function updateFutStrengthMeters() {
     ['USD/CHF','DXY','CHF'],['EUR/GBP','EUR','GBP'],['GBP/JPY','GBP','JPY'],['EUR/JPY','EUR','JPY'],
   ];
   fxPairs.forEach(([sym, base, quote]) => {
-    const p = pctChange(sym);
+    const p = tfPctChange(sym);
     if (base !== 'DXY' && cScores[base]) { cScores[base].total += Math.abs(p); if (p > 0) cScores[base].wins += Math.abs(p); }
     if (quote !== 'DXY' && cScores[quote]) { cScores[quote].total += Math.abs(p); if (p < 0) cScores[quote].wins += Math.abs(p); }
   });
@@ -5985,25 +6052,25 @@ function updateFutStrengthMeters() {
   }).sort((a, b) => b.pct - a.pct);
   _renderStrengthBar(fxItems, document.getElementById('fut-fx-strength'));
 
-  // INDICES: rank by % change
+  // INDICES: rank by % change (TF-aware)
   const idxSyms = [
     { sym: 'NAS100', label: 'NAS100' },
     { sym: 'SPX500', label: 'S&P 500' },
     { sym: 'US30',   label: 'DOW 30' },
     { sym: 'RUSSELL', label: 'RUSSELL' },
   ];
-  const idxItems = idxSyms.map(i => ({ label: i.label, pct: pctChange(i.sym) }))
+  const idxItems = idxSyms.map(i => ({ label: i.label, pct: tfPctChange(i.sym) }))
     .sort((a, b) => b.pct - a.pct);
   _renderStrengthBar(idxItems, document.getElementById('fut-idx-strength'));
 
-  // COMMODITIES: rank by % change
+  // COMMODITIES: rank by % change (TF-aware)
   const comSyms = [
     { sym: 'XAU/USD', label: 'GOLD' },
     { sym: 'XAG/USD', label: 'SILVER' },
     { sym: 'XAU/EUR', label: 'GOLD/EUR' },
     { sym: 'XAU/GBP', label: 'GOLD/GBP' },
   ];
-  const comItems = comSyms.map(i => ({ label: i.label, pct: pctChange(i.sym) }))
+  const comItems = comSyms.map(i => ({ label: i.label, pct: tfPctChange(i.sym) }))
     .sort((a, b) => b.pct - a.pct);
   _renderStrengthBar(comItems, document.getElementById('fut-com-strength'));
 }
@@ -6810,6 +6877,7 @@ function setGlobalTF(tf, btn) {
     // Re-render all sector components with new TF (data already fetched with all TFs)
     renderHeatmap(); renderLeaderboard(); renderMoneyFlow(); renderRS(); renderOutperformers(); renderSectorPulse();
   }
+  if (pid === 'page-futures') updateFutStrengthMeters();
   console.log('Global TF set to', tf);
 }
 
@@ -9745,8 +9813,11 @@ function setFutTF(tf, btn) {
   futCardsBuilt = false;
   document.querySelectorAll('[id^="fut-tf-"]').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
+  // Sync global TF so strength meters use the same timeframe
+  globalTF = tf;
   buildFutIntelCards();
   runFutIntelAll();
+  updateFutStrengthMeters();
 }
 
 // Live prices handled by TradingView ticker tape + Scanner API
