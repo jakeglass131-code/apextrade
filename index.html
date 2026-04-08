@@ -7414,55 +7414,134 @@ async function runAsxIntel() {
   const ticker = raw.replace('.ASX','').replace('.AX','');
   const scoreEl = document.getElementById('asx-intel-score');
   const detailEl = document.getElementById('asx-intel-detail');
-  if (scoreEl) scoreEl.innerHTML = '<div style="text-align:center;padding:40px"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Analysing ' + ticker + '...</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Running CRT engine across all 5 timeframes</div></div>';
+  if (scoreEl) scoreEl.innerHTML = '<div style="text-align:center;padding:40px"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Deep analysis: ' + ticker + '</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Fetching fundamentals, macro context & CRT technicals...</div></div>';
   if (detailEl) detailEl.innerHTML = '';
-  try {
-    const r = await fetch(PROXY + '/crt-engine?ticker=' + ticker, { signal: AbortSignal.timeout(20000) });
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    if (!data.signals || data.signals.length === 0) {
-      scoreEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3)"><div style="font-size:28px;margin-bottom:10px">—</div><div style="font-size:14px;font-weight:700;color:var(--text2)">' + ticker + '</div><div style="font-size:12px;margin-top:6px">No active CRT setups found across any timeframe</div><div style="font-size:11px;margin-top:10px;color:var(--text4)">The stock has no completed sweeps or TBOS confirmations in any of the 5 CRT models right now.</div></div>';
-      return;
-    }
-    // Score panel — top signal summary
-    const best = data.signals.reduce((a,b) => (b.confidence||0) > (a.confidence||0) ? b : a, data.signals[0]);
-    const dirCol = best.direction === 'LONG' ? 'var(--green)' : 'var(--red)';
-    const grade = best.confidence >= 85 ? 'A+' : best.confidence >= 75 ? 'A' : best.confidence >= 60 ? 'B' : 'C';
-    const gradeCol = grade.startsWith('A') ? 'var(--green)' : grade === 'B' ? 'var(--accent)' : 'var(--amber)';
-    scoreEl.innerHTML = '<div style="text-align:center;padding:20px">'
-      + '<div style="font-size:11px;color:var(--text3);letter-spacing:.1em;margin-bottom:4px">CRT ANALYSIS</div>'
-      + '<div style="font-size:22px;font-weight:800;color:var(--text)">' + ticker + '</div>'
-      + '<div style="font-size:42px;font-weight:800;color:' + dirCol + ';margin:10px 0">' + (best.direction === 'LONG' ? '▲' : '▼') + ' ' + best.direction + '</div>'
-      + '<div style="font-size:11px;color:var(--text3);margin-bottom:8px">' + best.model + ' · ' + best.type + '</div>'
-      + '<div style="display:flex;justify-content:center;gap:16px;margin:12px 0">'
-      + '<div><div style="font-size:9px;color:var(--text4)">CONFIDENCE</div><div style="font-size:20px;font-weight:800;color:' + dirCol + '">' + best.confidence + '%</div></div>'
-      + '<div><div style="font-size:9px;color:var(--text4)">GRADE</div><div style="font-size:20px;font-weight:800;color:' + gradeCol + '">' + grade + '</div></div>'
-      + '<div><div style="font-size:9px;color:var(--text4)">STATUS</div><div style="font-size:12px;font-weight:700;color:' + (best.status==='CONFIRMED'?'var(--green)':'var(--amber)') + '">' + best.status + '</div></div>'
-      + '</div>'
-      + '<div style="font-size:11px;color:var(--text3);margin-top:8px">' + data.signals.length + ' signal' + (data.signals.length>1?'s':'') + ' across ' + [...new Set(data.signals.map(s=>s.model))].length + ' timeframe' + '</div>'
+
+  // Fetch fundamentals + CRT in parallel
+  const [fundRes, crtRes] = await Promise.allSettled([
+    fetch(PROXY + '/fund-detail?ticker=' + ticker, { signal: AbortSignal.timeout(15000) }).then(r => r.json()),
+    fetch(PROXY + '/crt-engine?ticker=' + ticker, { signal: AbortSignal.timeout(20000) }).then(r => r.json())
+  ]);
+  const f = fundRes.status === 'fulfilled' && !fundRes.value.error ? fundRes.value : null;
+  const crt = crtRes.status === 'fulfilled' ? crtRes.value : null;
+  const sigs = crt && crt.signals ? crt.signals : [];
+
+  if (!f) {
+    scoreEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)"><div style="font-size:28px;margin-bottom:10px">⚠</div><div style="font-size:13px;font-weight:600">Could not load data for ' + ticker + '</div><div style="font-size:11px;color:var(--text3);margin-top:6px">' + (fundRes.reason || fundRes.value?.error || 'Check the ticker code') + '</div></div>';
+    return;
+  }
+
+  // Helper formatters
+  const fmt = (v, dec) => v != null ? v.toFixed(dec || 1) : '—';
+  const fmtPct = v => v != null ? (v * 100).toFixed(1) + '%' : '—';
+  const fmtM = v => { if (v == null) return '—'; const a = Math.abs(v); return (v<0?'-':'') + (a>=1e9 ? '$'+(a/1e9).toFixed(1)+'B' : a>=1e6 ? '$'+(a/1e6).toFixed(0)+'M' : '$'+(a/1e3).toFixed(0)+'K'); };
+  const valCol = (v, good, bad) => v == null ? 'var(--text3)' : v >= good ? 'var(--green)' : v <= bad ? 'var(--red)' : 'var(--text)';
+
+  // ── SCORE PANEL (left) ──
+  const gradeCol = f.grade === 'A+' ? 'var(--green)' : f.grade === 'A' ? 'var(--green)' : f.grade === 'B' ? 'var(--accent)' : f.grade === 'C' ? 'var(--amber)' : 'var(--red)';
+  const recMap = { strong_buy:'STRONG BUY', buy:'BUY', hold:'HOLD', sell:'SELL', strong_sell:'STRONG SELL' };
+  const recLabel = recMap[f.recommendation] || f.recommendation || '—';
+  const recCol = f.recommendation === 'buy' || f.recommendation === 'strong_buy' ? 'var(--green)' : f.recommendation === 'sell' || f.recommendation === 'strong_sell' ? 'var(--red)' : 'var(--amber)';
+  const upside = f.price && f.targetMeanPrice ? ((f.targetMeanPrice - f.price) / f.price * 100) : null;
+  const upsideCol = upside != null ? (upside > 10 ? 'var(--green)' : upside < -10 ? 'var(--red)' : 'var(--amber)') : 'var(--text3)';
+
+  scoreEl.innerHTML = '<div style="padding:16px">'
+    + '<div style="text-align:center;margin-bottom:12px">'
+    + '<div style="font-size:10px;color:var(--text4);letter-spacing:.1em">FUNDAMENTAL ANALYSIS</div>'
+    + '<div style="font-size:20px;font-weight:800;color:var(--text);margin:4px 0">' + (f.name || ticker) + '</div>'
+    + '<div style="font-size:11px;color:var(--text3)">' + f.sector + ' · ' + f.industry + '</div>'
+    + '<div style="font-size:24px;font-weight:800;color:var(--text);margin-top:8px">$' + fmt(f.price, 2) + '</div>'
+    + '<div style="font-size:10px;color:var(--text3)">MCap ' + fmtM(f.marketCap) + '</div>'
+    + '</div>'
+    // Grade + Score
+    + '<div style="display:flex;justify-content:center;gap:16px;margin:12px 0;padding:10px;background:var(--bg4);border-radius:8px">'
+    + '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">GRADE</div><div style="font-size:26px;font-weight:800;color:' + gradeCol + '">' + f.grade + '</div></div>'
+    + '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">VALUE</div><div style="font-size:18px;font-weight:800;color:var(--text)">' + f.valueScore + '</div></div>'
+    + '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">QUALITY</div><div style="font-size:18px;font-weight:800;color:var(--text)">' + f.qualityScore + '</div></div>'
+    + '</div>'
+    // Analyst consensus
+    + '<div style="background:var(--bg4);border-radius:8px;padding:10px;margin:8px 0;text-align:center">'
+    + '<div style="font-size:9px;color:var(--text4);letter-spacing:.06em">ANALYST CONSENSUS</div>'
+    + '<div style="font-size:16px;font-weight:800;color:' + recCol + ';margin:4px 0">' + recLabel + '</div>'
+    + '<div style="font-size:11px;color:var(--text3)">' + (f.numberOfAnalysts || 0) + ' analysts · Target $' + fmt(f.targetMeanPrice, 2) + '</div>'
+    + (upside != null ? '<div style="font-size:13px;font-weight:700;color:' + upsideCol + ';margin-top:4px">' + (upside > 0 ? '+' : '') + fmt(upside, 1) + '% upside</div>' : '')
+    + '</div>'
+    // Key signals
+    + (f.signals && f.signals.length ? '<div style="margin-top:8px">' + f.signals.map(s => '<div style="font-size:10px;padding:3px 8px;margin:2px 0;border-radius:4px;background:var(--bg5);color:var(--text2)">• ' + s + '</div>').join('') + '</div>' : '')
+    + '</div>';
+
+  // ── DETAIL PANEL (right) ──
+  let h = '';
+
+  // Section 1: Valuation
+  h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Valuation</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">P/E (TTM)</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.pe, 0, 40) + '">' + fmt(f.pe) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">FWD P/E</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.forwardPE, 0, 35) + '">' + fmt(f.forwardPE) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">P/B</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.pb, 0, 5) + '">' + fmt(f.pb, 2) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">P/S</div><div style="font-size:16px;font-weight:700;color:var(--text)">' + fmt(f.ps, 2) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EV/EBITDA</div><div style="font-size:16px;font-weight:700;color:var(--text)">' + fmt(f.evToEbitda) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">DIV YIELD</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.dividendYield, 0.04, -1) + '">' + fmtPct(f.dividendYield) + '</div></div>'
+    + '</div>';
+
+  // Section 2: Profitability & Growth
+  h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Profitability & Growth</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">ROE</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.roe, 0.15, 0) + '">' + fmtPct(f.roe) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">ROA</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.roa, 0.08, 0) + '">' + fmtPct(f.roa) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">MARGIN</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.profitMargin, 0.10, 0) + '">' + fmtPct(f.profitMargin) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EPS (TTM)</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.epsTrailing, 0, 0) + '">$' + fmt(f.epsTrailing, 2) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EPS FWD</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.epsForward, 0, 0) + '">$' + fmt(f.epsForward, 2) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EPS GROWTH</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.epsGrowth, 0.05, -0.05) + '">' + fmtPct(f.epsGrowth) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">REV GROWTH</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.revenueGrowth, 0.05, -0.05) + '">' + fmtPct(f.revenueGrowth) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EARN GROWTH</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.earningsGrowth, 0.05, -0.05) + '">' + fmtPct(f.earningsGrowth) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">PAYOUT</div><div style="font-size:16px;font-weight:700;color:var(--text)">' + fmtPct(f.payoutRatio) + '</div></div>'
+    + '</div>';
+
+  // Section 3: Balance Sheet
+  h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Balance Sheet & Financial Health</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">TOTAL ASSETS</div><div style="font-size:14px;font-weight:700;color:var(--text)">' + fmtM(f.totalAssets) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">TOTAL DEBT</div><div style="font-size:14px;font-weight:700;color:' + valCol(f.debtToEquity, -1, 1.5) + '">' + fmtM(f.totalDebt) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">CASH</div><div style="font-size:14px;font-weight:700;color:var(--green)">' + fmtM(f.totalCash) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">EQUITY</div><div style="font-size:14px;font-weight:700;color:var(--text)">' + fmtM(f.totalEquity) + '</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">DEBT/EQUITY</div><div style="font-size:14px;font-weight:700;color:' + valCol(f.debtToEquity, -1, 1.0) + '">' + fmt(f.debtToEquity, 2) + 'x</div></div>'
+    + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">REVENUE</div><div style="font-size:14px;font-weight:700;color:var(--text)">' + fmtM(f.revenue) + '</div></div>'
+    + '</div>';
+
+  // Section 4: Dividends
+  if (f.dividendYield && f.dividendYield > 0) {
+    h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Dividend Profile</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:16px">'
+      + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">YIELD</div><div style="font-size:16px;font-weight:700;color:var(--green)">' + fmtPct(f.dividendYield) + '</div></div>'
+      + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">ANNUAL RATE</div><div style="font-size:16px;font-weight:700;color:var(--text)">$' + fmt(f.dividendRate, 2) + '</div></div>'
+      + '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">PAYOUT RATIO</div><div style="font-size:16px;font-weight:700;color:' + valCol(f.payoutRatio, -1, 0.8) + '">' + fmtPct(f.payoutRatio) + '</div></div>'
       + '</div>';
-    // Detail panel — all signals breakdown
-    let html = '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">' + ticker + ' — All CRT Signals</div>';
-    data.signals.sort((a,b) => (b.confidence||0) - (a.confidence||0));
-    data.signals.forEach(sig => {
+  }
+
+  // Section 5: CRT Technicals (if any signals)
+  if (sigs.length > 0) {
+    h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">CRT Technical Setups (' + sigs.length + ' active)</div>';
+    sigs.sort((a,b) => (b.confidence||0) - (a.confidence||0));
+    sigs.forEach(sig => {
       const dc = sig.direction === 'LONG' ? 'var(--green)' : 'var(--red)';
       const sc = sig.status === 'CONFIRMED' ? 'var(--green)' : sig.status === 'FORMING' ? 'var(--amber)' : 'var(--accent)';
-      html += '<div style="border:1px solid var(--border2);border-radius:8px;padding:12px;margin-bottom:8px;background:var(--bg4)">'
-        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-        + '<div><span style="font-weight:700;color:' + dc + '">' + sig.direction + '</span> <span style="color:var(--text3);font-size:11px">' + sig.model + '</span></div>'
-        + '<div style="display:flex;gap:6px;align-items:center"><span style="font-size:10px;padding:2px 6px;border-radius:3px;background:' + (sig.status==='CONFIRMED'?'rgba(16,185,129,.12)':'rgba(245,158,11,.12)') + ';color:' + sc + ';font-weight:700">' + sig.status + '</span>'
-        + '<span style="font-size:14px;font-weight:800;color:' + dc + '">' + sig.confidence + '%</span></div></div>'
-        + '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">' + sig.type + '</div>'
-        + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px">'
-        + '<div><span style="color:var(--text4)">CRT Range</span><div style="color:var(--text);font-weight:600">' + (sig.crtLow||'—') + ' – ' + (sig.crtHigh||'—') + '</div></div>'
-        + '<div><span style="color:var(--text4)">TBOS Level</span><div style="color:var(--text);font-weight:600">' + (sig.tbosLevel||'—') + '</div></div>'
-        + '<div><span style="color:var(--text4)">Sweep</span><div style="color:var(--text);font-weight:600">' + (sig.sweepDate||'—') + '</div></div>'
-        + '</div></div>';
+      h += '<div style="border:1px solid var(--border2);border-radius:8px;padding:10px;margin-bottom:6px;background:var(--bg4)">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center">'
+        + '<div><span style="font-weight:700;color:' + dc + '">' + sig.direction + '</span> <span style="color:var(--text3);font-size:11px">' + sig.model + ' · ' + sig.type + '</span></div>'
+        + '<div><span style="font-size:10px;padding:2px 6px;border-radius:3px;background:' + (sig.status==='CONFIRMED'?'rgba(16,185,129,.12)':'rgba(245,158,11,.12)') + ';color:' + sc + ';font-weight:700">' + sig.status + '</span>'
+        + ' <span style="font-size:14px;font-weight:800;color:' + dc + '">' + sig.confidence + '%</span></div></div>'
+        + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:10px;margin-top:6px">'
+        + '<div><span style="color:var(--text4)">CRT</span><div style="color:var(--text)">' + (sig.crtLow||'') + '–' + (sig.crtHigh||'') + '</div></div>'
+        + '<div><span style="color:var(--text4)">TBOS</span><div style="color:var(--text)">' + (sig.tbosLevel||'—') + '</div></div>'
+        + '<div><span style="color:var(--text4)">Sweep</span><div style="color:var(--text)">' + (sig.sweepDate||'—') + '</div></div></div></div>';
     });
-    detailEl.innerHTML = html;
-  } catch(e) {
-    scoreEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--red)"><div style="font-size:28px;margin-bottom:10px">⚠</div><div style="font-size:13px;font-weight:600">Analysis failed</div><div style="font-size:11px;color:var(--text3);margin-top:6px">' + e.message + '</div></div>';
+  } else {
+    h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">CRT Technical Setups</div>'
+      + '<div style="font-size:11px;color:var(--text3);padding:12px;background:var(--bg4);border-radius:6px;margin-bottom:16px">No active CRT setups across any timeframe model</div>';
   }
+
+  detailEl.innerHTML = h;
 }
 
 // startAsxCrtScan is defined later with the new UI version
