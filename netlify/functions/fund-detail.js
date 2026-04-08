@@ -24,18 +24,47 @@ const MODULES = [
 const cache = {};
 const CACHE_TTL = 3600000; // 1 hour
 
+// Yahoo Finance now requires a crumb+cookie for v10 endpoints
+let yfSession = { crumb: null, cookie: null, ts: 0 };
+const SESSION_TTL = 3600000;
+
+async function ensureYfSession() {
+  if (yfSession.crumb && Date.now() - yfSession.ts < SESSION_TTL) return yfSession;
+  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36';
+  try {
+    // Step 1: Get consent cookie from Yahoo
+    const homeR = await fetch('https://fc.yahoo.com/v', { headers: { 'User-Agent': UA }, redirect: 'manual', signal: AbortSignal.timeout(6000) });
+    let cookies = [];
+    if (typeof homeR.headers.getSetCookie === 'function') cookies = homeR.headers.getSetCookie();
+    else { const raw = homeR.headers.get('set-cookie'); if (raw) cookies = raw.split(/,(?=[^ ;]+?=)/); }
+    const cookieStr = cookies.map(c => c.split(';')[0]).join('; ');
+    // Step 2: Get crumb
+    const crumbR = await fetch('https://query2.finance.yahoo.com/v1/test/getcrumb', {
+      headers: { 'User-Agent': UA, 'Cookie': cookieStr },
+      signal: AbortSignal.timeout(6000)
+    });
+    const crumb = await crumbR.text();
+    if (crumb && crumb.length < 50 && !crumb.includes('<')) {
+      yfSession = { crumb, cookie: cookieStr, ts: Date.now() };
+      return yfSession;
+    }
+  } catch (e) { /* fall through */ }
+  return { crumb: null, cookie: null, ts: 0 };
+}
+
 async function fetchFundamentals(ticker) {
   const now = Date.now();
   if (cache[ticker] && now - cache[ticker].ts < CACHE_TTL) return cache[ticker].data;
 
   const sym = ticker.includes('.') ? ticker : ticker + '.AX';
-  const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=${MODULES}`;
+  const session = await ensureYfSession();
+  const crumbParam = session.crumb ? `&crumb=${encodeURIComponent(session.crumb)}` : '';
+  const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=${MODULES}${crumbParam}`;
 
-  const r = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    },
-  });
+  const headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' };
+  if (session.cookie) headers['Cookie'] = session.cookie;
+
+  const r = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
 
   if (!r.ok) throw new Error(`Yahoo ${r.status} for ${sym}`);
   const d = await r.json();
