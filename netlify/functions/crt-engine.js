@@ -9,7 +9,7 @@
     TFs:     12M (TBOS=Monthly)  9M (TBOS=Weekly)  6M (TBOS=Weekly)
              3M  (TBOS=Monthly)  1M (TBOS=2-Day aggregated)
 
-    Data:    Yahoo Finance — monthly 15yr, weekly 5yr, daily 3yr
+    Data:    TradingView primary (native resolutions), Yahoo Finance fallback
     ═══════════════════════════════════════════════════════════════════════ */
 
 'use strict';
@@ -17,6 +17,10 @@
 /* ── warm-instance cache ─────────────────────────────────────────── */
 var dataCache = {};
 var CACHE_TTL = 3600000; // 1 hour
+
+/* ── TradingView session (auto-obtained or env override) ─────────── */
+var tvSession = { cookie: null, time: 0 };
+var TV_SESSION_TTL = 21600000; // 6 hours — refresh guest session periodically
 
 /* ═══════════════════════  HTTP HANDLER  ═══════════════════════════ */
 
@@ -541,7 +545,8 @@ function r2(v) { return v != null ? +(+v).toFixed(2) : null; }
 
 /* ═══════════════════════  DATA FETCHING  ═════════════════════════ */
 /*  TradingView = primary (native ASX resolutions incl 12M/6M/3M)
-    Yahoo Finance = fallback if TV fails (auth/rate-limit/timeout)    */
+    Yahoo Finance = fallback if TV fails (auth/rate-limit/timeout)
+    Session: auto-obtained from TV homepage, or set TV_SESSION env var  */
 
 function fetchData(tvSym, yfSym, tvRes, tvYears, yfIv, yfRg) {
   var key = tvSym + '_' + tvRes;
@@ -555,20 +560,80 @@ function fetchData(tvSym, yfSym, tvRes, tvYears, yfIv, yfRg) {
     });
 }
 
-/* ── TradingView history endpoint ── */
-function tv(sym, resolution, yearsBack) {
-  var from = Math.floor(Date.now() / 1000) - (yearsBack * 365.25 * 86400);
-  var to   = Math.floor(Date.now() / 1000);
-  var url  = 'https://data.tradingview.com/history?symbol=' + encodeURIComponent(sym) +
-             '&resolution=' + resolution + '&from=' + from + '&to=' + to;
-  return fetch(url, {
+/* ── TradingView session management ──
+   1. ENV override: set TV_SESSION in Netlify dashboard for your logged-in session
+   2. Auto-obtain: hits TV homepage → extracts sessionid cookie → caches 6 hrs
+   3. If both fail: requests go without cookies (may still work for basic data) */
+
+function ensureTvSession() {
+  /* 1 — env var override (highest priority, your own logged-in session) */
+  if (typeof process !== 'undefined' && process.env && process.env.TV_SESSION) {
+    return Promise.resolve(process.env.TV_SESSION);
+  }
+
+  /* 2 — cached session still fresh */
+  if (tvSession.cookie && Date.now() - tvSession.time < TV_SESSION_TTL) {
+    return Promise.resolve(tvSession.cookie);
+  }
+
+  /* 3 — auto-obtain guest session from TradingView */
+  return fetch('https://www.tradingview.com/', {
     headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-      'Accept': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'en-US,en;q=0.9'
+    },
+    redirect: 'follow',
+    signal: AbortSignal.timeout(5000)
+  })
+  .then(function (r) {
+    /* extract set-cookie headers */
+    var cookies = [];
+    if (typeof r.headers.getSetCookie === 'function') {
+      cookies = r.headers.getSetCookie();
+    } else {
+      var raw = r.headers.get('set-cookie');
+      if (raw) cookies = raw.split(/,(?=[^ ;]+?=)/);
+    }
+
+    var sid = null, sign = null;
+    for (var i = 0; i < cookies.length; i++) {
+      var m1 = cookies[i].match(/sessionid=([^;]+)/);
+      if (m1 && m1[1].indexOf('""') < 0) sid = m1[1];
+      var m2 = cookies[i].match(/sessionid_sign=([^;]+)/);
+      if (m2) sign = m2[1];
+    }
+
+    if (sid) {
+      var cookie = 'sessionid=' + sid;
+      if (sign) cookie += '; sessionid_sign=' + sign;
+      cookie += '; device_t=web';
+      tvSession = { cookie: cookie, time: Date.now() };
+      return cookie;
+    }
+    return null;
+  })
+  .catch(function () { return null; });
+}
+
+/* ── TradingView history endpoint (with session cookies) ── */
+function tv(sym, resolution, yearsBack) {
+  return ensureTvSession().then(function (cookie) {
+    var from = Math.floor(Date.now() / 1000) - Math.floor(yearsBack * 365.25 * 86400);
+    var to   = Math.floor(Date.now() / 1000);
+    var url  = 'https://data.tradingview.com/history?symbol=' + encodeURIComponent(sym) +
+               '&resolution=' + resolution + '&from=' + from + '&to=' + to;
+
+    var headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+      'Accept': 'application/json, text/plain, */*',
+      'Accept-Language': 'en-US,en;q=0.9',
       'Referer': 'https://www.tradingview.com/',
       'Origin': 'https://www.tradingview.com'
-    },
-    signal: AbortSignal.timeout(8000)
+    };
+    if (cookie) headers['Cookie'] = cookie;
+
+    return fetch(url, { headers: headers, signal: AbortSignal.timeout(8000) });
   })
   .then(function (r) { if (!r.ok) throw new Error('TV ' + r.status); return r.json(); })
   .then(function (d) {
