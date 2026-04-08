@@ -9570,13 +9570,14 @@ async function startAsxCrtScan() {
   asxScanCount  = 0;
 
   const rows = document.getElementById('asx-crt-rows');
-  if (rows) rows.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Scanning ASX...</div></div>';
+  if (rows) rows.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Fetching ASX stock list...</div></div>';
 
   const prog = document.getElementById('asx-crt-progress');
   if (prog) prog.style.display = 'block';
 
-  // Build ticker list — strip .AX suffix for engine
-  const tickers = ASX_SCAN_LIST.map(t => t.replace('.AX',''));
+  // Fetch full ASX ticker list (250+ stocks), not just the hardcoded 100
+  const rawTickers = await getAsxTickers();
+  const tickers = rawTickers.map(t => (t.ticker || t).replace('.AX',''));
   const total = tickers.length;
   let scanned = 0;
 
