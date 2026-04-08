@@ -6510,13 +6510,20 @@ const _TF_LOOKBACK = {
   '4H':  4 * 60 * 60000,
 };
 
-// % change over the globalTF lookback window (falls back to daily pctChange for D/W)
+// % change over the globalTF lookback window
 function tfPctChange(sym) {
   const tf = typeof globalTF !== 'undefined' ? globalTF : '1W';
   const lookback = _TF_LOOKBACK[tf];
+  const curPrice = prices[sym];
+  if (!curPrice) return 0;
 
-  // For daily/weekly/monthly — use normal day % change
-  if (!lookback) return pctChange(sym);
+  // For daily/weekly — use prevClose if available, else dayOpen (session open)
+  // dayOpen resets each page load so it won't accumulate simulation drift
+  if (!lookback) {
+    const ref = (typeof prevClose !== 'undefined' && prevClose[sym]) || dayOpen[sym];
+    if (!ref || ref === 0) return 0;
+    return (curPrice - ref) / ref * 100;
+  }
 
   // For short TFs — find the oldest snapshot within the lookback window
   const cutoff = Date.now() - lookback;
@@ -6527,11 +6534,10 @@ function tfPctChange(sym) {
   }
   // If we don't have enough history yet, use the oldest snapshot we have
   if (!baseSnap && _priceSnapshots.length > 0) baseSnap = _priceSnapshots[0];
-  if (!baseSnap) return pctChange(sym);
+  if (!baseSnap) return 0;
 
   const basePrice = baseSnap.prices[sym];
-  const curPrice = prices[sym];
-  if (!basePrice || !curPrice || basePrice === 0) return pctChange(sym);
+  if (!basePrice || basePrice === 0) return 0;
   return (curPrice - basePrice) / basePrice * 100;
 }
 
@@ -6585,12 +6591,12 @@ function updateFutStrengthMeters() {
   document.querySelectorAll('.str-tf-label').forEach(el => el.textContent = tfLabel);
 
   // FOREX: compute currency strength from pair moves (TF-aware)
+  // Each currency gets the AVERAGE of its pair contributions (not sum)
+  // so currencies appearing in more pairs aren't artificially inflated
   const currencies = ['DXY','EUR','GBP','AUD','NZD','JPY','CHF','CAD'];
   const cScores = {};
-  currencies.forEach(c => cScores[c] = { wins: 0, total: 0 });
-  // DXY gets its own % change directly instead of USD net from pairs
+  currencies.forEach(c => cScores[c] = { sum: 0, count: 0 });
   const dxyPct = tfPctChange('DXY');
-  cScores['DXY'] = { wins: dxyPct, total: Math.abs(dxyPct) };
   const fxPairs = [
     ['EUR/USD','EUR','DXY'],['GBP/USD','GBP','DXY'],['AUD/USD','AUD','DXY'],
     ['NZD/USD','NZD','DXY'],['USD/CAD','DXY','CAD'],['USD/JPY','DXY','JPY'],
@@ -6598,12 +6604,14 @@ function updateFutStrengthMeters() {
   ];
   fxPairs.forEach(([sym, base, quote]) => {
     const p = tfPctChange(sym);
-    if (base !== 'DXY' && cScores[base]) { cScores[base].total += Math.abs(p); if (p > 0) cScores[base].wins += Math.abs(p); }
-    if (quote !== 'DXY' && cScores[quote]) { cScores[quote].total += Math.abs(p); if (p < 0) cScores[quote].wins += Math.abs(p); }
+    // Pair up → base currency strengthened; pair down → quote currency strengthened
+    if (base !== 'DXY' && cScores[base])  { cScores[base].sum += p;  cScores[base].count++; }
+    if (quote !== 'DXY' && cScores[quote]) { cScores[quote].sum += -p; cScores[quote].count++; }
   });
   const fxItems = currencies.map(c => {
     if (c === 'DXY') return { label: 'DXY', pct: dxyPct };
-    return { label: c, pct: (cScores[c].wins || 0) - ((cScores[c].total || 0) - (cScores[c].wins || 0)) };
+    const avg = cScores[c].count > 0 ? cScores[c].sum / cScores[c].count : 0;
+    return { label: c, pct: avg };
   }).sort((a, b) => b.pct - a.pct);
   _renderStrengthBar(fxItems, document.getElementById('fut-fx-strength'));
 
