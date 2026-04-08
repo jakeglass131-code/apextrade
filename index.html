@@ -7531,9 +7531,9 @@ async function runAsxIntel() {
   }
 
   // Helper formatters
-  const fmt = (v, dec) => v != null ? v.toFixed(dec || 1) : '—';
-  const fmtPct = v => v != null ? (v * 100).toFixed(1) + '%' : '—';
-  const fmtM = v => { if (v == null) return '—'; const a = Math.abs(v); return (v<0?'-':'') + (a>=1e9 ? '$'+(a/1e9).toFixed(1)+'B' : a>=1e6 ? '$'+(a/1e6).toFixed(0)+'M' : '$'+(a/1e3).toFixed(0)+'K'); };
+  const fmt = (v, dec) => v != null && typeof v === 'number' && isFinite(v) ? v.toFixed(dec || 1) : '—';
+  const fmtPct = v => v != null && typeof v === 'number' && isFinite(v) ? (v * 100).toFixed(1) + '%' : '—';
+  const fmtM = v => { if (v == null || typeof v !== 'number' || !isFinite(v)) return '—'; const a = Math.abs(v); return (v<0?'-':'') + (a>=1e9 ? '$'+(a/1e9).toFixed(1)+'B' : a>=1e6 ? '$'+(a/1e6).toFixed(0)+'M' : '$'+(a/1e3).toFixed(0)+'K'); };
   const valCol = (v, good, bad) => v == null ? 'var(--text3)' : v >= good ? 'var(--green)' : v <= bad ? 'var(--red)' : 'var(--text)';
 
   // ── SCORE PANEL (left) ──
@@ -7570,6 +7570,7 @@ async function runAsxIntel() {
     + '</div>';
 
   // ── DETAIL PANEL (right) — comprehensive analysis ──
+  try {
   const _b = (l,v) => '<div style="background:var(--bg4);border-radius:6px;padding:10px"><div style="font-size:9px;color:var(--text4)">' + l + '</div><div style="font-size:15px;font-weight:700;color:' + v[1] + '">' + v[0] + '</div></div>';
   const _vc = (v, good, bad) => [v == null ? '—' : typeof v === 'number' ? v : v, v == null ? 'var(--text3)' : (typeof good === 'number' && v >= good) ? 'var(--green)' : (typeof bad === 'number' && v <= bad) ? 'var(--red)' : 'var(--text)'];
   const _sec = (t) => '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">' + t + '</div>';
@@ -7583,7 +7584,7 @@ async function runAsxIntel() {
   h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">'
     + '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(99,102,241,.12);color:var(--accent);font-weight:600">' + f.sector + '</span>'
     + '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(99,102,241,.08);color:var(--text2)">' + f.industry + '</span>'
-    + (f.fullTimeEmployees ? '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--bg5);color:var(--text3)">' + f.fullTimeEmployees.toLocaleString() + ' employees</span>' : '')
+    + (f.fullTimeEmployees ? '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--bg5);color:var(--text3)">' + Number(f.fullTimeEmployees).toLocaleString() + ' employees</span>' : '')
     + (f.isPreRevenue ? '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(245,158,11,.12);color:var(--amber);font-weight:600">Pre-Revenue</span>' : '')
     + (f.isCashFlowPositive === true ? '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(16,185,129,.12);color:var(--green);font-weight:600">Cash Flow +ve</span>' : '')
     + (f.isCashFlowPositive === false ? '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(239,68,68,.12);color:var(--red);font-weight:600">Cash Burn</span>' : '')
@@ -7952,6 +7953,10 @@ async function runAsxIntel() {
   }
 
   detailEl.innerHTML = h;
+  } catch(detailErr) {
+    console.error('Detail panel render error:', detailErr);
+    detailEl.innerHTML = '<div style="padding:20px;color:var(--red);font-size:12px">⚠ Error rendering detail panel: ' + detailErr.message + '</div>';
+  }
 }
 
 // startAsxCrtScan is defined later with the new UI version
