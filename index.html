@@ -7020,7 +7020,6 @@ const OVERNIGHT_INSTRUMENTS = [
   { sym:'BTC-USD', label:'BTC',  name:'Bitcoin',       dp:0 },
   { sym:'DX-Y.NYB',label:'DXY',  name:'US Dollar Idx', dp:2 },
   { sym:'AUDUSD=X',label:'AUD',  name:'AUD/USD',       dp:4 },
-  { sym:'^AXJO',   label:'ASX',  name:'ASX 200',       dp:0 },
 ];
 
 let overnightData = {};
@@ -7033,14 +7032,17 @@ async function fetchOvernightData() {
   const CANDLE_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions/candles';
 
   try {
-    // Batch fetch 1H candles (24h) for all overnight instruments via Netlify proxy
+    // Fetch 1H candles via Netlify proxy — use 5d range to ensure data even when markets closed
+    // Then trim to last 24 candles for 24h view
     const tickers = OVERNIGHT_INSTRUMENTS.map(i => i.sym).join(',');
-    const url = CANDLE_PROXY + '?tickers=' + encodeURIComponent(tickers) + '&interval=1h&range=1d';
+    const url = CANDLE_PROXY + '?tickers=' + encodeURIComponent(tickers) + '&interval=1h&range=5d';
     const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
     const data = await r.json();
 
     OVERNIGHT_INSTRUMENTS.forEach(inst => {
-      const candles = data[inst.sym] || [];
+      let candles = data[inst.sym] || [];
+      // Trim to last 24 candles (24 hours of 1H data)
+      if (candles.length > 24) candles = candles.slice(-24);
       const closes = candles.map(c => c.c).filter(c => c != null);
       const firstClose = closes.length > 0 ? closes[0] : null;
       const lastClose = closes.length > 0 ? closes[closes.length - 1] : null;
