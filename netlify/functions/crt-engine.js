@@ -364,18 +364,24 @@ function findLastSwingBefore(swings, ts) {
 
 /* ═══════════════════════  TBOS HELPERS  ══════════════════════════ */
 
-/* After a completed sweep: find first TBOS-TF candle that closes past level */
+/* After a completed sweep: find first TBOS-TF candle that CLOSED past level.
+   Last candle is always treated as forming (hasn't closed yet). */
 function findTbosAfter(tbosCandles, afterTs, level, isLong) {
-  for (var i = 0; i < tbosCandles.length; i++) {
+  var lastIdx = tbosCandles.length - 1;
+  /* only scan completed candles (exclude last = still forming) */
+  for (var i = 0; i <= lastIdx - 1; i++) {
     if (tbosCandles[i].t <= afterTs) continue;
     if (isLong ? tbosCandles[i].c > level : tbosCandles[i].c < level) {
       return { confirmed: true, forming: false, date: tbosCandles[i].date, age: tbosCandles.length - 1 - i };
     }
   }
-  /* check if last candle is approaching level (within 3%) */
-  if (tbosCandles.length) {
-    var last = tbosCandles[tbosCandles.length - 1];
+  /* last candle hasn't closed — check if price is past or approaching level */
+  if (lastIdx >= 0) {
+    var last = tbosCandles[lastIdx];
     if (last.t > afterTs) {
+      if (isLong ? last.c > level : last.c < level) {
+        return { confirmed: false, forming: true, date: last.date, age: 0 };
+      }
       var dist = isLong ? (level - last.c) / level : (last.c - level) / level;
       if (dist >= 0 && dist < 0.03) {
         return { confirmed: false, forming: true, date: last.date, age: 0 };
@@ -385,11 +391,20 @@ function findTbosAfter(tbosCandles, afterTs, level, isLong) {
   return { confirmed: false, forming: false, date: null, age: -1 };
 }
 
-/* Within a forming candle: find TBOS confirmation in a set of candles */
+/* Within a forming candle: find TBOS confirmation in a set of candles.
+   Last candle in set treated as forming (current period, hasn't closed). */
 function findTbosInSet(candles, level, isLong) {
-  for (var i = 0; i < candles.length; i++) {
+  /* only completed candles count as confirmed */
+  for (var i = 0; i < candles.length - 1; i++) {
     if (isLong ? candles[i].c > level : candles[i].c < level) {
       return { confirmed: true, forming: false, date: candles[i].date, age: candles.length - 1 - i };
+    }
+  }
+  /* last candle forming check */
+  if (candles.length) {
+    var last = candles[candles.length - 1];
+    if (isLong ? last.c > level : last.c < level) {
+      return { confirmed: false, forming: true, date: last.date, age: 0 };
     }
   }
   return { confirmed: false, forming: false, date: null, age: -1 };
