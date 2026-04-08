@@ -844,6 +844,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 #prediction-body .pred-v-item { text-align:center; }
 #prediction-body .pred-v-val { font-size:20px; font-weight:800; font-family:var(--fm); }
 #prediction-body .pred-v-lbl { font-size:9px; color:var(--text3); text-transform:uppercase; letter-spacing:.06em; margin-top:2px; }
+#prediction-body .pred-idx-card { border-radius:10px; padding:14px 18px; margin:10px 0; border:1px solid var(--border2); }
+#prediction-body .pred-idx-card.bull { background:rgba(16,185,129,.06); border-color:rgba(16,185,129,.25); }
+#prediction-body .pred-idx-card.bear { background:rgba(255,68,102,.06); border-color:rgba(255,68,102,.25); }
+#prediction-body .pred-idx-card.neutral { background:rgba(255,176,32,.06); border-color:rgba(255,176,32,.25); }
+#prediction-body .pred-call { font-size:22px; font-weight:900; letter-spacing:.05em; }
+#prediction-body .pred-idx-card.bull .pred-call { color:var(--green); }
+#prediction-body .pred-idx-card.bear .pred-call { color:var(--red); }
+#prediction-body .pred-idx-card.neutral .pred-call { color:var(--amber); }
+#prediction-body .pred-range { font-size:12px; color:var(--text2); font-family:var(--fm); font-weight:600; margin-top:4px; }
+#prediction-body .pred-conf { font-size:11px; color:var(--text3); font-weight:700; margin-top:2px; }
 
 
 /* Signal row scanner — modelled on reference ASX Fib scanner */
@@ -7020,55 +7030,36 @@ async function fetchOvernightData() {
   const timeEl = document.getElementById('overnight-time');
   if (!grid) return;
 
-  // Fetch intraday hourly candles for each instrument
-  // First try spark API for 1-day 15min data, then fallback
-  const syms = OVERNIGHT_INSTRUMENTS.map(i => i.sym).join(',');
+  const CANDLE_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions/candles';
 
   try {
-    // Fetch daily change via spark (5d daily)
-    const dailyUrl = `https://corsproxy.io/?url=${encodeURIComponent(
-      `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${syms}&range=5d&interval=1d`
-    )}`;
-    const dr = await fetch(dailyUrl, { signal: AbortSignal.timeout(10000) });
-    const dd = await dr.json();
-    (dd?.spark?.result || []).forEach(item => {
-      const sym = item.symbol;
-      const resp = item.response?.[0];
-      const meta = resp?.meta || {};
-      overnightData[sym] = {
-        price: meta.regularMarketPrice || meta.chartPreviousClose,
-        prev:  meta.chartPreviousClose,
-        closes: [], timestamps: [],
-        chgPct: meta.regularMarketPrice && meta.chartPreviousClose
-          ? (meta.regularMarketPrice - meta.chartPreviousClose) / meta.chartPreviousClose * 100
-          : 0
+    // Batch fetch 1H candles (24h) for all overnight instruments via Netlify proxy
+    const tickers = OVERNIGHT_INSTRUMENTS.map(i => i.sym).join(',');
+    const url = CANDLE_PROXY + '?tickers=' + encodeURIComponent(tickers) + '&interval=1h&range=1d';
+    const r = await fetch(url, { signal: AbortSignal.timeout(15000) });
+    const data = await r.json();
+
+    OVERNIGHT_INSTRUMENTS.forEach(inst => {
+      const candles = data[inst.sym] || [];
+      const closes = candles.map(c => c.c).filter(c => c != null);
+      const firstClose = closes.length > 0 ? closes[0] : null;
+      const lastClose = closes.length > 0 ? closes[closes.length - 1] : null;
+      const chgPct = firstClose && lastClose ? (lastClose - firstClose) / firstClose * 100 : 0;
+
+      overnightData[inst.sym] = {
+        price: lastClose,
+        prev: firstClose,
+        closes: closes,
+        timestamps: candles.map(c => c.t),
+        chgPct: chgPct,
       };
     });
-
-    // Now fetch intraday hourly candles for sparklines
-    const intradayUrl = `https://corsproxy.io/?url=${encodeURIComponent(
-      `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${syms}&range=1d&interval=15m`
-    )}`;
-    const ir = await fetch(intradayUrl, { signal: AbortSignal.timeout(10000) });
-    const id = await ir.json();
-    (id?.spark?.result || []).forEach(item => {
-      const sym = item.symbol;
-      const resp = item.response?.[0];
-      const closes = resp?.indicators?.quote?.[0]?.close || [];
-      const timestamps = resp?.timestamp || [];
-      if (overnightData[sym]) {
-        overnightData[sym].closes = closes;
-        overnightData[sym].timestamps = timestamps;
-      }
-    });
   } catch(e) {
-    console.warn('Spark API failed, using fallback:', e.message);
-    const fallback = [
-      {sym:'ES=F',price:5180,chg:-0.9},{sym:'YM=F',price:38800,chg:-0.5},
-      {sym:'GC=F',price:3185,chg:+0.4},{sym:'CL=F',price:71.2,chg:-1.8},
-      {sym:'BTC-USD',price:82400,chg:+2.1},{sym:'DX-Y.NYB',price:104.2,chg:+0.3},
-    ];
-    fallback.forEach(f => { overnightData[f.sym] = { price:f.price, prev: f.price/(1+f.chg/100), chgPct:f.chg, closes:[], timestamps:[] }; });
+    console.warn('Overnight candle fetch failed:', e.message);
+    // Fallback — empty data, cards show "No data"
+    OVERNIGHT_INSTRUMENTS.forEach(inst => {
+      overnightData[inst.sym] = { price: null, prev: null, chgPct: 0, closes: [], timestamps: [] };
+    });
   }
 
   renderOvernightGrid();
@@ -7096,27 +7087,31 @@ function renderOvernightGrid() {
       : '—';
     const chgFmt = `${up?'+':''}${chg.toFixed(2)}%`;
 
-    // Intraday sparkline chart
+    // 1H sparkline mini-chart (24h lookback)
     const closes = (d.closes || []).filter(c => c != null);
     let spark = '';
     if (closes.length >= 2) {
       const mn = Math.min(...closes), mx = Math.max(...closes);
       const range = mx - mn || 1;
-      const W = 120, H = 40;
+      const W = 140, H = 48;
       const pts = closes.map((c,i) =>
-        `${(i/(closes.length-1)*W).toFixed(1)},${(H - (c-mn)/range*H).toFixed(1)}`
+        `${(i/(closes.length-1)*W).toFixed(1)},${(H - (c-mn)/range*H * 0.85 - H*0.075).toFixed(1)}`
       ).join(' ');
-      // Fill area under line
       const fillPts = pts + ` ${W},${H} 0,${H}`;
       const strokeCol = up ? '#10b981' : '#f43f5e';
-      const fillCol = up ? 'rgba(16,185,129,0.15)' : 'rgba(244,63,94,0.15)';
-      // Open price reference line (first close)
-      const openY = (H - (closes[0]-mn)/range*H).toFixed(1);
-      spark = `<svg style="width:100%;height:44px;margin-top:6px;display:block" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-        <line x1="0" y1="${openY}" x2="${W}" y2="${openY}" stroke="${strokeCol}" stroke-width="0.4" stroke-dasharray="2,2" opacity="0.4"/>
+      const fillCol = up ? 'rgba(16,185,129,0.12)' : 'rgba(244,63,94,0.12)';
+      const openY = (H - (closes[0]-mn)/range*H * 0.85 - H*0.075).toFixed(1);
+      // End dot
+      const lastX = W;
+      const lastY = (H - (closes[closes.length-1]-mn)/range*H * 0.85 - H*0.075).toFixed(1);
+      spark = `<svg style="width:100%;height:52px;margin-top:4px;display:block" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <line x1="0" y1="${openY}" x2="${W}" y2="${openY}" stroke="rgba(255,255,255,.08)" stroke-width="0.5" stroke-dasharray="2,2"/>
         <polygon points="${fillPts}" fill="${fillCol}"/>
-        <polyline points="${pts}" fill="none" stroke="${strokeCol}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+        <polyline points="${pts}" fill="none" stroke="${strokeCol}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${lastX}" cy="${lastY}" r="2.5" fill="${strokeCol}"/>
       </svg>`;
+    } else {
+      spark = '<div style="height:52px;margin-top:4px;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text4)">No data</div>';
     }
 
     return `<div class="ovn-card">
@@ -7124,71 +7119,245 @@ function renderOvernightGrid() {
       <div class="ovn-name">${inst.name}</div>
       <div class="ovn-price">${priceFmt}</div>
       ${spark}
-      <div class="ovn-chg" style="color:${col};margin-top:4px">${chgFmt}</div>
+      <div class="ovn-chg" style="color:${col};margin-top:2px">${chgFmt}</div>
     </div>`;
   }).join('');
 }
 
-// ── MARKET PREDICTION ───────────────────────────────────
+// ── MARKET PREDICTION ENGINE ───────────────────────────────
+// Fetches real technical data for XEC, XSO, ASX200, then
+// combines with overnight data for AI-powered predictions
+
+const PRED_INDICES = [
+  { sym: '^AXEC', label: 'XEC', name: 'ASX Emerging Companies' },
+  { sym: '^AXSO', label: 'XSO', name: 'ASX Small Ordinaries' },
+  { sym: '^AXJO', label: 'ASX200', name: 'ASX 200' },
+];
+
+function _calcTechnicals(candles) {
+  if (!candles || candles.length < 20) return null;
+  const c = candles.map(x => x.c);
+  const h = candles.map(x => x.h);
+  const l = candles.map(x => x.l);
+  const v = candles.map(x => x.v || 0);
+  const n = c.length;
+
+  // EMAs
+  function ema(arr, p) { const k=2/(p+1); let e=arr[0]; for(let i=1;i<arr.length;i++) e=arr[i]*k+e*(1-k); return e; }
+  function emaSeries(arr, p) { const k=2/(p+1); const out=[arr[0]]; for(let i=1;i<arr.length;i++) out.push(arr[i]*k+out[i-1]*(1-k)); return out; }
+  const ema8=emaSeries(c,8), ema21=emaSeries(c,21), ema50=emaSeries(c,50), ema200=emaSeries(c,200);
+
+  // RSI 14
+  let gains=0, losses=0;
+  for(let i=n-14;i<n;i++){const d=c[i]-c[i-1];if(d>0)gains+=d;else losses-=d;}
+  const avgG=gains/14, avgL=losses/14;
+  const rsi = avgL===0 ? 100 : 100 - 100/(1+avgG/avgL);
+
+  // MACD
+  const ema12=emaSeries(c,12), ema26=emaSeries(c,26);
+  const macdLine=ema12[n-1]-ema26[n-1];
+  const macdArr=ema12.map((v,i)=>v-ema26[i]);
+  const signal=emaSeries(macdArr.slice(-9),9);
+  const macdSignal=signal[signal.length-1];
+  const macdHist=macdLine-macdSignal;
+
+  // ATR 14
+  let atrSum=0;
+  for(let i=n-14;i<n;i++){atrSum+=Math.max(h[i]-l[i],Math.abs(h[i]-c[i-1]),Math.abs(l[i]-c[i-1]));}
+  const atr=atrSum/14;
+
+  // Volume analysis
+  const avgVol20=v.slice(-20).reduce((a,b)=>a+b,0)/20;
+  const lastVol=v[n-1];
+  const rvol=avgVol20>0?(lastVol/avgVol20):1;
+
+  // Price vs EMAs
+  const last=c[n-1];
+  const ema8Now=ema8[n-1], ema21Now=ema21[n-1], ema50Now=ema50[n-1], ema200Now=n>=200?ema200[n-1]:null;
+
+  // Support/resistance from recent pivots
+  const recentH=Math.max(...h.slice(-20));
+  const recentL=Math.min(...l.slice(-20));
+  const prev5H=Math.max(...h.slice(-5));
+  const prev5L=Math.min(...l.slice(-5));
+
+  // Trend: higher highs/lows vs lower
+  const hh5=Math.max(...h.slice(-5)) > Math.max(...h.slice(-10,-5));
+  const hl5=Math.min(...l.slice(-5)) > Math.min(...l.slice(-10,-5));
+  const trend = hh5&&hl5 ? 'UPTREND' : (!hh5&&!hl5) ? 'DOWNTREND' : 'RANGING';
+
+  // 5-day return and 20-day return
+  const ret5 = n>=6 ? ((last-c[n-6])/c[n-6]*100) : 0;
+  const ret20 = n>=21 ? ((last-c[n-21])/c[n-21]*100) : 0;
+
+  // Day change
+  const dayChg = n>=2 ? ((last-c[n-2])/c[n-2]*100) : 0;
+
+  // Stochastic %K
+  const stochH=Math.max(...h.slice(-14));
+  const stochL=Math.min(...l.slice(-14));
+  const stochK=stochH!==stochL?((last-stochL)/(stochH-stochL)*100):50;
+
+  return {
+    last: +last.toFixed(2), dayChg: +dayChg.toFixed(2),
+    ret5: +ret5.toFixed(2), ret20: +ret20.toFixed(2),
+    rsi: +rsi.toFixed(1), stochK: +stochK.toFixed(1),
+    macd: +macdLine.toFixed(2), macdSignal: +macdSignal.toFixed(2), macdHist: +macdHist.toFixed(2),
+    ema8: +ema8Now.toFixed(2), ema21: +ema21Now.toFixed(2), ema50: +ema50Now.toFixed(2),
+    ema200: ema200Now ? +ema200Now.toFixed(2) : null,
+    atr: +atr.toFixed(2), rvol: +rvol.toFixed(2),
+    trend, recentH: +recentH.toFixed(2), recentL: +recentL.toFixed(2),
+    prev5H: +prev5H.toFixed(2), prev5L: +prev5L.toFixed(2),
+    aboveEma50: last > ema50Now, aboveEma200: ema200Now ? last > ema200Now : null,
+    goldenCross: ema50Now > (ema200Now||0), emaAlign: ema8Now>ema21Now&&ema21Now>ema50Now ? 'BULLISH' : ema8Now<ema21Now&&ema21Now<ema50Now ? 'BEARISH' : 'MIXED',
+  };
+}
+
+function _techSummary(label, t) {
+  if (!t) return `${label}: No data available\n`;
+  return `${label} (${t.last}):
+  Day: ${t.dayChg>0?'+':''}${t.dayChg}% | 5d: ${t.ret5>0?'+':''}${t.ret5}% | 20d: ${t.ret20>0?'+':''}${t.ret20}%
+  RSI(14): ${t.rsi} | Stoch %K: ${t.stochK} | MACD: ${t.macd} (signal ${t.macdSignal}, hist ${t.macdHist>0?'+':''}${t.macdHist})
+  EMA8: ${t.ema8} | EMA21: ${t.ema21} | EMA50: ${t.ema50}${t.ema200?' | EMA200: '+t.ema200:''}
+  EMA alignment: ${t.emaAlign} | Trend: ${t.trend} | ATR: ${t.atr} | RVOL: ${t.rvol}x
+  ${t.goldenCross?'Golden cross (EMA50>200)':'Death cross (EMA50<200)'} | ${t.aboveEma50?'Above':'Below'} EMA50 | ${t.aboveEma200!=null?(t.aboveEma200?'Above':'Below')+' EMA200':''}
+  20d range: ${t.recentL} — ${t.recentH} | 5d range: ${t.prev5L} — ${t.prev5H}\n`;
+}
+
 async function runMarketPrediction() {
   const body = document.getElementById('prediction-body');
   const badge = document.getElementById('pred-badge');
   const btn = document.getElementById('pred-refresh-btn');
   if (!body) return;
 
-  if (badge) { badge.textContent = 'Thinking...'; badge.style.color='var(--amber)'; badge.style.borderColor='rgba(255,170,0,.3)'; }
+  if (badge) { badge.textContent = 'Analysing...'; badge.style.color='var(--amber)'; badge.style.borderColor='rgba(255,170,0,.3)'; }
   if (btn) btn.disabled = true;
-  body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px">Running deep multi-factor analysis...</div>';
+  body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px"><div class="lpulse" style="background:var(--accent);margin:0 auto 12px"></div>Fetching index candles &amp; computing technicals...</div>';
 
-  // Build context from overnight data
+  const CANDLE_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions/candles';
+
+  // Step 1: Fetch 1Y daily candles for each prediction index
+  const techData = {};
+  try {
+    const tickers = PRED_INDICES.map(i => i.sym).join(',');
+    const r = await fetch(CANDLE_PROXY + '?tickers=' + encodeURIComponent(tickers) + '&interval=1d&range=1y', { signal: AbortSignal.timeout(15000) });
+    const data = await r.json();
+    PRED_INDICES.forEach(idx => {
+      const candles = data[idx.sym] || [];
+      techData[idx.label] = { candles, tech: _calcTechnicals(candles) };
+    });
+  } catch(e) {
+    console.warn('Prediction candle fetch failed:', e.message);
+  }
+
+  body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px"><div class="lpulse" style="background:var(--accent);margin:0 auto 12px"></div>Running AI prediction model...</div>';
+
+  // Build context
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Australia/Perth'});
   const dayOfWeek = now.toLocaleDateString('en-AU',{weekday:'long',timeZone:'Australia/Perth'});
   const month = now.toLocaleDateString('en-AU',{month:'long',timeZone:'Australia/Perth'});
   const dayNum = now.getDate();
 
-  // Summarise overnight moves
   const mktSummary = OVERNIGHT_INSTRUMENTS.map(inst => {
     const d = overnightData[inst.sym] || {};
     return `${inst.label}: ${d.chgPct != null ? (d.chgPct>0?'+':'')+(d.chgPct||0).toFixed(2)+'%' : 'N/A'}`;
   }).join(', ');
 
-  // Check for holiday tomorrow
   const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate()+1);
   const tomorrowDay = tomorrow.toLocaleDateString('en-AU',{weekday:'long',timeZone:'Australia/Perth'});
   const isPreHoliday = ['Friday','Saturday'].includes(dayOfWeek);
   const tomorrowIsWeekend = ['Saturday','Sunday'].includes(tomorrowDay);
 
-  const prompt = `You are an elite institutional market analyst and quant researcher covering ASX, US futures, crypto and macro. Today is ${dateStr} (Perth, WA time, AWST).
+  // Technical summaries for each index
+  const techBlock = PRED_INDICES.map(idx => _techSummary(idx.label + ' (' + idx.name + ')', techData[idx.label]?.tech)).join('\n');
 
-OVERNIGHT MARKET DATA (current moves):
+  const prompt = `You are an elite institutional quant analyst. Today is ${dateStr} (Perth AWST). Produce a next-session prediction for each ASX index below.
+
+═══ OVERNIGHT FUTURES (current session moves) ═══
 ${mktSummary}
+${isPreHoliday || tomorrowIsWeekend ? `\nCALENDAR: Tomorrow is ${tomorrowDay}${tomorrowIsWeekend ? ' (weekend — position squaring likely)' : ''}` : ''}
 
-${isPreHoliday || tomorrowIsWeekend ? `CALENDAR NOTE: Tomorrow is ${tomorrowDay}${tomorrowIsWeekend ? ' (weekend — position squaring expected today)' : ''}. ` : ''}
+═══ ASX INDEX TECHNICALS (daily candles, computed just now) ═══
+${techBlock}
 
-Your task is to produce the most comprehensive, institutional-grade market prediction for today's ASX session and any US futures moves during the day.
+═══ YOUR TASK ═══
+For EACH of the three indices (XEC, XSO, ASX200), produce a specific prediction for the next trading session.
 
-Structure your response with these exact sections using these HTML tags:
+Structure your response using these EXACT HTML sections. You MUST include all three index prediction blocks.
 
-<h3>📊 Overnight Recap & Tone</h3>
-<p>Summarise what happened overnight across US equity futures, rates, crypto, FX, and commodities. Identify the dominant theme (risk-off/risk-on/mixed). What does the overnight action tell us about institutional positioning?</p>
+<h3>📊 Market Context</h3>
+<p>2-3 sentences on overnight tone, dominant macro theme, and how it feeds into ASX. Mention risk-on/off, USD, commodities, any key data releases.</p>
 
-<h3>📅 Seasonal & Historical Context</h3>
-<p>Based on historical data: how has the market typically performed on ${dayOfWeek}s in ${month}? What does the same calendar date (${dayNum} ${month}) historically show across multiple years? Are there any notable seasonal patterns (month-end flows, options expiry proximity, earnings season effects, end-of-quarter positioning)? Include specific historical performance data where possible.</p>
+<h3>🎯 ASX 200 Prediction</h3>
+<div class="pred-idx-card bull-or-bear">
+<div class="pred-call">BULL / BEAR / NEUTRAL</div>
+<div class="pred-range">Expected range: XXXX — XXXX</div>
+<div class="pred-conf">Confidence: XX%</div>
+</div>
+<p>Specific directional call with rationale. Reference the technicals above — RSI, MACD, EMA structure, trend, key levels. State the most likely intraday scenario. Give 2-3 key levels to watch (support/resistance). Be opinionated.</p>
 
-<h3>🌐 Macro & Structural Factors</h3>
-<p>Key macro drivers at play today: Fed policy stance, RBA outlook, USD strength/weakness, iron ore and energy prices for ASX materials/energy. What is the institutional narrative driving money flow right now?</p>
+<h3>🎯 XSO (Small Ords) Prediction</h3>
+<div class="pred-idx-card bull-or-bear">
+<div class="pred-call">BULL / BEAR / NEUTRAL</div>
+<div class="pred-range">Expected range: XXXX — XXXX</div>
+<div class="pred-conf">Confidence: XX%</div>
+</div>
+<p>Same structure — specific call, reasoning from technicals, key levels. Compare to ASX200 — will small caps outperform or lag? Consider risk appetite and sector rotation signals.</p>
 
-<h3>⚡ High-Impact Catalysts Today</h3>
-<p>What scheduled events, data releases, or known catalysts could move markets today? Include: US economic data (if applicable given time zones), any ASX-specific corporate events, commodity market opens, and crypto market dynamics. Also consider any pre-holiday effect if tomorrow is ${tomorrowDay}.</p>
+<h3>🎯 XEC (Emerging Companies) Prediction</h3>
+<div class="pred-idx-card bull-or-bear">
+<div class="pred-call">BULL / BEAR / NEUTRAL</div>
+<div class="pred-range">Expected range: XXXX — XXXX</div>
+<div class="pred-conf">Confidence: XX%</div>
+</div>
+<p>Same structure. XEC is micro/nano-cap — how does risk appetite, liquidity, and overnight tone affect the smallest end? Is there a speculative bid or risk aversion?</p>
 
-<h3>🎯 ASX Prediction & Likely Scenario</h3>
-<p>Give a specific, directional prediction for the ASX today. State the most likely outcome (bull/bear/chop), a probability-weighted range, and the two most likely intraday scenarios. Be specific — e.g. "ASX likely opens flat to -0.3% on NQ weakness, bids likely to emerge at 7,820 support, watch for reversal if gold holds above $3,150."</p>
+<h3>⚡ Key Catalysts & Risks</h3>
+<p>3-5 bullet points: scheduled events, data releases, sector-specific catalysts, and key risks for the session. Include anything that could invalidate the above calls.</p>
 
-<h3>🔑 Key Levels & Trade Ideas</h3>
-<p>Give 3-5 specific actionable levels to watch today across ASX, NQ, gold, AUD/USD, and/or crude oil. Include support/resistance, potential entry zones, and what confirmation to wait for. Base these on overnight price action and technical structure.</p>
+<h3>🔑 Trade Setup Ideas</h3>
+<p>2-3 actionable trade ideas based on the above analysis. Reference specific index levels, potential entries, and what confirmation to wait for. Include stop/invalidation levels.</p>
 
-Respond with only the HTML sections above. Be specific, data-driven, and opinionated — not generic. Include actual numbers. Write like a senior quant at a hedge fund briefing the trading desk at 8am.`;
+RULES:
+- In each pred-idx-card div, set the class to "pred-idx-card bull" for bullish, "pred-idx-card bear" for bearish, or "pred-idx-card neutral" for neutral
+- Use real numbers from the technicals data above — do NOT make up levels
+- The expected range should use ATR to estimate ±1 ATR from last close
+- Confidence should reflect how aligned the signals are (RSI + MACD + EMA + trend + overnight)
+- Be specific and opinionated, not generic. Write like a quant briefing the PM at 7am.
+- Keep each section concise — no padding, just alpha.`;
+
+  // Build tech dashboard HTML (always shown, even without AI)
+  function _techDash(label, t) {
+    if (!t) return '';
+    const rsiCol = t.rsi > 70 ? 'var(--red)' : t.rsi < 30 ? 'var(--green)' : 'var(--text)';
+    const trendCol = t.trend==='UPTREND' ? 'var(--green)' : t.trend==='DOWNTREND' ? 'var(--red)' : 'var(--amber)';
+    const emaCol = t.emaAlign==='BULLISH' ? 'var(--green)' : t.emaAlign==='BEARISH' ? 'var(--red)' : 'var(--amber)';
+    const macdCol = t.macdHist > 0 ? 'var(--green)' : 'var(--red)';
+    const dayCol = t.dayChg >= 0 ? 'var(--green)' : 'var(--red)';
+    return `<div style="background:var(--bg4);border:1px solid var(--border2);border-radius:10px;padding:12px 14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:800;color:var(--text)">${label}</span>
+        <span style="font-size:15px;font-weight:800;font-family:var(--fm);color:var(--text)">${t.last}</span>
+        <span style="font-size:12px;font-weight:700;color:${dayCol}">${t.dayChg>=0?'+':''}${t.dayChg}%</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;font-size:10px">
+        <div><div style="color:var(--text4)">RSI</div><div style="font-weight:700;color:${rsiCol}">${t.rsi}</div></div>
+        <div><div style="color:var(--text4)">MACD</div><div style="font-weight:700;color:${macdCol}">${t.macdHist>0?'+':''}${t.macdHist}</div></div>
+        <div><div style="color:var(--text4)">Trend</div><div style="font-weight:700;color:${trendCol}">${t.trend}</div></div>
+        <div><div style="color:var(--text4)">EMAs</div><div style="font-weight:700;color:${emaCol}">${t.emaAlign}</div></div>
+        <div><div style="color:var(--text4)">5d</div><div style="font-weight:700;color:${t.ret5>=0?'var(--green)':'var(--red)'}">${t.ret5>=0?'+':''}${t.ret5}%</div></div>
+        <div><div style="color:var(--text4)">20d</div><div style="font-weight:700;color:${t.ret20>=0?'var(--green)':'var(--red)'}">${t.ret20>=0?'+':''}${t.ret20}%</div></div>
+        <div><div style="color:var(--text4)">ATR</div><div style="font-weight:700">${t.atr}</div></div>
+        <div><div style="color:var(--text4)">RVOL</div><div style="font-weight:700;color:${t.rvol>=1.5?'var(--green)':t.rvol<0.5?'var(--red)':'var(--text)'}">${t.rvol}x</div></div>
+      </div>
+      <div style="margin-top:6px;font-size:9px;color:var(--text4)">Support ${t.prev5L} · Resistance ${t.prev5H} · ${t.goldenCross?'Golden cross':'Death cross'}</div>
+    </div>`;
+  }
+
+  const techDashHTML = `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+    ${PRED_INDICES.map(idx => _techDash(idx.label, techData[idx.label]?.tech)).join('')}
+  </div>`;
 
   try {
     const proxyUrl = 'https://apextrade-proxy.netlify.app/.netlify/functions/predict';
@@ -7197,57 +7366,48 @@ Respond with only the HTML sections above. Be specific, data-driven, and opinion
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         prompt: prompt,
-        max_tokens: 1500,
+        max_tokens: 2000,
         model: 'claude-sonnet-4-20250514'
       })
     });
     const data = await resp.json();
     if (data.error) throw new Error(data.error);
     const text = data.content?.find(b => b.type === 'text')?.text || '';
-
     if (!text) throw new Error('No response');
 
-    // Determine overall bias from NQ + ES moves
+    // Determine overall bias from technicals + overnight
+    const asxTech = techData['ASX200']?.tech;
     const nq = overnightData['NQ=F']?.chgPct || 0;
     const es = overnightData['ES=F']?.chgPct || 0;
     const btc = overnightData['BTC-USD']?.chgPct || 0;
     const avgEquity = (nq + es) / 2;
-    const bias = avgEquity > 0.3 ? 'BULLISH' : avgEquity < -0.3 ? 'BEARISH' : 'NEUTRAL';
+    const techBias = asxTech ? (asxTech.rsi > 55 && asxTech.emaAlign==='BULLISH' ? 1 : asxTech.rsi < 45 && asxTech.emaAlign==='BEARISH' ? -1 : 0) : 0;
+    const overnightBias = avgEquity > 0.3 ? 1 : avgEquity < -0.3 ? -1 : 0;
+    const combinedBias = techBias + overnightBias;
+    const bias = combinedBias > 0 ? 'BULLISH' : combinedBias < 0 ? 'BEARISH' : 'NEUTRAL';
     const biasCol = bias === 'BULLISH' ? 'var(--green)' : bias === 'BEARISH' ? 'var(--red)' : 'var(--amber)';
 
-    // Render verdict card + full prediction
-    const verdictHTML = `<div class="pred-verdict">
-      <div class="pred-v-item">
-        <div class="pred-v-val" style="color:${biasCol}">${bias}</div>
-        <div class="pred-v-lbl">ASX bias today</div>
-      </div>
-      <div class="pred-v-item">
-        <div class="pred-v-val" style="color:${nq>=0?'var(--green)':'var(--red)'}">NQ ${nq>=0?'+':''}${nq.toFixed(1)}%</div>
-        <div class="pred-v-lbl">Nasdaq lead indicator</div>
-      </div>
-      <div class="pred-v-item">
-        <div class="pred-v-val" style="color:${btc>=0?'var(--green)':'var(--red)'}">BTC ${btc>=0?'+':''}${btc.toFixed(1)}%</div>
-        <div class="pred-v-lbl">Risk appetite proxy</div>
-      </div>
+    const verdictHTML = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;padding:12px 16px;background:var(--bg4);border:1px solid ${biasCol.replace('var(--','rgba(').replace(')',',.25)')};border-radius:10px">
+      <div style="text-align:center"><div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.05em">Overall Bias</div><div style="font-size:18px;font-weight:900;color:${biasCol}">${bias}</div></div>
+      <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">NQ Overnight</div><div style="font-size:15px;font-weight:800;color:${nq>=0?'var(--green)':'var(--red)'}">${nq>=0?'+':''}${nq.toFixed(2)}%</div></div>
+      <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">ES Overnight</div><div style="font-size:15px;font-weight:800;color:${es>=0?'var(--green)':'var(--red)'}">${es>=0?'+':''}${es.toFixed(2)}%</div></div>
+      <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">BTC Risk Proxy</div><div style="font-size:15px;font-weight:800;color:${btc>=0?'var(--green)':'var(--red)'}">${btc>=0?'+':''}${btc.toFixed(2)}%</div></div>
     </div>`;
 
-    body.innerHTML = verdictHTML + text;
+    body.innerHTML = verdictHTML + techDashHTML + text;
 
     if (badge) {
-      badge.textContent = bias === 'BULLISH' ? '📈 Bullish' : bias === 'BEARISH' ? '📉 Bearish' : '↔ Neutral';
+      badge.textContent = bias === 'BULLISH' ? 'Bullish' : bias === 'BEARISH' ? 'Bearish' : 'Neutral';
       badge.style.color = biasCol;
       badge.style.borderColor = biasCol.replace('var(--','rgba(').replace(')',',.35)');
     }
   } catch(e) {
-    const isProxyErr = e.message.includes('ANTHROPIC_API_KEY') || e.message.includes('503');
+    const isProxyErr = e.message.includes('ANTHROPIC_API_KEY') || e.message.includes('503') || e.message.includes('not configured');
+    // Even without AI, show the tech dashboard
     const errMsg = isProxyErr
-      ? 'Set the <code>ANTHROPIC_API_KEY</code> environment variable on apextrade-proxy.netlify.app to enable AI predictions.'
-      : `Analysis failed: ${e.message}. Try again shortly.`;
-    body.innerHTML = `<div style="color:var(--text3);font-size:12px;padding:20px;text-align:center;line-height:1.8">
-      <div style="font-size:24px;margin-bottom:8px">🔮</div>
-      ${errMsg}<br><br>
-      <div style="color:var(--text4);font-size:11px">The overnight data panel above still shows live market moves.</div>
-    </div>`;
+      ? '<div style="font-size:11px;color:var(--text4);margin-top:8px">Set <code>ANTHROPIC_API_KEY</code> on apextrade-proxy.netlify.app for AI prediction text.</div>'
+      : `<div style="font-size:11px;color:var(--red);margin-top:8px">AI prediction failed: ${e.message}</div>`;
+    body.innerHTML = techDashHTML + `<div style="text-align:center;padding:16px">${errMsg}</div>`;
     if (badge) { badge.textContent = isProxyErr ? 'Setup needed' : 'Retry'; badge.style.color='var(--amber)'; badge.style.borderColor='rgba(255,170,0,.3)'; }
   }
 
