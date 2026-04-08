@@ -1346,6 +1346,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <button class="filter-pill" id="asx-f-tf-6m" onclick="applyAsxTfFilter('6M CRT')">6M</button>
       <button class="filter-pill" id="asx-f-tf-3m" onclick="applyAsxTfFilter('3M CRT')">3M</button>
       <button class="filter-pill" id="asx-f-tf-1m" onclick="applyAsxTfFilter('1M CRT')">1M</button>
+      <span style="margin-left:8px;font-size:10px;color:var(--text3);font-weight:700">TBOS</span>
+      <button class="filter-pill active" id="asx-f-tbos-all" onclick="applyAsxTbosFilter('all')">ALL</button>
+      <button class="filter-pill" id="asx-f-tbos-conf" onclick="applyAsxTbosFilter('CONFIRMED')">✓ CONFIRMED</button>
+      <button class="filter-pill" id="asx-f-tbos-form" onclick="applyAsxTbosFilter('FORMING')">◎ FORMING</button>
       <div style="flex:1"></div>
       <span style="font-size:10px;color:var(--text3);font-weight:700;margin-right:4px">SORT</span>
       <button class="filter-pill active" id="asx-sort-score" onclick="applyAsxSort('score')">Score</button>
@@ -1484,15 +1488,52 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   </div>
   <!-- CRT SCANNER panel -->
   <div id="fut-panel-crt" style="display:none;flex-direction:column;flex:1;overflow:hidden">
-    <div class="scroll" style="padding:20px">
-      <div id="fut-crt-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
-        <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text3)">
-          <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:8px">⚡ Futures CRT Scanner</div>
-          <div style="font-size:12px;margin-bottom:20px">Scans NQ, ES, Gold, Crude and major FX pairs</div>
-          <button class="btn g" onclick="runFutCrtScan()" style="font-size:12px;padding:9px 24px">Scan Futures &amp; FX</button>
+    <!-- Scan controls -->
+    <div class="scan-header-bar">
+      <div>
+        <div style="font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-bottom:4px">CRT TIMEFRAME</div>
+        <select id="fut-crt-tf" onchange="renderFutCrtRows()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text)">
+          <option value="all">All Timeframes</option>
+          <option value="12M CRT">12M CRT</option>
+          <option value="9M CRT">9M CRT</option>
+          <option value="6M CRT">6M CRT</option>
+          <option value="3M CRT">3M CRT</option>
+          <option value="1M CRT">1M CRT</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-bottom:4px">DIRECTION</div>
+        <select id="fut-crt-dir" onchange="renderFutCrtRows()" style="background:var(--bg4);border:1px solid var(--border2);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text)">
+          <option value="all">Both</option>
+          <option value="LONG">Longs only</option>
+          <option value="SHORT">Shorts only</option>
+        </select>
+      </div>
+      <button class="btn g" onclick="runFutCrtScan()" id="fut-crt-scan-btn" style="align-self:flex-end;padding:7px 20px;font-size:12px;font-weight:700">⚡ Scan Futures</button>
+    </div>
+    <!-- Filter pills -->
+    <div style="padding:8px 20px;border-bottom:1px solid var(--border2);display:flex;align-items:center;gap:6px;flex-shrink:0;background:var(--bg2)">
+      <span style="font-size:10px;color:var(--text3);font-weight:700">TBOS</span>
+      <button class="filter-pill active" id="fut-f-tbos-all" onclick="applyFutTbosFilter('all')">ALL</button>
+      <button class="filter-pill" id="fut-f-tbos-conf" onclick="applyFutTbosFilter('CONFIRMED')">✓ CONFIRMED</button>
+      <button class="filter-pill" id="fut-f-tbos-form" onclick="applyFutTbosFilter('FORMING')">◎ FORMING</button>
+      <div style="flex:1"></div>
+      <span style="font-size:10px;color:var(--text3);font-weight:700;margin-right:4px">SORT</span>
+      <button class="filter-pill active" id="fut-sort-score" onclick="applyFutSort('score')">Score</button>
+      <button class="filter-pill" id="fut-sort-az" onclick="applyFutSort('az')">A-Z</button>
+    </div>
+    <!-- Signal rows -->
+    <div class="scroll" style="padding:0">
+      <div id="fut-crt-rows">
+        <div style="padding:60px 20px;text-align:center;color:var(--text3)">
+          <div style="font-size:32px;margin-bottom:12px">⚡</div>
+          <div style="font-size:15px;font-weight:700;color:var(--text2);margin-bottom:6px">Futures CRT Scanner</div>
+          <div style="font-size:12px;margin-bottom:20px">Scans NQ, ES, Gold, Crude and major FX pairs for CRT setups</div>
+          <button class="btn g" onclick="runFutCrtScan()" style="font-size:13px;padding:10px 28px;font-weight:700">⚡ Scan Futures &amp; FX</button>
         </div>
       </div>
     </div>
+    <div id="fut-crt-grid" style="display:none"></div>
   </div>
 </div>
 
@@ -8945,34 +8986,182 @@ function runFutIntel() {
   }
 }
 
+// ── Futures CRT Scanner ──
+const FUT_CRT_LIST = [
+  { ticker: 'NQ=F', name: 'Nasdaq 100', tv: 'CME_MINI:NQ1!' },
+  { ticker: 'ES=F', name: 'S&P 500', tv: 'CME_MINI:ES1!' },
+  { ticker: 'YM=F', name: 'Dow Jones', tv: 'CBOT_MINI:YM1!' },
+  { ticker: 'RTY=F', name: 'Russell 2000', tv: 'CME_MINI:RTY1!' },
+  { ticker: 'GC=F', name: 'Gold', tv: 'COMEX:GC1!' },
+  { ticker: 'SI=F', name: 'Silver', tv: 'COMEX:SI1!' },
+  { ticker: 'CL=F', name: 'Crude Oil', tv: 'NYMEX:CL1!' },
+  { ticker: 'NG=F', name: 'Natural Gas', tv: 'NYMEX:NG1!' },
+  { ticker: 'EURUSD=X', name: 'EUR/USD', tv: 'FX:EURUSD' },
+  { ticker: 'GBPUSD=X', name: 'GBP/USD', tv: 'FX:GBPUSD' },
+  { ticker: 'USDJPY=X', name: 'USD/JPY', tv: 'FX:USDJPY' },
+  { ticker: 'AUDUSD=X', name: 'AUD/USD', tv: 'FX:AUDUSD' },
+  { ticker: 'USDCAD=X', name: 'USD/CAD', tv: 'FX:USDCAD' },
+  { ticker: 'NZDUSD=X', name: 'NZD/USD', tv: 'FX:NZDUSD' },
+  { ticker: 'GBPJPY=X', name: 'GBP/JPY', tv: 'FX:GBPJPY' },
+  { ticker: 'EURJPY=X', name: 'EUR/JPY', tv: 'FX:EURJPY' },
+];
+const FUT_TV_MAP = {};
+FUT_CRT_LIST.forEach(f => FUT_TV_MAP[f.ticker] = f.tv);
+const FUT_NAME_MAP = {};
+FUT_CRT_LIST.forEach(f => FUT_NAME_MAP[f.ticker] = f.name);
+
+let futCrtSignals = [];
+let futCrtTbosFilter = 'all';
+let futCrtSort = 'score';
+
 async function runFutCrtScan() {
-  const grid = document.getElementById('fut-crt-grid');
-  if (grid) grid.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);grid-column:1/-1"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div style="font-size:13px;color:var(--text2)">Scanning futures instruments...</div></div>';
-  fetchBusy = false; await fetchPrices();
-  setTimeout(() => {
-    const futureTypes = ['index','commodity','forex'];
-    const items = typeof INSTRUMENTS !== 'undefined'
-      ? Object.entries(INSTRUMENTS).filter(([k,v]) => futureTypes.includes(v.type))
-      : [];
-    if (grid && items.length) {
-      grid.innerHTML = items.map(([sym,inst]) => {
-        const p = (typeof prices!=='undefined'&&prices[sym]) ? prices[sym] : inst.base;
-        const pct = typeof pctChange==='function' ? pctChange(sym) : 0;
-        const up = pct>=0;
-        return `<div style="background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:14px 16px;cursor:pointer" onclick="openChart('${sym}')">
-          <div style="display:flex;justify-content:space-between;align-items:center">
-            <div><div style="font-weight:700;font-size:13px;color:var(--text)">${sym}</div><div style="font-size:10px;color:var(--text3);text-transform:capitalize">${inst.type}</div></div>
-            <div style="text-align:right"><div style="font-size:13px;font-weight:700;font-family:var(--fm)">${typeof fmtPrice==='function'?fmtPrice(sym,p):p.toLocaleString()}</div><div style="font-size:11px;color:${up?'var(--green)':'var(--red)'};font-weight:700">${up?'+':''}${pct.toFixed(2)}%</div></div>
-          </div>
-        </div>`;
-      }).join('');
-    }
-    const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-    set('fut-stat-total', items.length);
-    const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
-    set('fut-stat-time', t+' AWST');
-    const stats = document.getElementById('fut-stats'); if(stats) stats.style.display='flex';
-  }, 1500);
+  futCrtSignals = [];
+  const rows = document.getElementById('fut-crt-rows');
+  const btn  = document.getElementById('fut-crt-scan-btn');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Scanning...'; }
+  if (rows) rows.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Scanning futures & FX...</div></div>';
+
+  const tickers = FUT_CRT_LIST.map(f => f.ticker);
+  for (let i = 0; i < tickers.length; i += 5) {
+    const batch = tickers.slice(i, i + 5);
+    try {
+      const r = await fetch(PROXY + '/crt-engine?tickers=' + batch.join(','), { signal: AbortSignal.timeout(25000) });
+      const d = await r.json();
+      if (d.results) d.results.forEach(res => {
+        if (!res.signals) return;
+        res.signals.forEach(sig => {
+          if (sig.status === 'FORMING') sig.tbosForming = true;
+          if (sig.sweepExtreme != null && sig.direction === 'LONG' && sig.sweepLow == null) sig.sweepLow = sig.sweepExtreme;
+          if (sig.sweepExtreme != null && sig.direction === 'SHORT' && sig.sweepHigh == null) sig.sweepHigh = sig.sweepExtreme;
+          futCrtSignals.push(Object.assign({}, sig, {
+            ticker: res.ticker,
+            price: sig.price || res.price,
+            baseConfidence: sig.confidence || 50,
+            finalConfidence: sig.confidence || 50
+          }));
+        });
+      });
+    } catch(e) {}
+    if (futCrtSignals.length > 0) renderFutCrtRows();
+  }
+
+  futCrtSignals.sort((a,b) => (b.finalConfidence||0) - (a.finalConfidence||0));
+  renderFutCrtRows();
+
+  const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  set('fut-stat-total', futCrtSignals.length);
+  set('fut-stat-long', futCrtSignals.filter(s=>s.direction==='LONG').length);
+  set('fut-stat-short', futCrtSignals.filter(s=>s.direction==='SHORT').length);
+  const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
+  set('fut-stat-time', t + ' AWST');
+  const stats = document.getElementById('fut-stats'); if(stats) stats.style.display='flex';
+  if (btn) { btn.disabled = false; btn.textContent = '⚡ Scan Futures'; }
+  if (futCrtSignals.length > 0) showToast('Futures CRT Scan', futCrtSignals.length + ' signals found', 'success', 4000);
+  else if (rows) rows.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">No CRT setups found across ' + tickers.length + ' instruments.</div>';
+}
+
+function renderFutCrtRows() {
+  const container = document.getElementById('fut-crt-rows');
+  if (!container) return;
+  let sigs = [...futCrtSignals];
+
+  const tfSel = (document.getElementById('fut-crt-tf')||{}).value || 'all';
+  if (tfSel !== 'all') sigs = sigs.filter(s => s.model === tfSel);
+  const dirSel = (document.getElementById('fut-crt-dir')||{}).value || 'all';
+  if (dirSel !== 'all') sigs = sigs.filter(s => s.direction === dirSel);
+  if (futCrtTbosFilter !== 'all') sigs = sigs.filter(s => s.status === futCrtTbosFilter);
+
+  if (futCrtSort === 'score') sigs.sort((a,b) => (b.finalConfidence||0) - (a.finalConfidence||0));
+  else if (futCrtSort === 'az') sigs.sort((a,b) => a.ticker.localeCompare(b.ticker));
+
+  if (sigs.length === 0) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">No signals match current filters.</div>';
+    return;
+  }
+  container.innerHTML = '';
+  sigs.forEach(sig => container.appendChild(renderFutSignalRow(sig)));
+}
+
+function renderFutSignalRow(sig) {
+  const conf = sig.finalConfidence || sig.baseConfidence || 0;
+  const grade = gradeSignal(conf);
+  const isLong = sig.direction === 'LONG';
+  const dirCol = isLong ? 'var(--green)' : 'var(--red)';
+  const gradeClass = { 'A+':'grade-ap', 'A':'grade-a', 'B':'grade-b', 'C':'grade-c' }[grade] || 'grade-c';
+  const name = FUT_NAME_MAP[sig.ticker] || sig.ticker;
+
+  let actionLabel, actionClass;
+  if (sig.status === 'CONFIRMED' && (grade === 'A+' || grade === 'A')) { actionLabel = 'TAKE'; actionClass = 'take-badge'; }
+  else if (sig.status === 'FORMING') { actionLabel = 'WAIT'; actionClass = 'wait-badge'; }
+  else if (grade === 'C') { actionLabel = 'SKIP'; actionClass = 'skip-badge'; }
+  else { actionLabel = 'WAIT'; actionClass = 'wait-badge'; }
+
+  const tags = [];
+  if (sig.status === 'CONFIRMED') tags.push(['TBOS CONFIRMED', 'sig-tag-bull']);
+  if (sig.status === 'FORMING')   tags.push(['TBOS FORMING', 'sig-tag-neut']);
+  if (sig.purgeCount >= 2) tags.push(['DOUBLE PURGE', 'sig-tag-bull']);
+  if ((sig.tbosAge||99) <= 1) tags.push(['FRESH TBOS', 'sig-tag-bull']);
+  if (sig.model) tags.push([sig.model, 'sig-tag-neut']);
+  if (sig.type) tags.push([sig.type.replace(' CRT',''), 'sig-tag-neut']);
+  if (sig.tbosPrefConfirmed) tags.push(['PREF TBOS ✓', 'sig-tag-bull']);
+  const tagsHtml = tags.slice(0,5).map(([lbl,cls]) => `<span class="sig-tag ${cls}">${lbl}</span>`).join('');
+
+  const fmtP = v => v ? (Math.abs(v) >= 1 ? v.toFixed(2) : v.toFixed(4)) : '--';
+  const lvl = computeCrtLevels(sig);
+  const rrDisplay = lvl.rr > 0 ? lvl.rr.toFixed(1) + ':1' : (sig.rr ? sig.rr + ':1' : '--');
+  const rrCol = (lvl.rr >= 2 || (sig.rr && sig.rr >= 2)) ? 'var(--green)' : (lvl.rr >= 1 || (sig.rr && sig.rr >= 1)) ? 'var(--amber)' : 'var(--text2)';
+  const levelsLine = `<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:5px;font-family:var(--fm);font-size:10px;line-height:1.6">` +
+    `<span><span style="color:var(--text3)">TBOS:</span> <span style="color:var(--accent);font-weight:700">${fmtP(sig.tbosLevel)}</span></span>` +
+    `<span><span style="color:var(--red)">STOP:</span> <span style="color:var(--red);font-weight:700">${fmtP(lvl.stop)}</span></span>` +
+    `<span><span style="color:var(--text3)">R:R:</span> <span style="color:${rrCol};font-weight:800">${rrDisplay}</span></span>` +
+    `<span><span style="color:var(--green)">TARGET:</span> <span style="color:var(--green);font-weight:600">${fmtP(sig.target)}</span></span>` +
+    `</div>`;
+  const confBarCol = conf >= 80 ? '#00d4a8' : conf >= 65 ? '#ffb020' : '#666';
+  const scoreNum = Math.round(conf / 100 * 13);
+
+  const div = document.createElement('div');
+  div.className = 'sig-row';
+  div.innerHTML = `
+    <span class="${gradeClass} grade-badge">${grade}</span>
+    <div style="min-width:0;flex:1">
+      <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px;flex-wrap:wrap">
+        <strong style="font-size:14px;color:var(--text);font-family:var(--fd)">${sig.ticker}</strong>
+        <span style="font-size:10px;color:var(--text3)">${name}</span>
+        <span style="font-size:11px;font-weight:700;color:${dirCol}">${sig.direction}</span>
+        <span class="${actionClass}">${actionLabel}</span>
+        <span style="font-size:12px;font-weight:700;color:var(--text);font-family:var(--fm)">${fmtP(sig.price)}</span>
+      </div>
+      <div style="display:flex;gap:5px;flex-wrap:wrap">${tagsHtml}</div>
+      ${levelsLine}
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0">
+      <div class="sig-conf-bar"><div class="sig-conf-fill" style="width:${conf}%;background:${confBarCol}"></div></div>
+    </div>
+    <div style="text-align:right;flex-shrink:0;min-width:80px">
+      <div style="font-size:11px;color:var(--text3)">Entry TF: <strong style="color:var(--text)">${(sig.entryTFs||[]).join('/')}</strong></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px"><strong style="color:var(--text)">${scoreNum}/13</strong></div>
+      <div style="font-size:18px;font-weight:800;color:${confBarCol};font-family:var(--fd);margin-top:4px">${conf}%</div>
+    </div>`;
+  const tvSym = FUT_TV_MAP[sig.ticker] || sig.ticker;
+  div.onclick = () => window.open('https://www.tradingview.com/chart/?symbol=' + tvSym, '_blank');
+  return div;
+}
+
+function applyFutTbosFilter(tf) {
+  futCrtTbosFilter = tf;
+  document.querySelectorAll('[id^="fut-f-tbos-"]').forEach(b => b.classList.remove('active'));
+  const key = tf === 'all' ? 'all' : tf === 'CONFIRMED' ? 'conf' : 'form';
+  const btn = document.getElementById('fut-f-tbos-' + key);
+  if (btn) btn.classList.add('active');
+  renderFutCrtRows();
+}
+
+function applyFutSort(s) {
+  futCrtSort = s;
+  document.querySelectorAll('[id^="fut-sort-"]').forEach(b => b.classList.remove('active'));
+  const btn = document.getElementById('fut-sort-' + s);
+  if (btn) btn.classList.add('active');
+  renderFutCrtRows();
 }
 
 async function runFutBullishScan() {
@@ -9023,6 +9212,7 @@ function fetchFutNews() {
 let asxCrtSignals   = [];  // full signal list after scan
 let asxCrtFilter    = 'best';
 let asxCrtSort      = 'score';
+let asxCrtTbosFilter = 'all';
 let asxScanCount    = 0;   // stocks scanned so far
 
 // Grade a signal 0-100 → A+/A/B/C
@@ -9212,6 +9402,9 @@ function renderAsxCrtRows() {
   const dirSel = document.getElementById('asx-crt-dir')?.value || 'all';
   if (dirSel !== 'all') sigs = sigs.filter(s => s.direction === dirSel);
 
+  // TBOS status filter
+  if (asxCrtTbosFilter !== 'all') sigs = sigs.filter(s => s.status === asxCrtTbosFilter);
+
   // Sector filter
   const secSel = (document.getElementById('asx-crt-sector')||{}).value || 'all';
   if (secSel !== 'all') sigs = sigs.filter(s => getSignalSector(s) === secSel);
@@ -9263,6 +9456,15 @@ function applyAsxTfFilter(tf) {
   document.querySelectorAll('[id^="asx-f-tf-"]').forEach(b => b.classList.remove('active'));
   const key = tf === 'all' ? 'all' : tf.replace(' CRT','').toLowerCase();
   const btn = document.getElementById('asx-f-tf-' + key);
+  if (btn) btn.classList.add('active');
+  renderAsxCrtRows();
+}
+
+function applyAsxTbosFilter(tf) {
+  asxCrtTbosFilter = tf;
+  document.querySelectorAll('[id^="asx-f-tbos-"]').forEach(b => b.classList.remove('active'));
+  const key = tf === 'all' ? 'all' : tf === 'CONFIRMED' ? 'conf' : 'form';
+  const btn = document.getElementById('asx-f-tbos-' + key);
   if (btn) btn.classList.add('active');
   renderAsxCrtRows();
 }
