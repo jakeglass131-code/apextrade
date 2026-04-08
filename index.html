@@ -1478,9 +1478,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
       <div style="grid-column:1/-1;padding:60px 20px;text-align:center;color:var(--text3)">
         <div style="font-size:32px;margin-bottom:12px">⚡</div>
         <div style="font-size:15px;font-weight:700;color:var(--text2);margin-bottom:6px">SMT Divergence Scanner</div>
-        <div style="font-size:12px;margin-bottom:6px">Scans highly correlated ASX pairs for Smart Money divergences</div>
-        <div style="font-size:11px;color:var(--text4);margin-bottom:20px">Banks · Miners · Gold · Energy · Retail · Insurance · REITs · Tech · Lithium</div>
-        <button class="btn g" onclick="startSmtScan()" style="font-size:13px;padding:10px 28px;font-weight:700">⚡ Start SMT Scan</button>
+        <div style="font-size:12px;margin-bottom:6px;color:var(--amber)">Pairs data being rebuilt — check back soon</div>
+        <div style="font-size:11px;color:var(--text4);margin-bottom:20px">Custom pair checker below still works</div>
       </div>
     </div>
 
@@ -9418,22 +9417,8 @@ async function checkCustomSmtPair() {
   }
 }
 
-// Load cached SMT results on page load
-(function() {
-  try {
-    const saved = localStorage.getItem('apex_smt_results');
-    if (saved) {
-      const data = JSON.parse(saved);
-      if (data.results && data.results.length > 0) {
-        smtResults = data.results;
-        const divs = smtResults.filter(r => r.activeDivergence);
-        const bull = divs.filter(d => d.activeDivergence.type === 'BULLISH');
-        updateSmtKPIs(smtResults.length, smtResults.filter(r => r.isValid).length, divs.length, bull.length, divs.length - bull.length);
-        renderSmtResults();
-      }
-    }
-  } catch(e) {}
-})();
+// SMT pairs removed for now — clear any cached results
+localStorage.removeItem('apex_smt_results');
 
 
 
