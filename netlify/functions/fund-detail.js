@@ -109,7 +109,7 @@ function estimateCapitalRaise(cashRunwayMonths) {
   return est.toISOString().slice(0,10);
 }
 
-// Infer likely upcoming catalysts with estimated dates
+// Infer likely upcoming catalysts with estimated dates and value-unlock scenarios
 function inferCatalysts(sector, industry, desc, flags) {
   const s = (sector || '').toLowerCase();
   const i = (industry || '').toLowerCase();
@@ -117,77 +117,111 @@ function inferCatalysts(sector, industry, desc, flags) {
   const cats = [];
   const nq = nextQuarterEnd();
   const ne = nextEarningsSeason();
+  const mc = flags.marketCap || 0;
+  const shares = flags.sharesOutstanding || 0;
+  const sp = flags.price || 0;
+
+  // Helper: compute implied SP from a target MC
+  const impliedSP = (targetMC) => shares > 0 ? targetMC / shares : null;
+  // Helper: format a currency value compactly
+  const fmtV = (v) => !v ? null : v >= 1e9 ? '$'+(v/1e9).toFixed(1)+'B' : v >= 1e6 ? '$'+(v/1e6).toFixed(0)+'M' : '$'+(v/1e3).toFixed(0)+'K';
+  const fmtSP = (v) => !v ? null : '$' + (v >= 10 ? v.toFixed(2) : v >= 1 ? v.toFixed(3) : v.toFixed(4));
 
   // Mining / Resources
-  if (s.includes('basic material') || i.includes('mining') || i.includes('gold') || i.includes('metal') ||
+  const isMining = s.includes('basic material') || i.includes('mining') || i.includes('gold') || i.includes('metal') ||
       i.includes('copper') || i.includes('iron') || i.includes('coal') || i.includes('silver') ||
-      d.includes('exploration') || d.includes('mining') || d.includes('drill') || d.includes('mineral')) {
-    cats.push({ type: 'Drill Results', icon: '⛏', desc: 'Assay results from current drilling programs', est: 'Ongoing — results released as received from lab', timing: 'ongoing' });
-    cats.push({ type: 'Resource Estimate', icon: '📐', desc: 'Updated JORC resource / reserve estimates', est: 'Typically post drill campaign — check ASX announcements', timing: 'variable' });
+      d.includes('exploration') || d.includes('mining') || d.includes('drill') || d.includes('mineral');
+  if (isMining) {
+    const reRateMC = mc * 2.5; // Resource upgrade typically 2-3x for explorers
+    cats.push({ type: 'Drill Results', icon: '⛏', desc: 'Assay results from current drilling programs', est: 'Ongoing — results released as received from lab', timing: 'ongoing',
+      unlock: 'High-grade hits can re-rate MC 50-200%', unlockMC: reRateMC, unlockSP: impliedSP(reRateMC) });
+    cats.push({ type: 'Resource Estimate', icon: '📐', desc: 'Updated JORC resource / reserve estimates', est: 'Typically post drill campaign — check ASX announcements', timing: 'variable',
+      unlock: 'JORC upgrade de-risks the asset → attracts institutional capital', unlockMC: mc * 3, unlockSP: impliedSP(mc * 3) });
     if (d.includes('feasibility') || d.includes('study') || d.includes('scoping'))
-      cats.push({ type: 'Feasibility Study', icon: '📊', desc: 'DFS/PFS/Scoping study results', est: '6-18 months from announcement of study commencement', timing: 'variable' });
+      cats.push({ type: 'Feasibility Study', icon: '📊', desc: 'DFS/PFS/Scoping study results', est: '6-18 months from announcement of study commencement', timing: 'variable',
+        unlock: 'Positive DFS signals path to production → unlocks project financing', unlockMC: mc * 2, unlockSP: impliedSP(mc * 2) });
     if (d.includes('production') || d.includes('processing') || d.includes('plant'))
       cats.push({ type: 'Production Update', icon: '🏭', desc: 'Quarterly production & cost report', est: nq ? 'Due by ' + nq.due : 'Next quarter end + 1 month', timing: 'quarterly', date: nq ? nq.due : null });
     cats.push({ type: 'Commodity Price', icon: '📈', desc: 'Underlying commodity price movements', est: 'Continuous — macro-driven', timing: 'ongoing' });
   }
 
   // Lithium / Battery / Rare Earths
-  if (i.includes('lithium') || i.includes('rare earth') || d.includes('lithium') || d.includes('battery') ||
-      d.includes('rare earth') || d.includes('graphite') || d.includes('cobalt') || d.includes('nickel')) {
-    cats.push({ type: 'Offtake Agreement', icon: '🤝', desc: 'Binding offtake or supply agreements with EV/battery makers', est: 'Typically announced post-DFS or during construction phase', timing: 'variable' });
+  const isLithium = i.includes('lithium') || i.includes('rare earth') || d.includes('lithium') || d.includes('battery') ||
+      d.includes('rare earth') || d.includes('graphite') || d.includes('cobalt') || d.includes('nickel');
+  if (isLithium) {
+    cats.push({ type: 'Offtake Agreement', icon: '🤝', desc: 'Binding offtake or supply agreements with EV/battery makers', est: 'Typically announced post-DFS or during construction phase', timing: 'variable',
+      unlock: 'Binding offtake de-risks revenue → unlocks project debt financing', unlockMC: mc * 2, unlockSP: impliedSP(mc * 2) });
     cats.push({ type: 'EV Demand Data', icon: '🔋', desc: 'Global EV sales data impacting lithium/battery demand', est: 'Monthly — China EV sales released ~10th of each month', timing: 'monthly' });
   }
 
   // Oil & Gas
   if (i.includes('oil') || i.includes('gas') || i.includes('petroleum') || i.includes('energy') ||
       d.includes('oil') || d.includes('petroleum') || d.includes('natural gas')) {
-    cats.push({ type: 'Well Results', icon: '🛢', desc: 'Exploration well results & flow rates', est: 'Released upon completion — check current drilling schedule', timing: 'ongoing' });
+    cats.push({ type: 'Well Results', icon: '🛢', desc: 'Exploration well results & flow rates', est: 'Released upon completion — check current drilling schedule', timing: 'ongoing',
+      unlock: 'Commercial flow rates → booking reserves → production pathway', unlockMC: mc * 3, unlockSP: impliedSP(mc * 3) });
     cats.push({ type: 'Oil/Gas Price', icon: '⛽', desc: 'Brent/WTI crude & LNG price movements', est: 'Continuous — OPEC meetings quarterly', timing: 'ongoing' });
     cats.push({ type: 'Production Report', icon: '📋', desc: 'Quarterly production & reserves update', est: nq ? 'Due by ' + nq.due : 'Next quarter end + 1 month', timing: 'quarterly', date: nq ? nq.due : null });
   }
 
   // Biotech / Pharma / Healthcare
-  if (s.includes('healthcare') || i.includes('biotech') || i.includes('pharma') || i.includes('drug') ||
+  const isBiotech = s.includes('healthcare') || i.includes('biotech') || i.includes('pharma') || i.includes('drug') ||
       i.includes('medical') || i.includes('diagnostic') || d.includes('clinical') || d.includes('fda') ||
-      d.includes('therapeutic') || d.includes('trial') || d.includes('regulatory')) {
-    cats.push({ type: 'Clinical Trial Results', icon: '🧬', desc: 'Phase I/II/III trial data readouts', est: 'Check company pipeline — data typically at medical conferences (ASCO Jun, ASH Dec, AACR Apr)', timing: 'variable' });
-    cats.push({ type: 'FDA/TGA Approval', icon: '✅', desc: 'Regulatory approval or submission milestones', est: 'FDA PDUFA dates published — TGA timelines 6-12 months from submission', timing: 'variable' });
-    cats.push({ type: 'Partnership Deal', icon: '🤝', desc: 'Licensing, collaboration or distribution agreements', est: 'Often announced at JP Morgan Healthcare Conference (Jan) or ASCO (Jun)', timing: 'variable' });
+      d.includes('therapeutic') || d.includes('trial') || d.includes('regulatory');
+  if (isBiotech) {
+    cats.push({ type: 'Clinical Trial Results', icon: '🧬', desc: 'Phase I/II/III trial data readouts', est: 'Check company pipeline — data typically at medical conferences (ASCO Jun, ASH Dec, AACR Apr)', timing: 'variable',
+      unlock: 'Positive Phase II/III → opens path to registration & commercialisation', unlockMC: mc * 3, unlockSP: impliedSP(mc * 3) });
+    cats.push({ type: 'FDA/TGA Approval', icon: '✅', desc: 'Regulatory approval or submission milestones', est: 'FDA PDUFA dates published — TGA timelines 6-12 months from submission', timing: 'variable',
+      unlock: 'Approval unlocks commercial sales → peak revenue multiples apply', unlockMC: mc * 5, unlockSP: impliedSP(mc * 5) });
+    cats.push({ type: 'Partnership Deal', icon: '🤝', desc: 'Licensing, collaboration or distribution agreements', est: 'Often announced at JP Morgan Healthcare Conference (Jan) or ASCO (Jun)', timing: 'variable',
+      unlock: 'Big pharma deal validates asset + upfront cash + milestone payments', unlockMC: mc * 2, unlockSP: impliedSP(mc * 2) });
     if (d.includes('device') || d.includes('implant'))
-      cats.push({ type: 'Device Approval', icon: '🏥', desc: 'Medical device regulatory clearance (FDA 510k/CE Mark)', est: 'FDA 510k ~3-6 months from submission, PMA ~12 months', timing: 'variable' });
+      cats.push({ type: 'Device Approval', icon: '🏥', desc: 'Medical device regulatory clearance (FDA 510k/CE Mark)', est: 'FDA 510k ~3-6 months from submission, PMA ~12 months', timing: 'variable',
+        unlock: 'Clearance unlocks US market sales to hospitals & clinics', unlockMC: mc * 2.5, unlockSP: impliedSP(mc * 2.5) });
   }
 
   // Technology / Software
-  if (s.includes('technology') || i.includes('software') || i.includes('saas') || i.includes('internet') ||
-      i.includes('cloud') || d.includes('platform') || d.includes('saas') || d.includes('ai ')) {
-    cats.push({ type: 'Contract Win', icon: '📝', desc: 'New enterprise contracts or government deals', est: 'Ongoing — announced as material contracts are signed', timing: 'ongoing' });
-    cats.push({ type: 'ARR/MRR Update', icon: '💰', desc: 'Annual/monthly recurring revenue milestones', est: nq ? 'Quarterly update due ~' + nq.due : 'Quarterly with 4C lodgement', timing: 'quarterly', date: nq ? nq.due : null });
-    cats.push({ type: 'Product Launch', icon: '🚀', desc: 'New product releases or feature launches', est: 'Check company roadmap — often announced at results or conferences', timing: 'variable' });
+  const isTech = s.includes('technology') || i.includes('software') || i.includes('saas') || i.includes('internet') ||
+      i.includes('cloud') || d.includes('platform') || d.includes('saas') || d.includes('ai ');
+  if (isTech) {
+    const arrMultiple = mc > 1e9 ? 1.5 : 2; // smaller co gets bigger re-rate from contract wins
+    cats.push({ type: 'Contract Win', icon: '📝', desc: 'New enterprise contracts or government deals', est: 'Ongoing — announced as material contracts are signed', timing: 'ongoing',
+      unlock: 'Material contract → step change in ARR → SaaS multiple re-rate', unlockMC: mc * arrMultiple, unlockSP: impliedSP(mc * arrMultiple) });
+    cats.push({ type: 'ARR/MRR Update', icon: '💰', desc: 'Annual/monthly recurring revenue milestones', est: nq ? 'Quarterly update due ~' + nq.due : 'Quarterly with 4C lodgement', timing: 'quarterly', date: nq ? nq.due : null,
+      unlock: 'Accelerating ARR growth → higher EV/Revenue multiple from market' });
+    cats.push({ type: 'Product Launch', icon: '🚀', desc: 'New product releases or feature launches', est: 'Check company roadmap — often announced at results or conferences', timing: 'variable',
+      unlock: 'New product opens adjacent TAM → cross-sell to existing customers' });
   }
 
   // Cannabis
   if (i.includes('cannabis') || i.includes('marijuana') || d.includes('cannabis')) {
-    cats.push({ type: 'Regulatory Change', icon: '⚖', desc: 'State/federal cannabis regulation updates', est: 'Ongoing — legislative calendar dependent', timing: 'variable' });
-    cats.push({ type: 'License Grant', icon: '📜', desc: 'New cultivation or distribution licenses', est: 'Application-dependent — typically 3-6 month approval process', timing: 'variable' });
+    cats.push({ type: 'Regulatory Change', icon: '⚖', desc: 'State/federal cannabis regulation updates', est: 'Ongoing — legislative calendar dependent', timing: 'variable',
+      unlock: 'Federal rescheduling or new state legalisation → TAM expansion', unlockMC: mc * 3, unlockSP: impliedSP(mc * 3) });
+    cats.push({ type: 'License Grant', icon: '📜', desc: 'New cultivation or distribution licenses', est: 'Application-dependent — typically 3-6 month approval process', timing: 'variable',
+      unlock: 'New license → expanded production capacity & new market access' });
   }
 
   // Real Estate / REITs
   if (s.includes('real estate') || i.includes('reit') || d.includes('property') || d.includes('real estate')) {
-    cats.push({ type: 'Acquisition', icon: '🏢', desc: 'Property acquisitions or disposals', est: 'Ongoing — announced as transactions settle', timing: 'ongoing' });
-    cats.push({ type: 'Occupancy Update', icon: '📊', desc: 'Occupancy rates & rental income updates', est: ne ? ne.label + ' ~' + ne.date : 'With half/full year results', timing: 'half-yearly', date: ne ? ne.date : null });
+    cats.push({ type: 'Acquisition', icon: '🏢', desc: 'Property acquisitions or disposals', est: 'Ongoing — announced as transactions settle', timing: 'ongoing',
+      unlock: 'Accretive acquisition → higher NTA & distribution per unit' });
+    cats.push({ type: 'Occupancy Update', icon: '📊', desc: 'Occupancy rates & rental income updates', est: ne ? ne.label + ' ~' + ne.date : 'With half/full year results', timing: 'half-yearly', date: ne ? ne.date : null,
+      unlock: 'Occupancy lift → directly flows to distribution & NAV uplift' });
     cats.push({ type: 'Distribution', icon: '💰', desc: 'Quarterly/half-year distribution announcements', est: ne ? 'With ' + ne.label + ' ~' + ne.date : 'With results', timing: 'half-yearly', date: ne ? ne.date : null });
   }
 
   // Financial
   if (s.includes('financial') || i.includes('bank') || i.includes('insurance') || i.includes('capital')) {
     const rba = nextRBADates();
-    cats.push({ type: 'Rate Decision', icon: '🏦', desc: 'RBA interest rate decision', est: rba.length ? 'Next: ' + rba[0] + (rba[1] ? ', then ' + rba[1] : '') : 'See RBA schedule', timing: 'scheduled', date: rba[0] || null });
-    cats.push({ type: 'Loan Book Update', icon: '📈', desc: 'Credit quality & loan growth data', est: ne ? 'With ' + ne.label + ' ~' + ne.date : 'With half/full year results', timing: 'half-yearly', date: ne ? ne.date : null });
+    cats.push({ type: 'Rate Decision', icon: '🏦', desc: 'RBA interest rate decision', est: rba.length ? 'Next: ' + rba[0] + (rba[1] ? ', then ' + rba[1] : '') : 'See RBA schedule', timing: 'scheduled', date: rba[0] || null,
+      unlock: 'Rate cut → NIM compression but loan demand up. Hold → margins stable' });
+    cats.push({ type: 'Loan Book Update', icon: '📈', desc: 'Credit quality & loan growth data', est: ne ? 'With ' + ne.label + ' ~' + ne.date : 'With half/full year results', timing: 'half-yearly', date: ne ? ne.date : null,
+      unlock: 'Loan growth + low bad debts → earnings beat → dividend upgrade' });
   }
 
   // Agriculture
   if (i.includes('agri') || i.includes('farm') || d.includes('agriculture') || d.includes('crop') || d.includes('cattle')) {
-    cats.push({ type: 'Harvest Report', icon: '🌾', desc: 'Seasonal crop yield or livestock data', est: 'Seasonal — Australian harvest Oct-Jan, planting Apr-Jun', timing: 'seasonal' });
+    cats.push({ type: 'Harvest Report', icon: '🌾', desc: 'Seasonal crop yield or livestock data', est: 'Seasonal — Australian harvest Oct-Jan, planting Apr-Jun', timing: 'seasonal',
+      unlock: 'Bumper harvest + high commodity prices → record revenue year' });
     cats.push({ type: 'Weather Impact', icon: '🌧', desc: 'Drought/flood/weather event impacts on production', est: 'BOM seasonal outlook updated quarterly', timing: 'ongoing' });
   }
 
@@ -198,26 +232,34 @@ function inferCatalysts(sector, industry, desc, flags) {
     const capDate = estimateCapitalRaise(flags.cashRunwayMonths);
     cats.push({ type: 'Capital Raise', icon: '⚠', desc: 'Potential placement, SPP, or rights issue to fund operations',
       est: flags.cashRunwayMonths ? 'Est ~' + (capDate || 'unknown') + ' (runway ' + flags.cashRunwayMonths + ' months)' : 'Timing depends on cash burn rate — monitor quarterly 5B',
-      timing: 'risk', date: capDate });
+      timing: 'risk', date: capDate,
+      unlock: 'Dilution risk — new shares issued at discount. SP typically drops 10-20% on announcement' });
   }
 
   if (flags.revenue && flags.revenue > 10000000)
-    cats.push({ type: 'Earnings Report', icon: '📊', desc: 'Half-year or full-year earnings results', est: ne ? ne.label + ' — ~' + ne.date + ' to ' + ne.end : 'Feb (H1) or Aug (FY) results season', timing: 'half-yearly', date: ne ? ne.date : null });
+    cats.push({ type: 'Earnings Report', icon: '📊', desc: 'Half-year or full-year earnings results', est: ne ? ne.label + ' — ~' + ne.date + ' to ' + ne.end : 'Feb (H1) or Aug (FY) results season', timing: 'half-yearly', date: ne ? ne.date : null,
+      unlock: 'Beat → re-rate on upgraded guidance. Miss → sell-off risk' });
 
   if (flags.dividendYield && flags.dividendYield > 0)
-    cats.push({ type: 'Dividend Declaration', icon: '💰', desc: 'Next interim or final dividend announcement', est: ne ? 'With ' + ne.label + ' ~' + ne.date : 'Announced with results — Feb (interim) or Aug (final)', timing: 'half-yearly', date: ne ? ne.date : null });
+    cats.push({ type: 'Dividend Declaration', icon: '💰', desc: 'Next interim or final dividend announcement', est: ne ? 'With ' + ne.label + ' ~' + ne.date : 'Announced with results — Feb (interim) or Aug (final)', timing: 'half-yearly', date: ne ? ne.date : null,
+      unlock: 'Dividend increase → signals confidence, attracts income investors' });
+
+  // Add formatted target values where we have unlock MC/SP
+  cats.forEach(c => {
+    if (c.unlockMC) c.unlockMCFmt = fmtV(c.unlockMC);
+    if (c.unlockSP) c.unlockSPFmt = fmtSP(c.unlockSP);
+  });
 
   // Sort: scheduled dates first, then ongoing, then variable
   const order = { scheduled: 0, quarterly: 1, 'half-yearly': 2, monthly: 3, seasonal: 4, ongoing: 5, variable: 6, risk: 7 };
   cats.sort((a, b) => {
-    // Items with a date come first, sorted by date
     if (a.date && b.date) return a.date.localeCompare(b.date);
     if (a.date && !b.date) return -1;
     if (!a.date && b.date) return 1;
     return (order[a.timing] || 9) - (order[b.timing] || 9);
   });
 
-  return cats.slice(0, 10); // cap at 10
+  return cats.slice(0, 10);
 }
 
 async function fetchFundamentals(ticker) {
@@ -404,6 +446,8 @@ async function fetchFundamentals(ticker) {
     industry: ap.industry || 'Unknown',
     price: raw(pr.regularMarketPrice),
     marketCap: raw(sd.marketCap),
+    sharesOutstanding: raw(ks.sharesOutstanding),
+    enterpriseValue: raw(ks.enterpriseValue),
     // Valuation
     pe: pe,
     forwardPE: raw(ks.forwardPE),
@@ -469,7 +513,7 @@ async function fetchFundamentals(ticker) {
     website: ap.website || null,
     longBusinessSummary: ap.longBusinessSummary ? ap.longBusinessSummary.slice(0, 300) : null,
     // Industry-specific upcoming catalysts (inferred from sector/industry)
-    likelyCatalysts: inferCatalysts(ap.sector, ap.industry, ap.longBusinessSummary || '', { isPreRevenue, isBurningCash, cashRunwayMonths, revenue, dividendYield: divYield }),
+    likelyCatalysts: inferCatalysts(ap.sector, ap.industry, ap.longBusinessSummary || '', { isPreRevenue, isBurningCash, cashRunwayMonths, revenue, dividendYield: divYield, marketCap: raw(sd.marketCap), sharesOutstanding: raw(ks.sharesOutstanding), price: raw(pr.regularMarketPrice) }),
     // Scores
     valueScore: valueScore,
     qualityScore: qualityScore,
