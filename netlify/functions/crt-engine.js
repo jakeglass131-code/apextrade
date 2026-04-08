@@ -18,9 +18,6 @@
 var dataCache = {};
 var CACHE_TTL = 3600000; // 1 hour
 
-/* ── TradingView session (auto-obtained or env override) ─────────── */
-var tvSession = { cookie: null, time: 0 };
-var TV_SESSION_TTL = 21600000; // 6 hours — refresh guest session periodically
 
 /* ═══════════════════════  HTTP HANDLER  ═══════════════════════════ */
 
@@ -52,29 +49,24 @@ exports.handler = async function (event) {
 
 async function scanTicker(ticker) {
   var sym = ticker.includes('.') ? ticker : ticker + '.AX';
-  var tvSym = sym.endsWith('.AX') ? 'ASX:' + sym.replace('.AX', '') : sym;
 
-  /* ── parallel data fetch: TradingView primary, Yahoo fallback ──
-     TV gives native 12M/6M/3M resolutions = exact period candles (no grouping needed)
-     Monthly/Weekly/Daily always fetched for TBOS + ATR + 2-day aggregation */
+  /* ── parallel Yahoo Finance fetch: monthly 15yr · weekly 5yr · daily 3yr ──
+     TV data endpoints are server-blocked (only serve in-browser requests).
+     Yahoo provides identical ASX candle data — same market feed, 15yr depth. */
   var raw = await Promise.all([
-    fetchData(tvSym, sym, '1M', 15, '1mo', '15y'),   // monthly
-    fetchData(tvSym, sym, '1W', 5,  '1wk', '5y'),    // weekly
-    fetchData(tvSym, sym, '1D', 3,  '1d',  '3y'),    // daily
-    tv(tvSym, '12M', 20).catch(function () { return null; }),  // TV native yearly
-    tv(tvSym, '6M',  10).catch(function () { return null; }),  // TV native half-year
-    tv(tvSym, '3M',  10).catch(function () { return null; })   // TV native quarterly
+    getCachedOrFetch(sym, '1mo', '15y'),
+    getCachedOrFetch(sym, '1wk', '5y'),
+    getCachedOrFetch(sym, '1d',  '3y')
   ]);
   var mo = raw[0], wk = raw[1], dy = raw[2];
-  var tv12 = raw[3], tv6 = raw[4], tv3 = raw[5];
   if (mo.length < 12) throw new Error('insufficient data (' + mo.length + ' months)');
 
-  /* build period candles — use TV native resolution if available, group from monthly otherwise */
-  var day2   = buildNDayCandles(dy, 2);                                      // 2-day agg for 1M TBOS
-  var yearly = (tv12 && tv12.length >= 3) ? tv12 : grp(mo, ky);             // 12M CRT
-  var nineMo = grp(mo, k9);                                                  // 9M  CRT (TV has no 9M)
-  var halfYr = (tv6  && tv6.length  >= 3) ? tv6  : grp(mo, kh);            // 6M  CRT
-  var qtrly  = (tv3  && tv3.length  >= 3) ? tv3  : grp(mo, kq);            // 3M  CRT
+  /* build period candles from monthly data */
+  var day2   = buildNDayCandles(dy, 2);   // 2-day aggregated for 1M TBOS
+  var yearly = grp(mo, ky);               // 12M CRT candles
+  var nineMo = grp(mo, k9);               // 9M  CRT candles
+  var halfYr = grp(mo, kh);               // 6M  CRT candles
+  var qtrly  = grp(mo, kq);              // 3M  CRT candles
 
   /* add end-of-period timestamps */
   addEndT(yearly); addEndT(nineMo); addEndT(halfYr); addEndT(qtrly); addEndT(mo);
@@ -148,10 +140,7 @@ async function scanTicker(ticker) {
     return b.confidence - a.confidence;
   });
 
-  /* data source indicator */
-  var src = (tv12 && tv12.length >= 3) ? 'tradingview' : 'yahoo';
-
-  return { ticker: ticker, price: price, date: lastDate, signalCount: signals.length, signals: signals, source: src };
+  return { ticker: ticker, price: price, date: lastDate, signalCount: signals.length, signals: signals, source: 'yahoo' };
 }
 
 /* ═══════════════════════  CORE DETECTION  ════════════════════════ */
@@ -544,111 +533,20 @@ function r4(v) { return v != null ? +(+v).toFixed(4) : null; }
 function r2(v) { return v != null ? +(+v).toFixed(2) : null; }
 
 /* ═══════════════════════  DATA FETCHING  ═════════════════════════ */
-/*  TradingView = primary (native ASX resolutions incl 12M/6M/3M)
-    Yahoo Finance = fallback if TV fails (auth/rate-limit/timeout)
-    Session: auto-obtained from TV homepage, or set TV_SESSION env var  */
+/*  Yahoo Finance — identical ASX candle data to TradingView (same market feed).
+    TV data endpoints are server-blocked (only serve in-browser requests).       */
 
-function fetchData(tvSym, yfSym, tvRes, tvYears, yfIv, yfRg) {
-  var key = tvSym + '_' + tvRes;
+function getCachedOrFetch(sym, interval, range) {
+  var key = sym + '_' + interval + '_' + range;
   var cached = dataCache[key];
   if (cached && Date.now() - cached.time < CACHE_TTL) return Promise.resolve(cached.data);
-  return tv(tvSym, tvRes, tvYears)
-    .catch(function () { return yf(yfSym, yfIv, yfRg); })
-    .then(function (data) {
-      dataCache[key] = { data: data, time: Date.now() };
-      return data;
-    });
-}
-
-/* ── TradingView session management ──
-   1. ENV override: set TV_SESSION in Netlify dashboard for your logged-in session
-   2. Auto-obtain: hits TV homepage → extracts sessionid cookie → caches 6 hrs
-   3. If both fail: requests go without cookies (may still work for basic data) */
-
-function ensureTvSession() {
-  /* 1 — env var override (highest priority, your own logged-in session) */
-  if (typeof process !== 'undefined' && process.env && process.env.TV_SESSION) {
-    return Promise.resolve(process.env.TV_SESSION);
-  }
-
-  /* 2 — cached session still fresh */
-  if (tvSession.cookie && Date.now() - tvSession.time < TV_SESSION_TTL) {
-    return Promise.resolve(tvSession.cookie);
-  }
-
-  /* 3 — auto-obtain guest session from TradingView */
-  return fetch('https://www.tradingview.com/', {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'Accept-Language': 'en-US,en;q=0.9'
-    },
-    redirect: 'follow',
-    signal: AbortSignal.timeout(5000)
-  })
-  .then(function (r) {
-    /* extract set-cookie headers */
-    var cookies = [];
-    if (typeof r.headers.getSetCookie === 'function') {
-      cookies = r.headers.getSetCookie();
-    } else {
-      var raw = r.headers.get('set-cookie');
-      if (raw) cookies = raw.split(/,(?=[^ ;]+?=)/);
-    }
-
-    var sid = null, sign = null;
-    for (var i = 0; i < cookies.length; i++) {
-      var m1 = cookies[i].match(/sessionid=([^;]+)/);
-      if (m1 && m1[1].indexOf('""') < 0) sid = m1[1];
-      var m2 = cookies[i].match(/sessionid_sign=([^;]+)/);
-      if (m2) sign = m2[1];
-    }
-
-    if (sid) {
-      var cookie = 'sessionid=' + sid;
-      if (sign) cookie += '; sessionid_sign=' + sign;
-      cookie += '; device_t=web';
-      tvSession = { cookie: cookie, time: Date.now() };
-      return cookie;
-    }
-    return null;
-  })
-  .catch(function () { return null; });
-}
-
-/* ── TradingView history endpoint (with session cookies) ── */
-function tv(sym, resolution, yearsBack) {
-  return ensureTvSession().then(function (cookie) {
-    var from = Math.floor(Date.now() / 1000) - Math.floor(yearsBack * 365.25 * 86400);
-    var to   = Math.floor(Date.now() / 1000);
-    var url  = 'https://data.tradingview.com/history?symbol=' + encodeURIComponent(sym) +
-               '&resolution=' + resolution + '&from=' + from + '&to=' + to;
-
-    var headers = {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
-      'Accept': 'application/json, text/plain, */*',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Referer': 'https://www.tradingview.com/',
-      'Origin': 'https://www.tradingview.com'
-    };
-    if (cookie) headers['Cookie'] = cookie;
-
-    return fetch(url, { headers: headers, signal: AbortSignal.timeout(8000) });
-  })
-  .then(function (r) { if (!r.ok) throw new Error('TV ' + r.status); return r.json(); })
-  .then(function (d) {
-    if (d.s !== 'ok' || !d.t || !d.t.length) throw new Error('TV: ' + (d.s || 'empty'));
-    return d.t.map(function (t, i) {
-      return {
-        t: t * 1000,
-        date: new Date(t * 1000).toISOString().slice(0, 10),
-        o: d.o[i], h: d.h[i], l: d.l[i], c: d.c[i]
-      };
-    }).filter(function (c) { return c.o != null && c.c != null && c.h != null && c.l != null; });
+  return yf(sym, interval, range).then(function (data) {
+    dataCache[key] = { data: data, time: Date.now() };
+    return data;
   });
 }
 
-/* ── Yahoo Finance fallback ── */
+
 function yf(sym, iv, rg) {
   var url = 'https://query1.finance.yahoo.com/v8/finance/chart/' + sym + '?interval=' + iv + '&range=' + rg;
   return fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(8000) })
