@@ -7678,6 +7678,7 @@ async function fetchOvernightData() {
     const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
     timeEl.textContent = `${t} AWST · ${new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short',timeZone:'Australia/Perth'})}`;
   }
+  if (typeof _setUpdatedAt === 'function') _setUpdatedAt('upd-overnight');
 
   // Trigger prediction after data is loaded
   runMarketPrediction();
