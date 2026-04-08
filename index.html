@@ -1360,6 +1360,31 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 
     <div class="scroll" style="padding:16px 20px">
 
+      <!-- Strength meters -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+        <div class="panel" style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:800;color:var(--text)">Currency Strength</div>
+            <div style="font-size:9px;color:var(--text4)">Live from prices</div>
+          </div>
+          <div id="fut-fx-strength"></div>
+        </div>
+        <div class="panel" style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:800;color:var(--text)">Index Strength</div>
+            <div style="font-size:9px;color:var(--text4)">Live from prices</div>
+          </div>
+          <div id="fut-idx-strength"></div>
+        </div>
+        <div class="panel" style="padding:14px 16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div style="font-size:12px;font-weight:800;color:var(--text)">Commodity Strength</div>
+            <div style="font-size:9px;color:var(--text4)">Live from prices</div>
+          </div>
+          <div id="fut-com-strength"></div>
+        </div>
+      </div>
+
       <!-- Live pair cards grid — Dovvy style -->
       <div id="fut-pair-grid" class="pair-grid" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:16px"></div>
 
@@ -2803,7 +2828,7 @@ function nav(p) {
     // Fundamentals agent no longer auto-starts — user triggers scans manually
   }
   if (p === 'futures') {
-    updateFutMomBar(); fetchFutNews();
+    updateFutMomBar(); fetchFutNews(); updateFutStrengthMeters();
     // Auto-start intel scoring (live prices from TradingView widgets)
     setTimeout(() => {
       const panel = document.getElementById('fut-panel-intel');
@@ -3209,6 +3234,7 @@ function updatePriceEls() {
   updateMomentumBar();
   updateJournalStats();
   if (document.getElementById('page-flow')?.classList.contains('active')) updateCurrencyStrength();
+  if (document.getElementById('page-futures')?.classList.contains('active')) updateFutStrengthMeters();
 }
 
 // ═══════════════════════════════════════════════════════
@@ -6064,6 +6090,66 @@ function updateTopMovers() {
       + '<span style="font-size:12px;font-weight:700">' + sym + '</span>'
       + '<span style="font-size:12px;font-weight:700;color:' + (up?'var(--green)':'var(--red)') + '">' + (up?'+':'') + pct.toFixed(2) + '%</span></div>';
   }).join('');
+}
+
+// ── Futures strength meters (Forex / Indices / Commodities) ──
+function _renderStrengthBar(items, el) {
+  if (!el) return;
+  const max = Math.max(...items.map(i => Math.abs(i.pct)), 0.01);
+  el.innerHTML = items.map(({label, pct}, idx) => {
+    const w = Math.min(100, (Math.abs(pct) / max) * 100);
+    const col = idx < Math.ceil(items.length * 0.33) ? 'var(--green)' : idx >= Math.floor(items.length * 0.67) ? 'var(--red)' : 'var(--amber)';
+    const sign = pct >= 0 ? '+' : '';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">'
+      + '<div style="width:52px;font-size:11px;font-weight:800;color:' + col + '">' + label + '</div>'
+      + '<div style="flex:1;background:var(--bg5);border-radius:3px;height:8px;overflow:hidden">'
+      + '<div style="height:8px;border-radius:3px;background:' + col + ';width:' + w.toFixed(0) + '%;transition:width .6s"></div></div>'
+      + '<div style="width:52px;text-align:right;font-size:10px;color:' + col + ';font-weight:700">' + sign + pct.toFixed(2) + '%</div>'
+      + '<div style="width:18px;text-align:right;font-size:11px;font-weight:800;color:' + col + '">' + (idx + 1) + '</div></div>';
+  }).join('');
+}
+
+function updateFutStrengthMeters() {
+  // FOREX: compute currency strength from pair moves
+  const currencies = ['USD','EUR','GBP','AUD','NZD','JPY','CHF','CAD'];
+  const cScores = {};
+  currencies.forEach(c => cScores[c] = { wins: 0, total: 0 });
+  const fxPairs = [
+    ['EUR/USD','EUR','USD'],['GBP/USD','GBP','USD'],['AUD/USD','AUD','USD'],
+    ['NZD/USD','NZD','USD'],['USD/CAD','USD','CAD'],['USD/JPY','USD','JPY'],
+    ['USD/CHF','USD','CHF'],['EUR/GBP','EUR','GBP'],['GBP/JPY','GBP','JPY'],['EUR/JPY','EUR','JPY'],
+  ];
+  fxPairs.forEach(([sym, base, quote]) => {
+    const p = pctChange(sym);
+    if (cScores[base]) { cScores[base].total += Math.abs(p); if (p > 0) cScores[base].wins += Math.abs(p); }
+    if (cScores[quote]) { cScores[quote].total += Math.abs(p); if (p < 0) cScores[quote].wins += Math.abs(p); }
+  });
+  const fxItems = currencies.map(c => ({ label: c, pct: (cScores[c].wins || 0) - ((cScores[c].total || 0) - (cScores[c].wins || 0)) }))
+    .sort((a, b) => b.pct - a.pct);
+  _renderStrengthBar(fxItems, document.getElementById('fut-fx-strength'));
+
+  // INDICES: rank by % change
+  const idxSyms = [
+    { sym: 'NAS100', label: 'NAS100' },
+    { sym: 'SPX500', label: 'S&P 500' },
+    { sym: 'US30',   label: 'DOW 30' },
+    { sym: 'RUSSELL', label: 'RUSSELL' },
+    { sym: 'DXY',    label: 'DXY' },
+  ];
+  const idxItems = idxSyms.map(i => ({ label: i.label, pct: pctChange(i.sym) }))
+    .sort((a, b) => b.pct - a.pct);
+  _renderStrengthBar(idxItems, document.getElementById('fut-idx-strength'));
+
+  // COMMODITIES: rank by % change
+  const comSyms = [
+    { sym: 'XAU/USD', label: 'GOLD' },
+    { sym: 'XAG/USD', label: 'SILVER' },
+    { sym: 'XAU/EUR', label: 'GOLD/EUR' },
+    { sym: 'XAU/GBP', label: 'GOLD/GBP' },
+  ];
+  const comItems = comSyms.map(i => ({ label: i.label, pct: pctChange(i.sym) }))
+    .sort((a, b) => b.pct - a.pct);
+  _renderStrengthBar(comItems, document.getElementById('fut-com-strength'));
 }
 
 // Load journal
