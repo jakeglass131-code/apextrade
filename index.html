@@ -5963,21 +5963,26 @@ function _renderStrengthBar(items, el) {
 
 function updateFutStrengthMeters() {
   // FOREX: compute currency strength from pair moves
-  const currencies = ['USD','EUR','GBP','AUD','NZD','JPY','CHF','CAD'];
+  const currencies = ['DXY','EUR','GBP','AUD','NZD','JPY','CHF','CAD'];
   const cScores = {};
   currencies.forEach(c => cScores[c] = { wins: 0, total: 0 });
+  // DXY gets its own % change directly instead of USD net from pairs
+  const dxyPct = pctChange('DXY');
+  cScores['DXY'] = { wins: dxyPct, total: Math.abs(dxyPct) };
   const fxPairs = [
-    ['EUR/USD','EUR','USD'],['GBP/USD','GBP','USD'],['AUD/USD','AUD','USD'],
-    ['NZD/USD','NZD','USD'],['USD/CAD','USD','CAD'],['USD/JPY','USD','JPY'],
-    ['USD/CHF','USD','CHF'],['EUR/GBP','EUR','GBP'],['GBP/JPY','GBP','JPY'],['EUR/JPY','EUR','JPY'],
+    ['EUR/USD','EUR','DXY'],['GBP/USD','GBP','DXY'],['AUD/USD','AUD','DXY'],
+    ['NZD/USD','NZD','DXY'],['USD/CAD','DXY','CAD'],['USD/JPY','DXY','JPY'],
+    ['USD/CHF','DXY','CHF'],['EUR/GBP','EUR','GBP'],['GBP/JPY','GBP','JPY'],['EUR/JPY','EUR','JPY'],
   ];
   fxPairs.forEach(([sym, base, quote]) => {
     const p = pctChange(sym);
-    if (cScores[base]) { cScores[base].total += Math.abs(p); if (p > 0) cScores[base].wins += Math.abs(p); }
-    if (cScores[quote]) { cScores[quote].total += Math.abs(p); if (p < 0) cScores[quote].wins += Math.abs(p); }
+    if (base !== 'DXY' && cScores[base]) { cScores[base].total += Math.abs(p); if (p > 0) cScores[base].wins += Math.abs(p); }
+    if (quote !== 'DXY' && cScores[quote]) { cScores[quote].total += Math.abs(p); if (p < 0) cScores[quote].wins += Math.abs(p); }
   });
-  const fxItems = currencies.map(c => ({ label: c, pct: (cScores[c].wins || 0) - ((cScores[c].total || 0) - (cScores[c].wins || 0)) }))
-    .sort((a, b) => b.pct - a.pct);
+  const fxItems = currencies.map(c => {
+    if (c === 'DXY') return { label: 'DXY', pct: dxyPct };
+    return { label: c, pct: (cScores[c].wins || 0) - ((cScores[c].total || 0) - (cScores[c].wins || 0)) };
+  }).sort((a, b) => b.pct - a.pct);
   _renderStrengthBar(fxItems, document.getElementById('fut-fx-strength'));
 
   // INDICES: rank by % change
@@ -5986,7 +5991,6 @@ function updateFutStrengthMeters() {
     { sym: 'SPX500', label: 'S&P 500' },
     { sym: 'US30',   label: 'DOW 30' },
     { sym: 'RUSSELL', label: 'RUSSELL' },
-    { sym: 'DXY',    label: 'DXY' },
   ];
   const idxItems = idxSyms.map(i => ({ label: i.label, pct: pctChange(i.sym) }))
     .sort((a, b) => b.pct - a.pct);
