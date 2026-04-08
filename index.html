@@ -1040,14 +1040,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <button class="smkt"        id="asx-tab-bullish" onclick="setAsxTab('bullish')"  style="font-size:12px;padding:10px 18px;border:none;border-bottom:2px solid transparent;background:transparent;color:var(--text3);cursor:pointer;font-weight:600">📈 Bullish</button>
     <div style="flex:1"></div>
     <div id="asx-ctrl-intel" style="display:flex;align-items:center;gap:8px;padding:6px 0">
-      <select id="asx-intel-sym" style="font-size:11px;padding:4px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px">
-        <option value="BHP.ASX">BHP.ASX</option><option value="CBA.ASX">CBA.ASX</option>
-        <option value="RIO.ASX">RIO.ASX</option><option value="CSL.ASX">CSL.ASX</option>
-        <option value="NAB.ASX">NAB.ASX</option><option value="WBC.ASX">WBC.ASX</option>
-        <option value="ANZ.ASX">ANZ.ASX</option><option value="FMG.ASX">FMG.ASX</option>
-        <option value="WDS.ASX">WDS.ASX</option><option value="MQG.ASX">MQG.ASX</option>
-        <option value="WOW.ASX">WOW.ASX</option><option value="XRO.ASX">XRO.ASX</option>
-      </select>
+      <div style="position:relative">
+        <input id="asx-intel-sym" type="text" value="" placeholder="Search ASX ticker..." autocomplete="off"
+          style="font-size:11px;padding:4px 8px;background:var(--bg4);border:1px solid var(--border2);color:var(--text);border-radius:6px;width:120px;font-family:var(--fm)"
+          oninput="asxSymAutocomplete(this)" onkeydown="if(event.key==='Enter'){hideAsxSymDropdown();runAsxIntel();}" onfocus="asxSymAutocomplete(this)">
+        <div id="asx-sym-dropdown" style="display:none;position:absolute;top:100%;left:0;width:200px;max-height:220px;overflow-y:auto;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;z-index:999;margin-top:2px;box-shadow:0 8px 24px rgba(0,0,0,.5)"></div>
+      </div>
       <button onclick="runAsxIntel()" class="btn g" style="font-size:11px">Analyse</button>
       <button onclick="fetchAsxNews()" class="btn" style="font-size:11px">Refresh news</button>
     </div>
@@ -2710,6 +2708,7 @@ function nav(p) {
   if (p === 'asx')     {
     fetchAsxNews();
     startAsxPriceEngine(); // start live ASX price streaming
+    if (!_asxTickerCache) getAsxTickers(); // preload full ASX list for search
     // Fundamentals agent no longer auto-starts — user triggers scans manually
   }
   if (p === 'futures') {
@@ -7374,6 +7373,40 @@ saveJournalTrade = function() {
     updateJournalStats();
   }, 200);
 };
+
+// ── ASX symbol search autocomplete ──
+function asxSymAutocomplete(input) {
+  const dd = document.getElementById('asx-sym-dropdown');
+  if (!dd) return;
+  const q = input.value.trim().toUpperCase();
+  if (q.length < 1) { dd.style.display = 'none'; return; }
+  const tickers = _asxTickerCache || [];
+  const matches = tickers.filter(s => {
+    const t = s.ticker.toUpperCase(), n = (s.name||'').toUpperCase();
+    return t.startsWith(q) || n.includes(q);
+  }).slice(0, 20);
+  if (matches.length === 0) { dd.style.display = 'none'; return; }
+  dd.innerHTML = matches.map(s => {
+    const label = s.name && s.name !== s.ticker ? s.ticker + ' — ' + s.name : s.ticker;
+    return '<div style="padding:6px 10px;font-size:11px;cursor:pointer;color:var(--text);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" '
+      + 'onmousedown="selectAsxSym(\'' + s.ticker + '\')" '
+      + 'onmouseover="this.style.background=\'var(--bg5)\'" onmouseout="this.style.background=\'transparent\'">'
+      + label + '</div>';
+  }).join('');
+  dd.style.display = 'block';
+}
+function selectAsxSym(ticker) {
+  const input = document.getElementById('asx-intel-sym');
+  if (input) input.value = ticker + '.ASX';
+  hideAsxSymDropdown();
+}
+function hideAsxSymDropdown() {
+  const dd = document.getElementById('asx-sym-dropdown');
+  if (dd) dd.style.display = 'none';
+}
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#asx-ctrl-intel')) hideAsxSymDropdown();
+});
 
 function runAsxIntel() {
   const sym = document.getElementById('asx-intel-sym')?.value || 'BHP.ASX';
