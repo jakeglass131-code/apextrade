@@ -57,19 +57,35 @@ async function fetchFundamentals(ticker) {
   if (cache[ticker] && now - cache[ticker].ts < CACHE_TTL) return cache[ticker].data;
 
   const sym = ticker.includes('.') ? ticker : ticker + '.AX';
-  const session = await ensureYfSession();
-  const crumbParam = session.crumb ? `&crumb=${encodeURIComponent(session.crumb)}` : '';
-  const url = `https://query2.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=${MODULES}${crumbParam}`;
+  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36';
 
-  const headers = { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' };
-  if (session.cookie) headers['Cookie'] = session.cookie;
+  let lastErr = null;
+  // Try: (0) cached crumb, (1) fresh crumb, (2) no crumb at all
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt === 1) yfSession = { crumb: null, cookie: null, ts: 0 }; // force refresh
 
-  const r = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
+    let session;
+    if (attempt < 2) {
+      session = await ensureYfSession();
+    } else {
+      session = { crumb: null, cookie: null, ts: 0 };
+    }
 
-  if (!r.ok) throw new Error(`Yahoo ${r.status} for ${sym}`);
-  const d = await r.json();
-  const result = d.quoteSummary && d.quoteSummary.result && d.quoteSummary.result[0];
-  if (!result) throw new Error(`No data for ${sym}`);
+    const crumbParam = session.crumb ? `&crumb=${encodeURIComponent(session.crumb)}` : '';
+    const base = session.crumb ? 'query2' : 'query1';
+    const url = `https://${base}.finance.yahoo.com/v10/finance/quoteSummary/${sym}?modules=${MODULES}${crumbParam}`;
+
+    const hdrs = { 'User-Agent': UA };
+    if (session.cookie) hdrs['Cookie'] = session.cookie;
+
+    try {
+      const r = await fetch(url, { headers: hdrs, signal: AbortSignal.timeout(10000) });
+      if (r.status === 401 || r.status === 403) { lastErr = `Yahoo ${r.status}`; continue; }
+      if (!r.ok) throw new Error(`Yahoo ${r.status} for ${sym}`);
+
+      const d = await r.json();
+      const result = d.quoteSummary && d.quoteSummary.result && d.quoteSummary.result[0];
+      if (!result) throw new Error(`No data for ${sym}`);
 
   const fd = result.financialData || {};
   const ks = result.defaultKeyStatistics || {};
@@ -222,8 +238,11 @@ async function fetchFundamentals(ticker) {
     lastUpdated: new Date().toISOString(),
   };
 
-  cache[ticker] = { data, ts: now };
-  return data;
+      cache[ticker] = { data, ts: now };
+      return data;
+    } catch (e) { lastErr = e.message; continue; }
+  }
+  throw new Error(lastErr || `Failed to fetch ${sym}`);
 }
 
 exports.handler = async function(event) {
