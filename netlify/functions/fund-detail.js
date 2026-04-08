@@ -18,6 +18,8 @@ const MODULES = [
   'incomeStatementHistory',
   'assetProfile',
   'price',
+  'calendarEvents',
+  'upgradeDowngradeHistory',
 ].join(',');
 
 // Simple in-memory cache (survives within a single Lambda instance)
@@ -95,6 +97,8 @@ async function fetchFundamentals(ticker) {
   const is = (result.incomeStatementHistory && result.incomeStatementHistory.incomeStatementHistory) || [];
   const ap = result.assetProfile || {};
   const pr = result.price || {};
+  const ce = result.calendarEvents || {};
+  const udh = (result.upgradeDowngradeHistory && result.upgradeDowngradeHistory.history) || [];
 
   // Extract raw values (Yahoo wraps numbers in {raw, fmt} objects)
   const raw = (obj) => obj && obj.raw !== undefined ? obj.raw : null;
@@ -227,8 +231,30 @@ async function fetchFundamentals(ticker) {
     netIncome: netIncome,
     // Analyst
     targetMeanPrice: raw(fd.targetMeanPrice),
+    targetHighPrice: raw(fd.targetHighPrice),
+    targetLowPrice: raw(fd.targetLowPrice),
     recommendation: fd.recommendationKey || null,
     numberOfAnalysts: raw(fd.numberOfAnalystOpinions),
+    // Catalysts — calendar events
+    earningsDate: ce.earnings && ce.earnings.earningsDate && ce.earnings.earningsDate.length
+      ? ce.earnings.earningsDate.map(d => raw(d) ? new Date(raw(d) * 1000).toISOString().slice(0, 10) : null).filter(Boolean)
+      : [],
+    earningsEstimate: ce.earnings ? raw(ce.earnings.earningsAverage) : null,
+    revenueEstimate: ce.earnings ? raw(ce.earnings.revenueAverage) : null,
+    exDividendDate: raw(ce.exDividendDate) ? new Date(raw(ce.exDividendDate) * 1000).toISOString().slice(0, 10) : null,
+    dividendPayDate: raw(ce.dividendDate) ? new Date(raw(ce.dividendDate) * 1000).toISOString().slice(0, 10) : null,
+    // Catalysts — recent analyst upgrades/downgrades (last 5)
+    analystChanges: udh.slice(0, 5).map(u => ({
+      date: u.epochGradeDate ? new Date(u.epochGradeDate * 1000).toISOString().slice(0, 10) : null,
+      firm: u.firm || 'Unknown',
+      action: u.action || '',
+      from: u.fromGrade || '',
+      to: u.toGrade || '',
+    })),
+    // Company profile
+    fullTimeEmployees: ap.fullTimeEmployees || null,
+    website: ap.website || null,
+    longBusinessSummary: ap.longBusinessSummary ? ap.longBusinessSummary.slice(0, 300) : null,
     // Scores
     valueScore: valueScore,
     qualityScore: qualityScore,
@@ -256,7 +282,8 @@ exports.handler = async function(event) {
       const data = await fetchFundamentals(params.ticker);
       return { statusCode: 200, headers: H, body: JSON.stringify(data) };
     } catch (e) {
-      return { statusCode: 200, headers: H, body: JSON.stringify({ error: e.message, ticker: params.ticker }) };
+      const errH = { ...H, 'Cache-Control': 'no-store' };
+      return { statusCode: 200, headers: errH, body: JSON.stringify({ error: e.message, ticker: params.ticker }) };
     }
   }
 

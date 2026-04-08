@@ -7419,7 +7419,7 @@ async function runAsxIntel() {
 
   // Fetch fundamentals + CRT in parallel
   const [fundRes, crtRes] = await Promise.allSettled([
-    fetch(PROXY + '/fund-detail?ticker=' + ticker, { signal: AbortSignal.timeout(15000) }).then(r => r.json()),
+    fetch(PROXY + '/fund-detail?ticker=' + ticker + '&_t=' + Date.now(), { signal: AbortSignal.timeout(15000) }).then(r => r.json()),
     fetch(PROXY + '/crt-engine?ticker=' + ticker, { signal: AbortSignal.timeout(20000) }).then(r => r.json())
   ]);
   const f = fundRes.status === 'fulfilled' && !fundRes.value.error ? fundRes.value : null;
@@ -7519,7 +7519,124 @@ async function runAsxIntel() {
       + '</div>';
   }
 
-  // Section 5: CRT Technicals (if any signals)
+  // Section 5: Catalyst Pipeline
+  h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Catalyst Pipeline</div>';
+  const catalysts = [];
+  const today = new Date().toISOString().slice(0, 10);
+  // Earnings dates
+  if (f.earningsDate && f.earningsDate.length) {
+    f.earningsDate.forEach(d => {
+      const isPast = d < today;
+      catalysts.push({ date: d, type: 'Earnings', label: isPast ? 'Last Earnings' : 'Next Earnings', icon: isPast ? '📊' : '📅', color: isPast ? 'var(--text3)' : 'var(--accent)', detail: f.earningsEstimate != null ? 'Est EPS $' + f.earningsEstimate.toFixed(2) + (f.revenueEstimate ? ' · Rev ' + (f.revenueEstimate >= 1e9 ? '$'+(f.revenueEstimate/1e9).toFixed(1)+'B' : '$'+(f.revenueEstimate/1e6).toFixed(0)+'M') : '') : '' });
+    });
+  }
+  // Ex-dividend date
+  if (f.exDividendDate) {
+    const isPast = f.exDividendDate < today;
+    catalysts.push({ date: f.exDividendDate, type: 'Dividend', label: isPast ? 'Last Ex-Div' : 'Next Ex-Div', icon: '💰', color: isPast ? 'var(--text3)' : 'var(--green)', detail: f.dividendRate ? '$' + f.dividendRate.toFixed(2) + '/share' : '' });
+  }
+  // Dividend pay date
+  if (f.dividendPayDate) {
+    const isPast = f.dividendPayDate < today;
+    catalysts.push({ date: f.dividendPayDate, type: 'Payment', label: isPast ? 'Last Div Payment' : 'Div Payment Due', icon: '🏦', color: isPast ? 'var(--text3)' : 'var(--green)', detail: '' });
+  }
+  // Sort catalysts by date
+  catalysts.sort((a, b) => a.date.localeCompare(b.date));
+
+  if (catalysts.length) {
+    h += '<div style="margin-bottom:12px">';
+    catalysts.forEach(c => {
+      const daysAway = Math.round((new Date(c.date) - new Date()) / 86400000);
+      const daysLabel = daysAway > 0 ? daysAway + 'd away' : daysAway === 0 ? 'TODAY' : Math.abs(daysAway) + 'd ago';
+      h += '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;margin-bottom:4px;background:var(--bg4);border-radius:6px;border-left:3px solid ' + c.color + '">'
+        + '<div style="font-size:18px">' + c.icon + '</div>'
+        + '<div style="flex:1"><div style="font-size:11px;font-weight:700;color:var(--text)">' + c.label + '</div>'
+        + '<div style="font-size:10px;color:var(--text3)">' + c.date + ' · ' + daysLabel + (c.detail ? ' · ' + c.detail : '') + '</div></div></div>';
+    });
+    h += '</div>';
+  } else {
+    h += '<div style="font-size:11px;color:var(--text3);padding:12px;background:var(--bg4);border-radius:6px;margin-bottom:12px">No upcoming earnings or dividend dates available</div>';
+  }
+
+  // Analyst changes (upgrades/downgrades)
+  if (f.analystChanges && f.analystChanges.length) {
+    h += '<div style="font-size:11px;font-weight:600;color:var(--text2);margin-bottom:6px">Recent Analyst Actions</div>';
+    f.analystChanges.forEach(a => {
+      const actCol = a.action === 'upgrade' ? 'var(--green)' : a.action === 'downgrade' ? 'var(--red)' : 'var(--amber)';
+      const actIcon = a.action === 'upgrade' ? '⬆' : a.action === 'downgrade' ? '⬇' : '↔';
+      h += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;margin-bottom:3px;background:var(--bg4);border-radius:5px;font-size:10px">'
+        + '<span style="color:' + actCol + ';font-weight:700">' + actIcon + ' ' + (a.action || 'init').toUpperCase() + '</span>'
+        + '<span style="color:var(--text2);font-weight:600">' + a.firm + '</span>'
+        + (a.from ? '<span style="color:var(--text4)">' + a.from + ' → ' + a.to + '</span>' : '<span style="color:var(--text3)">' + a.to + '</span>')
+        + '<span style="color:var(--text4);margin-left:auto">' + (a.date || '') + '</span></div>';
+    });
+    h += '<div style="margin-bottom:16px"></div>';
+  }
+
+  // Section 6: Macro & Sector Context
+  h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">Macro & Sector Context</div>';
+  h += '<div style="background:var(--bg4);border-radius:8px;padding:12px;margin-bottom:16px">';
+  // Business summary
+  if (f.longBusinessSummary) {
+    h += '<div style="font-size:11px;color:var(--text2);margin-bottom:10px;line-height:1.5">' + f.longBusinessSummary + (f.longBusinessSummary.length >= 295 ? '...' : '') + '</div>';
+  }
+  // Sector + Industry tag line
+  h += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px">'
+    + '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(99,102,241,.12);color:var(--accent);font-weight:600">' + f.sector + '</span>'
+    + '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(99,102,241,.08);color:var(--text2)">' + f.industry + '</span>'
+    + (f.fullTimeEmployees ? '<span style="font-size:10px;padding:3px 8px;border-radius:4px;background:var(--bg5);color:var(--text3)">' + f.fullTimeEmployees.toLocaleString() + ' employees</span>' : '')
+    + '</div>';
+  // Analyst target range bar
+  if (f.targetLowPrice && f.targetHighPrice && f.price) {
+    const lo = f.targetLowPrice, hi = f.targetHighPrice, cur = f.price, mid = f.targetMeanPrice || ((lo+hi)/2);
+    const range = hi - lo || 1;
+    const curPct = Math.max(0, Math.min(100, ((cur - lo) / range) * 100));
+    const midPct = Math.max(0, Math.min(100, ((mid - lo) / range) * 100));
+    h += '<div style="margin-top:8px"><div style="font-size:10px;color:var(--text4);margin-bottom:4px">ANALYST TARGET RANGE</div>'
+      + '<div style="position:relative;height:24px;background:linear-gradient(90deg,rgba(239,68,68,.15),rgba(245,158,11,.1),rgba(16,185,129,.15));border-radius:4px;margin-bottom:4px">'
+      + '<div style="position:absolute;left:' + curPct + '%;top:0;bottom:0;width:2px;background:var(--text);z-index:2" title="Current $' + cur.toFixed(2) + '"></div>'
+      + '<div style="position:absolute;left:' + midPct + '%;top:2px;width:8px;height:8px;border-radius:50%;background:var(--accent);transform:translateX(-4px);z-index:2" title="Mean target $' + mid.toFixed(2) + '"></div>'
+      + '</div>'
+      + '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text4)">'
+      + '<span>Low $' + lo.toFixed(2) + '</span>'
+      + '<span style="color:var(--accent)">Mean $' + mid.toFixed(2) + '</span>'
+      + '<span>High $' + hi.toFixed(2) + '</span></div></div>';
+  }
+  // Investment thesis summary
+  h += '<div style="margin-top:10px;padding:8px 10px;border-radius:6px;background:var(--bg5);border:1px solid var(--border2)">'
+    + '<div style="font-size:10px;font-weight:700;color:var(--text2);margin-bottom:4px">INVESTMENT THESIS</div>';
+  const bullPoints = [], bearPoints = [];
+  if (f.pe && f.pe < 15) bullPoints.push('Attractive valuation at ' + f.pe.toFixed(1) + 'x earnings');
+  if (f.pe && f.pe > 30) bearPoints.push('Expensive at ' + f.pe.toFixed(1) + 'x earnings');
+  if (f.roe && f.roe > 0.15) bullPoints.push('Strong returns on equity (' + (f.roe*100).toFixed(0) + '%)');
+  if (f.roe && f.roe < 0) bearPoints.push('Negative return on equity');
+  if (f.dividendYield && f.dividendYield > 0.04) bullPoints.push('Solid ' + (f.dividendYield*100).toFixed(1) + '% dividend yield');
+  if (f.debtToEquity != null && f.debtToEquity < 0.5) bullPoints.push('Conservative balance sheet (D/E ' + f.debtToEquity.toFixed(2) + ')');
+  if (f.debtToEquity != null && f.debtToEquity > 1.5) bearPoints.push('Heavy debt load (D/E ' + f.debtToEquity.toFixed(2) + ')');
+  if (f.revenueGrowth && f.revenueGrowth > 0.1) bullPoints.push('Revenue growing ' + (f.revenueGrowth*100).toFixed(0) + '% YoY');
+  if (f.revenueGrowth && f.revenueGrowth < -0.05) bearPoints.push('Revenue declining ' + (f.revenueGrowth*100).toFixed(0) + '% YoY');
+  if (f.profitMargin && f.profitMargin > 0.15) bullPoints.push('Healthy profit margins (' + (f.profitMargin*100).toFixed(0) + '%)');
+  if (f.profitMargin != null && f.profitMargin < 0) bearPoints.push('Currently loss-making');
+  if (f.earningsGrowth && f.earningsGrowth > 0.1) bullPoints.push('Earnings growth accelerating');
+  if (f.earningsGrowth && f.earningsGrowth < -0.1) bearPoints.push('Earnings in decline');
+  const upside2 = f.price && f.targetMeanPrice ? ((f.targetMeanPrice - f.price) / f.price * 100) : null;
+  if (upside2 && upside2 > 15) bullPoints.push('Analysts see +' + upside2.toFixed(0) + '% upside');
+  if (upside2 && upside2 < -10) bearPoints.push('Analysts see ' + upside2.toFixed(0) + '% downside');
+
+  if (bullPoints.length) {
+    h += '<div style="font-size:10px;color:var(--green);font-weight:600;margin-bottom:2px">BULL CASE</div>';
+    bullPoints.forEach(p => { h += '<div style="font-size:10px;color:var(--text2);padding-left:10px">+ ' + p + '</div>'; });
+  }
+  if (bearPoints.length) {
+    h += '<div style="font-size:10px;color:var(--red);font-weight:600;margin:4px 0 2px">BEAR CASE</div>';
+    bearPoints.forEach(p => { h += '<div style="font-size:10px;color:var(--text2);padding-left:10px">- ' + p + '</div>'; });
+  }
+  if (!bullPoints.length && !bearPoints.length) {
+    h += '<div style="font-size:10px;color:var(--text3)">Insufficient data for thesis generation</div>';
+  }
+  h += '</div></div>';
+
+  // Section 7: CRT Technicals (if any signals)
   if (sigs.length > 0) {
     h += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;border-bottom:1px solid var(--border2);padding-bottom:6px">CRT Technical Setups (' + sigs.length + ' active)</div>';
     sigs.sort((a,b) => (b.confidence||0) - (a.confidence||0));
