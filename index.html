@@ -931,6 +931,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10H12z"/><path d="M12 12L2 12a10 10 0 0 0 10 10z"/></svg>
     <span>Sectors</span>
   </button>
+  <button class="sbb" id="sb-flow" onclick="nav('flow')">
+    <svg viewBox="0 0 24 24"><path d="M12 2v20M2 12h20"/><path d="M17 7l-5 5-3-3-5 5"/></svg>
+    <span>Flow</span>
+  </button>
   <button class="sbb" id="sb-smt" onclick="nav('smt')">
     <svg viewBox="0 0 24 24"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
     <span>SMT</span>
@@ -1161,7 +1165,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
         <div style="padding:20px;overflow-y:auto"><div id="asx-intel-detail"></div></div>
       </div>
       <div class="panel" style="margin:16px 20px">
-        <div class="phead"><div class="ptitle">ASX Intelligence feed</div><div class="pmeta" id="asx-feed-time">Live</div></div>
+        <div class="phead">
+          <div class="ptitle">ASX Intelligence feed</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="display:flex;gap:2px" id="news-tf-pills">
+              <button class="pill-btn news-tf active" data-ntf="all" onclick="filterNewsTF('all',this)" style="font-size:9px;padding:2px 8px;border-radius:4px;background:var(--accent);color:#fff;border:none;cursor:pointer">All</button>
+              <button class="pill-btn news-tf" data-ntf="1" onclick="filterNewsTF('1',this)" style="font-size:9px;padding:2px 8px;border-radius:4px;background:var(--bg5);color:var(--text3);border:none;cursor:pointer">1h</button>
+              <button class="pill-btn news-tf" data-ntf="6" onclick="filterNewsTF('6',this)" style="font-size:9px;padding:2px 8px;border-radius:4px;background:var(--bg5);color:var(--text3);border:none;cursor:pointer">6h</button>
+              <button class="pill-btn news-tf" data-ntf="24" onclick="filterNewsTF('24',this)" style="font-size:9px;padding:2px 8px;border-radius:4px;background:var(--bg5);color:var(--text3);border:none;cursor:pointer">Today</button>
+              <button class="pill-btn news-tf" data-ntf="168" onclick="filterNewsTF('168',this)" style="font-size:9px;padding:2px 8px;border-radius:4px;background:var(--bg5);color:var(--text3);border:none;cursor:pointer">1W</button>
+            </div>
+            <div class="pmeta" id="asx-feed-time">Live</div>
+          </div>
+        </div>
         <div id="asx-news-feed">
           <div class="iitem"><div class="idot" style="background:var(--amber)"></div><div><div class="itext"><strong>RBA minutes:</strong> Board discussed further hike but voted to hold. AUD muted — market had priced hold.</div><div class="imeta"><span class="itime">3h ago</span><span class="itag im2">Medium · AUD</span></div></div></div>
           <div class="iitem"><div class="idot" style="background:var(--text4)"></div><div><div class="itext"><strong>BHP Q2 production</strong> in line with expectations. Iron ore +3% QoQ. Minor positive, largely priced in.</div><div class="imeta"><span class="itime">5h ago</span><span class="itag il">Low · BHP</span></div></div></div>
@@ -7275,14 +7291,14 @@ document.addEventListener('keydown', function(e) {
   // Navigation: 1-6 for pages
   if (!ctrl && !e.altKey) {
     switch(key) {
-      case '1': nav('dashboard'); break;
-      case '2': nav('scanner'); break;
-      case '3': nav('intel'); break;
-      case '4': nav('journal'); break;
-      case '5': nav('sectors'); break;
+      case '1': nav('dash'); break;
+      case '2': nav('asx'); break;
+      case '3': nav('futures'); break;
+      case '4': nav('sectors'); break;
+      case '5': nav('smt'); break;
       case '6': nav('flow'); break;
       case '7': nav('settings'); break;
-      case 'n': if (!e.shiftKey) { nav('dashboard'); setTimeout(()=> showAddTrade && showAddTrade(), 100); } break;
+      case 'n': if (!e.shiftKey) { nav('dash'); setTimeout(()=> showAddTrade && showAddTrade(), 100); } break;
       case 'escape':
         const mw = document.getElementById('modal-wrap');
         if (mw && mw.style.display !== 'none') closeModal();
@@ -7290,7 +7306,7 @@ document.addEventListener('keydown', function(e) {
         if (atf && atf.style.display !== 'none') atf.style.display = 'none';
         break;
       case '?':
-        if (e.shiftKey) showToast('Keyboard Shortcuts', '1-7: Navigate pages · N: New trade · Esc: Close modal · ?: This help', 'info', 6000);
+        if (e.shiftKey) showToast('Keyboard Shortcuts', '1:Today 2:ASX 3:Futures 4:Sectors 5:SMT 6:Flow 7:Settings · N:New trade · Esc:Close', 'info', 6000);
         break;
     }
   }
@@ -7700,7 +7716,56 @@ function fetchAsxNews() {
     const t = document.getElementById('intel-feed-time');
     const at = document.getElementById('asx-feed-time');
     if (t && at) at.innerHTML = t.innerHTML;
+    // Re-apply active news TF filter
+    const active = document.querySelector('.news-tf.active');
+    if (active && active.dataset.ntf !== 'all') filterNewsTF(active.dataset.ntf, active);
   }).catch(()=>{});
+}
+
+function filterNewsTF(hours, btn) {
+  // Style pills
+  document.querySelectorAll('.news-tf').forEach(b => {
+    b.style.background = 'var(--bg5)'; b.style.color = 'var(--text3)';
+    b.classList.remove('active');
+  });
+  if (btn) { btn.style.background = 'var(--accent)'; btn.style.color = '#fff'; btn.classList.add('active'); }
+
+  const items = document.querySelectorAll('#asx-news-feed .iitem');
+  if (hours === 'all') { items.forEach(i => i.style.display = ''); return; }
+
+  const maxH = parseInt(hours);
+  let shown = 0;
+  items.forEach(item => {
+    const timeEl = item.querySelector('.itime');
+    if (!timeEl) { item.style.display = ''; return; }
+    const txt = timeEl.textContent.trim().toLowerCase();
+    // Parse relative time: "1h ago", "5h ago", "17h ago", "2d ago", "3m ago" etc.
+    let itemHours = 0;
+    const mH = txt.match(/(\d+)\s*h/); if (mH) itemHours = parseInt(mH[1]);
+    const mD = txt.match(/(\d+)\s*d/); if (mD) itemHours = parseInt(mD[1]) * 24;
+    const mM = txt.match(/(\d+)\s*m(?:in)?/); if (mM) itemHours = parseInt(mM[1]) / 60;
+    const mW = txt.match(/(\d+)\s*w/); if (mW) itemHours = parseInt(mW[1]) * 168;
+    // "just now" or "now" → 0
+    if (txt.includes('now') || txt.includes('just')) itemHours = 0;
+
+    if (itemHours <= maxH) { item.style.display = ''; shown++; }
+    else { item.style.display = 'none'; }
+  });
+  if (shown === 0) {
+    // Show a "no news" message temporarily
+    const feed = document.getElementById('asx-news-feed');
+    const existing = feed.querySelector('.no-news-msg');
+    if (!existing) {
+      const msg = document.createElement('div');
+      msg.className = 'no-news-msg';
+      msg.style.cssText = 'padding:20px;text-align:center;color:var(--text3);font-size:11px';
+      msg.textContent = 'No news items in this timeframe';
+      feed.appendChild(msg);
+    }
+  } else {
+    const existing = document.getElementById('asx-news-feed')?.querySelector('.no-news-msg');
+    if (existing) existing.remove();
+  }
 }
 
 // ══════════════════════════════════════════
