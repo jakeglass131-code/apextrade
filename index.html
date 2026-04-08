@@ -9591,6 +9591,11 @@ function startAsxCrtScan() {
     if (p && ap) ap.textContent = p.textContent;
 
     if (asxCrtSignals.length > 0) renderAsxCrtRows();
+    else if (typeof crtScanning !== 'undefined' && crtScanning) {
+      const scanPct = (typeof crtScanned !== 'undefined' && typeof crtSignals !== 'undefined') ? Math.round((crtScanned / Math.max((typeof ASX_SCAN_LIST !== 'undefined' ? ASX_SCAN_LIST.length : 100), 1)) * 100) : 0;
+      const rowsEl = document.getElementById('asx-crt-rows');
+      if (rowsEl) rowsEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Scanning ASX... ' + (typeof crtScanned !== 'undefined' ? crtScanned : 0) + ' stocks scanned</div><div style="font-size:11px;color:var(--text3);margin-top:4px">' + asxCrtSignals.length + ' signals found</div></div>';
+    }
 
     if (typeof crtScanning !== 'undefined' && !crtScanning) {
       clearInterval(poll);
