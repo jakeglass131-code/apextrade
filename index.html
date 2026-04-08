@@ -11002,10 +11002,7 @@ async function testTdKey() {
     const resp = await fetch('https://api.twelvedata.com/price?symbol=AAPL&apikey=' + encodeURIComponent(key));
     const data = await resp.json();
     if (data.price) {
-      resEl.className = 'test-result ok'; resEl.innerHTML = '&#10003; Connected (AAPL: 
-
-
- + parseFloat(data.price).toFixed(2) + ')';
+      resEl.className = 'test-result ok'; resEl.innerHTML = '&#10003; Connected (AAPL: $' + parseFloat(data.price).toFixed(2) + ')';
     } else {
       resEl.className = 'test-result fail'; resEl.innerHTML = '&#10007; ' + (data.message || 'Invalid key');
     }
