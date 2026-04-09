@@ -2312,6 +2312,18 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
       </div>
     </div>
 
+    <!-- ── MarketLens broker flow — auto-refreshes via MarketLens Bridge extension ── -->
+    <div class="panel" style="margin-bottom:12px">
+      <div class="phead">
+        <div class="ptitle">MarketLens · Institutional broker flow</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="pmeta" id="ml-flow-status">Awaiting data</div>
+          <div class="updated-at" id="upd-ml"></div>
+        </div>
+      </div>
+      <div id="ml-flow-panel" style="min-height:100px"></div>
+    </div>
+
     <!-- ── Outperformer Filter ── -->
     <div class="panel">
       <div class="phead">
@@ -5991,8 +6003,8 @@ function refreshSectorData() {
         hm.classList.add('sector-updated');
       }
     }
-    // Update "last refreshed" stamp — wired to any element with id="sector-updated-at"
-    try { if (typeof _setUpdatedAt === 'function') _setUpdatedAt('sector-updated-at'); } catch(e){}
+    // Last-refreshed stamp is set inside fetchSectorData() via _setUpdatedAt('upd-sector')
+    // so no additional call needed here; the element id is 'upd-sector'.
   }
 
   fetchSectorData().then(_done).catch(_done);
@@ -6766,6 +6778,15 @@ function checkMlExtension() {
   document.dispatchEvent(new CustomEvent('apex_request_ml_data'));
 }
 
+// Poll the extension every 30s to request fresh data. The extension,
+// if installed, answers with a window.postMessage which is handled above.
+// Also re-renders the "Awaiting data" placeholder on load so it's immediate.
+setInterval(checkMlExtension, 30000);
+setTimeout(function() {
+  try { updateMlFlowPanel(); } catch(e) {}
+  checkMlExtension();
+}, 500);
+
 function processMlData(data) {
   if (!data?.ticker) return;
   
@@ -6847,11 +6868,31 @@ function getMlBadge(sym) {
 function updateMlFlowPanel() {
   const el = document.getElementById('ml-flow-panel');
   if (!el) return;
-  
+
+  // Update status + last-sync stamp in the panel header (sector page)
+  const statusEl = document.getElementById('ml-flow-status');
   const hasData = Object.keys(mlData).length > 0 || mlScreener.length > 0;
-  
+  if (statusEl) {
+    if (hasData) {
+      const count = Object.keys(mlData).length + mlScreener.length;
+      statusEl.textContent = count + ' stock' + (count === 1 ? '' : 's') + ' tracked';
+      statusEl.className = 'pmeta g';
+    } else {
+      statusEl.textContent = 'Waiting for MarketLens extension';
+      statusEl.className = 'pmeta a';
+    }
+  }
+  if (hasData && typeof _setUpdatedAt === 'function') {
+    try { _setUpdatedAt('upd-ml'); } catch(e){}
+  }
+
   if (!hasData) {
-    el.innerHTML = '<div style="padding:16px;color:var(--text3);font-size:12px;text-align:center">Open MarketLens and search a stock to see broker data here.<br><br><a href="https://app.marketlens.com.au" target="_blank" style="color:var(--accent)">Open MarketLens →</a></div>';
+    el.innerHTML = '<div style="padding:20px 16px;color:var(--text3);font-size:12px;text-align:center;line-height:1.6">'
+      + '<div style="font-size:24px;margin-bottom:6px;opacity:0.6">⬢</div>'
+      + '<div style="color:var(--text2);font-weight:600;margin-bottom:4px">No broker flow data yet</div>'
+      + '<div>Install the MarketLens Bridge extension and open a stock on marketlens.com.au.<br>Data will auto-populate here as the extension streams it.</div>'
+      + '<div style="margin-top:10px"><a href="https://app.marketlens.com.au" target="_blank" style="color:var(--accent);font-weight:600">Open MarketLens →</a></div>'
+      + '</div>';
     return;
   }
   
