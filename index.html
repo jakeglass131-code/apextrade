@@ -897,6 +897,299 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .scan-select { background:var(--bg4); border:1px solid var(--border2); border-radius:6px; padding:5px 8px; font-size:12px; color:var(--text); font-family:var(--fd); }
 .scan-select:focus { outline:none; border-color:var(--accent); }
 
+/* ═══════════════════════════════════════════════════════════════
+   POLISH LAYER — smoothness, motion, micro-interactions
+   Added 2026-04-09. Fully additive; remove this block to revert.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Smoother scrolling everywhere */
+html, body { scroll-behavior: smooth; }
+.scroll { scroll-behavior: smooth; }
+
+/* Spring-like easing variables */
+:root {
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-back:  cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out-quint: cubic-bezier(0.83, 0, 0.17, 1);
+}
+
+/* Global: smoother transitions on interactive elements */
+.btn, .chip, .stab, .sbb, .panel, .mc, .sh-card, .row, .scanrow, .scanrow-v2,
+.lb-row, .op-row, .iitem, .rs-chart-row, .pc2, .stat-card, .mbtn, .toggle,
+.filter-pill, .preset-chip, .scan-row-new, .tag-opt, .hm-cell, .cal-day {
+  transition: background .2s var(--ease-out-quint),
+              color .2s var(--ease-out-quint),
+              border-color .2s var(--ease-out-quint),
+              box-shadow .25s var(--ease-out-quint),
+              transform .2s var(--ease-out-quint);
+}
+
+/* Button micro-interaction: subtle lift + glow on hover, press-down on click */
+.btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.35); }
+.btn:active { transform: translateY(0) scale(0.98); transition-duration: .08s; }
+.btn.g:hover { box-shadow: 0 4px 18px rgba(6,182,212,0.25), var(--glow-accent); }
+.mbtn:hover { transform: translateY(-1px); }
+.filter-pill:hover { transform: translateY(-1px); }
+.preset-chip:hover { transform: translateY(-1px); }
+.chip:hover { transform: translateY(-1px); }
+
+/* Sidebar buttons: glowing indicator on active */
+.sbb.active::before {
+  content:''; position:absolute; left:-1px; top:10px; bottom:10px; width:2px;
+  background:var(--accent); border-radius:0 2px 2px 0;
+  box-shadow:0 0 8px var(--accent), 0 0 16px rgba(6,182,212,0.4);
+  animation:sbbGlow 2.4s var(--ease-in-out-quint) infinite;
+}
+@keyframes sbbGlow {
+  0%,100% { opacity:0.8; box-shadow:0 0 6px var(--accent), 0 0 12px rgba(6,182,212,0.3); }
+  50%     { opacity:1;   box-shadow:0 0 12px var(--accent), 0 0 24px rgba(6,182,212,0.55); }
+}
+.sbb { transform-origin:center; }
+.sbb:hover { transform: translateY(-1px); }
+.sbb.active { transform: translateY(-1px); }
+
+/* Page entry animation — fade + slight rise + slight blur clear */
+@keyframes pageIn {
+  from { opacity:0; transform:translateY(8px); filter:blur(4px); }
+  to   { opacity:1; transform:translateY(0);   filter:blur(0); }
+}
+.page.active { animation: pageIn .42s var(--ease-out-quint) both; }
+
+/* Stagger panel entry on page load */
+@keyframes panelIn {
+  from { opacity:0; transform:translateY(10px) scale(0.99); }
+  to   { opacity:1; transform:translateY(0)    scale(1); }
+}
+.page.active .panel,
+.page.active .mc,
+.page.active .stat-card,
+.page.active .pc2 {
+  animation: panelIn .5s var(--ease-out-quint) both;
+}
+.page.active .panel:nth-of-type(1),
+.page.active .mc:nth-of-type(1) { animation-delay: .02s; }
+.page.active .panel:nth-of-type(2),
+.page.active .mc:nth-of-type(2) { animation-delay: .06s; }
+.page.active .panel:nth-of-type(3),
+.page.active .mc:nth-of-type(3) { animation-delay: .10s; }
+.page.active .panel:nth-of-type(4),
+.page.active .mc:nth-of-type(4) { animation-delay: .14s; }
+.page.active .panel:nth-of-type(5) { animation-delay: .18s; }
+.page.active .panel:nth-of-type(6) { animation-delay: .22s; }
+.page.active .panel:nth-of-type(n+7) { animation-delay: .26s; }
+
+/* Panel hover: stronger depth */
+.panel:hover {
+  border-color: var(--border3);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.02) inset;
+  transform: translateY(-1px);
+}
+.mc:hover, .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03) inset;
+}
+
+/* Sector heatmap cards: stronger lift + subtle glow */
+.sh-card { will-change: transform; }
+.sh-card:hover {
+  transform: translateY(-3px) scale(1.012);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.45);
+  border-color: var(--border3);
+}
+.sh-card.lead:hover { box-shadow: 0 10px 28px rgba(16,185,129,0.25); }
+.sh-card.lag:hover  { box-shadow: 0 10px 28px rgba(244,63,94,0.25); }
+
+/* Row micro-interaction — cursor pulls the left edge */
+.row, .scanrow, .scanrow-v2, .lb-row, .op-row, .iitem {
+  will-change: background, transform;
+}
+.row:hover, .iitem:hover { transform: translateX(3px); }
+.scanrow:hover, .scanrow-v2:hover, .lb-row:hover, .op-row:hover { transform: translateX(2px); }
+
+/* Live pill — stronger breathing glow */
+.live-pill {
+  box-shadow: 0 0 12px rgba(16,185,129,0.25);
+  animation: livePulse 2.4s var(--ease-in-out-quint) infinite;
+}
+@keyframes livePulse {
+  0%,100% { box-shadow: 0 0 8px rgba(16,185,129,0.18); }
+  50%     { box-shadow: 0 0 18px rgba(16,185,129,0.38); }
+}
+.lpulse {
+  position: relative;
+}
+.lpulse::before {
+  content:''; position:absolute; inset:-3px; border-radius:50%;
+  border:1px solid var(--accent); opacity:0;
+  animation: pulseRing 2s var(--ease-out-quint) infinite;
+}
+@keyframes pulseRing {
+  0%   { opacity:0.6; transform:scale(0.9); }
+  80%  { opacity:0;   transform:scale(2.2); }
+  100% { opacity:0;   transform:scale(2.2); }
+}
+
+/* Refresh indicator — can be added to any element while data is loading */
+.refreshing { position: relative; }
+.refreshing::after {
+  content:''; position:absolute; top:0; left:-100%; right:0; height:2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: refreshSweep 1.6s var(--ease-in-out-quint) infinite;
+  pointer-events:none;
+}
+@keyframes refreshSweep {
+  0%   { left:-100%; }
+  100% { left:100%; }
+}
+
+/* Small spinning refresh icon utility */
+.spin { animation: spin 1s linear infinite; display:inline-block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Shimmer skeleton loading utility */
+.skel {
+  background: linear-gradient(90deg, rgba(148,163,184,0.04) 0%, rgba(148,163,184,0.10) 50%, rgba(148,163,184,0.04) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.6s var(--ease-in-out-quint) infinite;
+  border-radius: 6px;
+}
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Enhanced focus rings — glow on inputs/selects */
+.rc-input:focus, .form-input:focus, .ss-input:focus, .modal-input:focus, .rc-field input:focus,
+.scan-select:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(6,182,212,0.15), 0 0 18px rgba(6,182,212,0.12);
+  outline: none;
+  transition: border-color .18s var(--ease-out-quint), box-shadow .22s var(--ease-out-quint);
+}
+
+/* Scanner row: richer hover — soft accent tint from left */
+.scanrow-v2:hover { background: linear-gradient(90deg, rgba(6,182,212,0.06), rgba(6,182,212,0.01) 40%, transparent); }
+.scanrow:hover    { background: linear-gradient(90deg, rgba(6,182,212,0.07), rgba(6,182,212,0.01) 40%, transparent); }
+
+/* Number change glow (use on price updates) */
+@keyframes numPop {
+  0%   { transform: scale(1);   filter: brightness(1); }
+  40%  { transform: scale(1.04); filter: brightness(1.3); }
+  100% { transform: scale(1);   filter: brightness(1); }
+}
+.num-pop { animation: numPop .5s var(--ease-out-back); }
+
+/* Gradient accent on key metric numbers (optional, apply with .grad) */
+.grad-accent {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--blue) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.grad-green {
+  background: linear-gradient(135deg, var(--green) 0%, #34d399 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.grad-red {
+  background: linear-gradient(135deg, var(--red) 0%, #fb7185 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* Modal entry — fade and scale */
+#modal-wrap { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); transition: backdrop-filter .2s; }
+@keyframes modalIn {
+  from { opacity:0; transform:translateY(12px) scale(0.97); }
+  to   { opacity:1; transform:translateY(0)    scale(1); }
+}
+#modal-wrap.open .modal { animation: modalIn .32s var(--ease-out-quint) both; }
+
+/* Toast slideIn already exists — override with smoother easing */
+.toast { animation: slideIn .38s var(--ease-out-back) both !important; }
+
+/* Tabs (sub-tabs like asx-tab-intel) — underline slides smoothly */
+.stab { position: relative; }
+.stab::after {
+  content:''; position:absolute; left:50%; right:50%; bottom:-1px; height:2px;
+  background: var(--accent); border-radius:2px 2px 0 0;
+  transition: left .28s var(--ease-out-quint), right .28s var(--ease-out-quint);
+}
+.stab.active::after { left:0; right:0; }
+.stab.active { border-bottom-color: transparent !important; }
+
+/* Ticker tape: smoother edges */
+.ticker-track { will-change: transform; }
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Scrollbar polish */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(148,163,184,0.12);
+  border-radius: 4px;
+  transition: background .2s;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(148,163,184,0.28); }
+
+/* Polish: soft border highlight on focused panels (when keyboard-nav'd) */
+.panel:focus-within { border-color: rgba(6,182,212,0.3); box-shadow: 0 0 0 1px rgba(6,182,212,0.15), 0 8px 32px rgba(0,0,0,0.3); }
+
+/* Polish: nicer disabled state */
+.btn:disabled, .btn[disabled] { opacity:0.45; cursor:not-allowed; transform:none !important; }
+
+/* Polish: ticker item subtle hover lift */
+.tick { transition: background .18s var(--ease-out-quint), transform .18s var(--ease-out-quint); }
+.tick:hover { background: var(--bg3); transform: translateY(-1px); }
+
+/* Polish: smooth header background on sticky headers */
+.ph { backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); background: rgba(14,17,23,0.85); }
+
+/* Polish: animated gradient border on "primary action" buttons .btn.g */
+.btn.g {
+  background: linear-gradient(135deg, var(--accent2), rgba(6,182,212,0.08));
+  border-color: rgba(6,182,212,0.4);
+}
+.btn.g:hover {
+  background: linear-gradient(135deg, rgba(6,182,212,0.3), rgba(6,182,212,0.12));
+  box-shadow: 0 0 24px rgba(6,182,212,0.25), 0 4px 14px rgba(0,0,0,0.3);
+}
+
+/* Polish: loading dots for refresh state */
+.dots::after {
+  content:'...'; display:inline-block; width: 1em;
+  animation: dots 1.2s steps(4, end) infinite;
+  text-align:left;
+}
+@keyframes dots {
+  0%, 20% { content:''; }
+  40% { content:'.'; }
+  60% { content:'..'; }
+  80%, 100% { content:'...'; }
+}
+
+/* Polish: Sector heatmap card inner shadow accent when leader */
+.sh-card.lead { box-shadow: inset 0 0 0 1px rgba(16,185,129,0.25), 0 2px 12px rgba(16,185,129,0.08); }
+.sh-card.lag  { box-shadow: inset 0 0 0 1px rgba(244,63,94,0.25),  0 2px 12px rgba(244,63,94,0.08); }
+
+/* Polish: data table row subtle zebra on hover areas */
+tr:hover td { transition: background .18s var(--ease-out-quint); }
+
+/* Polish: sector update flash */
+@keyframes sectorFlash {
+  0%   { background: rgba(6,182,212,0.10); }
+  100% { background: transparent; }
+}
+.sector-updated { animation: sectorFlash 1.4s var(--ease-out-quint); }
+
+/* Polish: better selection color */
+::selection { background: rgba(6,182,212,0.32); color: var(--text); }
+
 </style>
 </head>
 <body>
@@ -5674,13 +5967,35 @@ function renderSectorPulse() {
 }
 
 function refreshSectorData() {
-  fetchSectorData().then(function() {
+  // Loading state: pulse the "Refresh" button + sweep line across sector page header
+  var sp = document.getElementById('page-sectors');
+  var refreshBtn = sp && sp.querySelector('.ph-r .btn');
+  if (refreshBtn) refreshBtn.classList.add('refreshing');
+  if (sp) {
+    var ph = sp.querySelector('.ph');
+    if (ph) ph.classList.add('refreshing');
+  }
+
+  function _done() {
     renderHeatmap(); renderLeaderboard(); renderMoneyFlow(); renderRS(); renderOutperformers();
     renderRegimeBanner(); renderSectorPulse();
-  }).catch(function() {
-    renderHeatmap(); renderLeaderboard(); renderMoneyFlow(); renderRS(); renderOutperformers();
-    renderRegimeBanner(); renderSectorPulse();
-  });
+    if (refreshBtn) refreshBtn.classList.remove('refreshing');
+    if (sp) {
+      var ph2 = sp.querySelector('.ph');
+      if (ph2) ph2.classList.remove('refreshing');
+      // Brief flash on the heatmap to signal "data updated"
+      var hm = sp.querySelector('.sector-heatmap');
+      if (hm) {
+        hm.classList.remove('sector-updated');
+        void hm.offsetWidth; // force reflow to restart animation
+        hm.classList.add('sector-updated');
+      }
+    }
+    // Update "last refreshed" stamp — wired to any element with id="sector-updated-at"
+    try { if (typeof _setUpdatedAt === 'function') _setUpdatedAt('sector-updated-at'); } catch(e){}
+  }
+
+  fetchSectorData().then(_done).catch(_done);
   // Commodity RRG + AFR scanner + news (parallel, independent of sector data)
   refreshCommodityAndNews();
 }
@@ -7571,15 +7886,14 @@ intelRefreshTimer = setInterval(() => {
   }
 }, 300000); // every 5 minutes
 
-// Build sector page + auto-refresh every 60s during market hours
+// Build sector page + auto-refresh in background so data is fresh whenever user navigates there
 refreshSectorData();
 sectorRefreshTimer = setInterval(function() {
-  // Auto-refresh sectors if page is visible and sector page is active
+  // Skip only when tab is completely backgrounded (saves API calls) —
+  // but refresh even when user is on another page, so data is warm on next nav.
   if (document.hidden) return;
-  var sp = document.getElementById('page-sectors');
-  if (!sp || !sp.classList.contains('active')) return;
   refreshSectorData();
-}, 60000);
+}, 45000);
 
 // Initial calc
 calcRisk();
