@@ -3219,7 +3219,16 @@ function nav(p) {
   document.querySelectorAll('.sbb').forEach(x => x.classList.remove('active'));
   const pg = document.getElementById('page-' + p);
   const sb = document.getElementById('sb-' + p);
-  if (pg) pg.classList.add('active');
+  if (pg) {
+    pg.classList.add('active');
+    // Force CSS animation replay on every nav (pageIn + staggered panelIn)
+    pg.style.animation = 'none';
+    pg.querySelectorAll('.panel, .mc, .stat-card, .pc2').forEach(function(el){ el.style.animation = 'none'; });
+    // Reflow
+    void pg.offsetWidth;
+    pg.style.animation = '';
+    pg.querySelectorAll('.panel, .mc, .stat-card, .pc2').forEach(function(el){ el.style.animation = ''; });
+  }
   if (sb) sb.classList.add('active');
   if (p === 'asx')     {
     fetchAsxNews();
@@ -4218,6 +4227,10 @@ const HIGH_IMPACT = ['GDP','CPI','INTEREST RATE','RATE DECISION','INFLATION','FO
 const MED_IMPACT = ['SALES','UNEMPLOYMENT','MANUFACTURING','PMI','HOUSING','RETAIL','CONSUMER','OIL','CRUDE','IRON ORE','GOLD','CHINA','TREASURY','BOND','YIELD','DOLLAR','TRADE BALANCE'];
 
 async function fetchNews() {
+  // Visual refresh state: sweep bar across every news feed container
+  const newsContainers = document.querySelectorAll('#news-feed, #sector-news-feed, #asx-news-feed, #fut-news-feed');
+  newsContainers.forEach(function(el){ el.classList.add('refreshing'); });
+
   // News fetch chain — proxy-first for reliable CORS, fallback to direct RSS
   const sources = [
     // AFR — Australian Financial Review (priority for ASX traders)
@@ -4233,16 +4246,20 @@ async function fetchNews() {
     () => fetchRSSviaProxy('https://rss.nytimes.com/services/xml/rss/nyt/Business.xml', 'NY Times'),
   ];
 
-  for (const src of sources) {
-    try {
-      const items = await src();
-      if (items && items.length >= 3) {
-        renderNewsItems(items);
-        return;
-      }
-    } catch(e) { console.warn('News source failed:', e.message); continue; }
+  try {
+    for (const src of sources) {
+      try {
+        const items = await src();
+        if (items && items.length >= 3) {
+          renderNewsItems(items);
+          return;
+        }
+      } catch(e) { console.warn('News source failed:', e.message); continue; }
+    }
+    renderNewsPlaceholder();
+  } finally {
+    newsContainers.forEach(function(el){ el.classList.remove('refreshing'); });
   }
-  renderNewsPlaceholder();
 }
 
 // Parse RSS XML text into item array
@@ -8108,6 +8125,10 @@ async function fetchOvernightData() {
   const timeEl = document.getElementById('overnight-time');
   if (!grid) return;
 
+  // Visual refresh state on the overnight panel
+  const overnightPanel = grid.closest('.panel') || grid;
+  overnightPanel.classList.add('refreshing');
+
   const CANDLE_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions/candles';
 
   try {
@@ -8149,6 +8170,9 @@ async function fetchOvernightData() {
     timeEl.textContent = `${t} AWST · ${new Date().toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'short',timeZone:'Australia/Perth'})}`;
   }
   if (typeof _setUpdatedAt === 'function') _setUpdatedAt('upd-overnight');
+
+  // Clear refresh sweep state
+  overnightPanel.classList.remove('refreshing');
 
   // Trigger prediction after data is loaded
   runMarketPrediction();
