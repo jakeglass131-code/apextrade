@@ -1190,6 +1190,79 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
 /* Polish: better selection color */
 ::selection { background: rgba(6,182,212,0.32); color: var(--text); }
 
+/* Polish: keyboard focus ring for buttons (non-mouse users get a clear hint) */
+.btn:focus-visible,
+.smkt:focus-visible,
+.stab:focus-visible,
+.mn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(6, 182, 212, 0.35),
+              0 0 18px rgba(6, 182, 212, 0.22);
+  border-color: rgba(6, 182, 212, 0.6);
+}
+
+/* Polish: click feedback on buttons — subtle scale-down on press */
+.btn:not(:disabled):active { transform: scale(0.97); transition-duration: .08s; }
+
+/* Polish: smoother hover lift on .panel when .panel.interactive */
+.panel.interactive { transition: transform .25s var(--ease-out-quint), box-shadow .25s var(--ease-out-quint), border-color .25s var(--ease-out-quint); }
+.panel.interactive:hover {
+  transform: translateY(-2px);
+  border-color: rgba(6, 182, 212, 0.28);
+  box-shadow: 0 10px 30px -12px rgba(6, 182, 212, 0.18), 0 0 0 1px rgba(6, 182, 212, 0.06) inset;
+}
+
+/* Polish: live-pill gets an extra soft glow pulse so it reads as "heartbeat" */
+.live-pill {
+  animation: livePulse 3.2s var(--ease-out-quint) infinite;
+  transition: box-shadow .3s var(--ease-out-quint);
+}
+
+/* Polish: topbar subtle gradient sheen (very slow, non-distracting) */
+.topbar {
+  background-image: linear-gradient(100deg, transparent 30%, rgba(6, 182, 212, 0.04) 50%, transparent 70%);
+  background-size: 220% 100%;
+  animation: topbarSheen 18s linear infinite;
+}
+@keyframes topbarSheen {
+  0%   { background-position: 220% 0; }
+  100% { background-position: -20% 0; }
+}
+
+/* Polish: stat-card numeric values get a soft glow on update */
+.stat-card .stat-value.pop {
+  animation: numPop .45s var(--ease-out-quint);
+  text-shadow: 0 0 18px rgba(6, 182, 212, 0.35);
+}
+
+/* Polish: nav menu item hover slide-in accent bar */
+.mn { position: relative; overflow: hidden; }
+.mn::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, var(--accent), transparent);
+  transform: translateX(-4px);
+  opacity: 0;
+  transition: transform .25s var(--ease-out-quint), opacity .25s var(--ease-out-quint);
+}
+.mn:hover::before,
+.mn.active::before { transform: translateX(0); opacity: 1; }
+
+/* Polish: modal backdrop smoother blur on open */
+#modal-wrap.open { backdrop-filter: blur(8px) saturate(1.2); -webkit-backdrop-filter: blur(8px) saturate(1.2); }
+
+/* Polish: page-header gradient underline */
+.ph::after {
+  content: '';
+  position: absolute;
+  left: 20px; right: 20px; bottom: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(6, 182, 212, 0.35), transparent);
+  opacity: 0.7;
+}
+.ph { position: relative; }
+
 </style>
 </head>
 <body>
@@ -1318,7 +1391,13 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
         </div>
       </div>
       <div id="prediction-body" style="padding:20px">
-        <div style="color:var(--text3);font-size:12px;text-align:center;padding:30px">Running deep analysis...</div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:36px 20px">
+          <div class="lpulse"></div>
+          <div style="color:var(--text3);font-size:12px;text-align:center;letter-spacing:.3px">Running deep market analysis…</div>
+          <div class="skel skel-text" style="width:72%;max-width:420px;height:10px"></div>
+          <div class="skel skel-text" style="width:58%;max-width:360px;height:10px"></div>
+          <div class="skel skel-text" style="width:64%;max-width:380px;height:10px"></div>
+        </div>
       </div>
     </div>
 
@@ -1335,7 +1414,11 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
           </div>
         </div>
         <div id="news-feed" style="max-height:380px;overflow-y:auto">
-          <div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Fetching live news...</div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;gap:10px;align-items:flex-start"><div class="skel skel-bar" style="width:42px;height:42px;border-radius:6px;flex-shrink:0"></div><div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="skel skel-text" style="width:92%;height:12px"></div><div class="skel skel-text" style="width:60%;height:9px"></div></div></div>
+            <div style="display:flex;gap:10px;align-items:flex-start"><div class="skel skel-bar" style="width:42px;height:42px;border-radius:6px;flex-shrink:0"></div><div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="skel skel-text" style="width:85%;height:12px"></div><div class="skel skel-text" style="width:50%;height:9px"></div></div></div>
+            <div style="display:flex;gap:10px;align-items:flex-start"><div class="skel skel-bar" style="width:42px;height:42px;border-radius:6px;flex-shrink:0"></div><div style="flex:1;display:flex;flex-direction:column;gap:6px"><div class="skel skel-text" style="width:78%;height:12px"></div><div class="skel skel-text" style="width:55%;height:9px"></div></div></div>
+          </div>
         </div>
       </div>
       <!-- Economic Calendar -->
@@ -1348,7 +1431,13 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
           </div>
         </div>
         <div id="calendar-body">
-          <div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">Fetching economic calendar...</div>
+          <div style="padding:24px 20px;display:flex;flex-direction:column;gap:10px">
+            <div class="skel skel-text" style="width:90%;height:14px"></div>
+            <div class="skel skel-text" style="width:70%;height:10px"></div>
+            <div class="skel skel-text" style="width:85%;height:14px"></div>
+            <div class="skel skel-text" style="width:60%;height:10px"></div>
+            <div class="skel skel-text" style="width:80%;height:14px"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -7952,6 +8041,24 @@ sectorRefreshTimer = setInterval(function() {
   if (document.hidden) return;
   refreshSectorData();
 }, 45000);
+
+// Dashboard overnight data: auto-refresh every 3 minutes while tab is visible
+// (Cheap fetch; keeps the dash warm whether or not the user is looking at it)
+setInterval(function() {
+  if (document.hidden) return;
+  if (typeof fetchOvernightData === 'function') {
+    try { fetchOvernightData(); } catch(e) {}
+  }
+}, 180000);
+
+// Futures strength meters: refresh every 30s while viewing futures page
+setInterval(function() {
+  if (document.hidden) return;
+  var pg = document.getElementById('page-futures');
+  if (pg && pg.classList.contains('active') && typeof updateFutStrengthMeters === 'function') {
+    try { updateFutStrengthMeters(); } catch(e) {}
+  }
+}, 30000);
 
 // Initial calc
 calcRisk();
