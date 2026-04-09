@@ -8,7 +8,7 @@ exports.handler = async (event) => {
   
   // Batch mode: ?tickers=BHP,CBA,CSL — fetch multiple tickers in one call
   if((event.queryStringParameters||{}).tickers){
-    const tickers=(event.queryStringParameters.tickers||'').split(',').map(t=>t.trim()).filter(Boolean).slice(0,12);
+    const tickers=(event.queryStringParameters.tickers||'').split(',').map(t=>t.trim()).filter(Boolean).slice(0,30);
     const results={};
     await Promise.all(tickers.map(async t=>{
       const sym=t.startsWith('^')?t:t.includes('.')||t.includes('=')||t.includes('-')?t:t+'.AX';

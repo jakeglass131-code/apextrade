@@ -1,15 +1,43 @@
 // Claude API proxy for market predictions
 // Keeps the API key server-side instead of exposing it in the browser
 
+// Allowed origins — anything else is rejected so random callers can't burn credits.
+// Override in Netlify env var ALLOWED_ORIGINS (comma-separated) if you add a custom domain.
+var DEFAULT_ALLOWED_ORIGINS = [
+  'https://apextrade-proxy.netlify.app',
+  'https://apextrade.netlify.app',
+  'http://localhost:8888',
+  'http://localhost:3000',
+  'http://127.0.0.1:8888'
+];
+
+function getAllowedOrigins() {
+  var env = (process.env.ALLOWED_ORIGINS || '').split(',').map(function(s) { return s.trim(); }).filter(Boolean);
+  return env.length ? env : DEFAULT_ALLOWED_ORIGINS;
+}
+
+function pickOrigin(event) {
+  var origin = (event.headers && (event.headers.origin || event.headers.Origin)) || '';
+  var allowed = getAllowedOrigins();
+  return allowed.indexOf(origin) !== -1 ? origin : '';
+}
+
 exports.handler = async function(event) {
+  var allowOrigin = pickOrigin(event);
   var H = {
-    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Origin': allowOrigin || 'null',
     'Access-Control-Allow-Headers': 'Content-Type',
+    'Vary': 'Origin',
     'Content-Type': 'application/json'
   };
 
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: H, body: '' };
+  }
+
+  // Reject callers from non-allowlisted origins
+  if (!allowOrigin) {
+    return { statusCode: 403, headers: H, body: JSON.stringify({ error: 'Origin not allowed' }) };
   }
 
   if (event.httpMethod !== 'POST') {

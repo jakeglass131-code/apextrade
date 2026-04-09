@@ -916,9 +916,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
   </div>
 </div>
 
-<!-- Simulated data warning banner (shown when no TD key) -->
+<!-- Simulated data warning banner (only shown if backend proxy is unreachable) -->
 <div class="sim-banner" id="sim-data-banner" style="display:none">
-  <span>&#9888; SIMULATED DATA &#8212; Add Twelve Data key in Settings for live prices</span>
+  <span>&#9888; SIMULATED DATA &#8212; Backend price proxy unreachable. Check your connection or add a Twelve Data key in Settings.</span>
   <button class="sim-banner-close" onclick="document.getElementById('sim-data-banner').style.display='none'" title="Dismiss">&#10005;</button>
 </div>
 
@@ -2983,32 +2983,32 @@ const CFG = {
 
 
 // ── INSTRUMENT DEFINITIONS ──
-// Twelve Data: forex + metals (XAU prices in AUD on AU accounts)
-// Yahoo Finance: indices (real-time, free, correct values)
+// Primary source: Yahoo Finance via Netlify proxy (free, no key required)
+// Optional secondary: Twelve Data (if user adds a key in Settings)
 const INSTRUMENTS = {
-  // Forex Majors — TD live
-  'EUR/USD': { td:'EUR/USD', yf:null, type:'forex',     dp:4, base:1.1519  },
-  'GBP/USD': { td:'GBP/USD', yf:null, type:'forex',     dp:4, base:1.3194  },
-  'AUD/USD': { td:'AUD/USD', yf:null, type:'forex',     dp:4, base:0.6291  },
-  'NZD/USD': { td:'NZD/USD', yf:null, type:'forex',     dp:4, base:0.5701  },
-  'USD/CAD': { td:'USD/CAD', yf:null, type:'forex',     dp:4, base:1.3850  },
-  'USD/JPY': { td:'USD/JPY', yf:null, type:'forex',     dp:2, base:149.50  },
-  'USD/CHF': { td:'USD/CHF', yf:null, type:'forex',     dp:4, base:0.8820  },
-  // Forex Crosses — TD live
-  'EUR/GBP': { td:'EUR/GBP', yf:null, type:'forex',     dp:4, base:0.8730  },
-  'GBP/JPY': { td:'GBP/JPY', yf:null, type:'forex',     dp:2, base:190.20  },
-  'EUR/JPY': { td:'EUR/JPY', yf:null, type:'forex',     dp:2, base:162.80  },
-  // Metals — TD live (returns AUD price, displayed as-is since user is AU)
-  'XAU/USD': { td:'XAU/USD', yf:null, type:'commodity', dp:2, base:4676.43 },
-  'XAG/USD': { td:'XAG/USD', yf:null, type:'commodity', dp:2, base:91.20   },
-  'XAU/EUR': { td:'XAU/EUR', yf:null, type:'commodity', dp:2, base:4065.00 },
-  'XAU/GBP': { td:'XAU/GBP', yf:null, type:'commodity', dp:2, base:3540.00 },
-  // Indices — Yahoo Finance real-time (correct full values)
-  'NAS100':  { td:'QQQ', mult:41.10,  type:'index', dp:0, base:24045  },
-  'SPX500':  { td:'SPY', mult:10.05,  type:'index', dp:0, base:6582   },
-  'US30':    { td:'DIA', mult:100.0,  type:'index', dp:0, base:46500  },
-  'RUSSELL': { td:'IWM', mult:10.06,  type:'index', dp:0, base:2530   },
-  'DXY':     { td:'UUP', mult:3.597,  type:'index', dp:2, base:100.19 },
+  // Forex Majors
+  'EUR/USD': { td:'EUR/USD', yf:'EURUSD=X', type:'forex',     dp:4, base:1.1519  },
+  'GBP/USD': { td:'GBP/USD', yf:'GBPUSD=X', type:'forex',     dp:4, base:1.3194  },
+  'AUD/USD': { td:'AUD/USD', yf:'AUDUSD=X', type:'forex',     dp:4, base:0.6291  },
+  'NZD/USD': { td:'NZD/USD', yf:'NZDUSD=X', type:'forex',     dp:4, base:0.5701  },
+  'USD/CAD': { td:'USD/CAD', yf:'USDCAD=X', type:'forex',     dp:4, base:1.3850  },
+  'USD/JPY': { td:'USD/JPY', yf:'USDJPY=X', type:'forex',     dp:2, base:149.50  },
+  'USD/CHF': { td:'USD/CHF', yf:'USDCHF=X', type:'forex',     dp:4, base:0.8820  },
+  // Forex Crosses
+  'EUR/GBP': { td:'EUR/GBP', yf:'EURGBP=X', type:'forex',     dp:4, base:0.8730  },
+  'GBP/JPY': { td:'GBP/JPY', yf:'GBPJPY=X', type:'forex',     dp:2, base:190.20  },
+  'EUR/JPY': { td:'EUR/JPY', yf:'EURJPY=X', type:'forex',     dp:2, base:162.80  },
+  // Metals
+  'XAU/USD': { td:'XAU/USD', yf:'GC=F',     type:'commodity', dp:2, base:4676.43 },
+  'XAG/USD': { td:'XAG/USD', yf:'SI=F',     type:'commodity', dp:2, base:91.20   },
+  'XAU/EUR': { td:'XAU/EUR', yf:null,       type:'commodity', dp:2, base:4065.00, derived:true },
+  'XAU/GBP': { td:'XAU/GBP', yf:null,       type:'commodity', dp:2, base:3540.00, derived:true },
+  // Indices — Yahoo futures symbols give full real values (no ETF multiplier needed)
+  'NAS100':  { td:'QQQ', yf:'NQ=F',   mult:1, type:'index', dp:0, base:24045  },
+  'SPX500':  { td:'SPY', yf:'ES=F',   mult:1, type:'index', dp:0, base:6582   },
+  'US30':    { td:'DIA', yf:'YM=F',   mult:1, type:'index', dp:0, base:46500  },
+  'RUSSELL': { td:'IWM', yf:'RTY=F',  mult:1, type:'index', dp:0, base:2530   },
+  'DXY':     { td:'UUP', yf:'DX-Y.NYB', mult:1, type:'index', dp:2, base:100.19 },
 };
 
 // TD batch string — forex + metals only
@@ -3091,7 +3091,64 @@ async function fetchPrevClose() {
   } catch(e) { console.warn('prevClose fetch error:', e.message); }
 }
 
-// ── TWELVE DATA FETCH (forex + metals) ──
+// ── BACKEND PRICE FETCH (Yahoo Finance via Netlify proxy — no key required) ──
+// Batches all forex/metals/indices in a single request to /.netlify/functions/candles
+const CANDLES_PROXY_URL = 'https://apextrade-proxy.netlify.app/.netlify/functions/candles';
+async function fetchBackendPrices() {
+  try {
+    // Collect all Yahoo symbols for non-derived instruments
+    const yfSymbols = Object.values(INSTRUMENTS).filter(i => i.yf).map(i => i.yf);
+    if (!yfSymbols.length) return false;
+    const url = `${CANDLES_PROXY_URL}?tickers=${encodeURIComponent(yfSymbols.join(','))}&interval=1h&range=5d`;
+    const r = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!r.ok) return false;
+    const data = await r.json();
+    let updated = 0;
+    for (const [sym, inst] of Object.entries(INSTRUMENTS)) {
+      if (!inst.yf) continue;
+      const candles = data[inst.yf];
+      if (!Array.isArray(candles) || candles.length < 2) continue;
+      const last = candles[candles.length - 1];
+      if (!last || last.c == null || isNaN(last.c)) continue;
+      let p = parseFloat(last.c);
+      if (inst.mult && inst.mult !== 1) p = p * inst.mult;
+      p = +p.toFixed(inst.dp);
+      if (!dayOpen[sym] || dayOpen[sym] === inst.base) dayOpen[sym] = p;
+      prices[sym] = p;
+      // Store previous close (first candle in the window) so % change works without TD key
+      if (!prevClose[sym]) {
+        const first = candles[0];
+        if (first && first.c != null && !isNaN(first.c)) {
+          let pc = parseFloat(first.c);
+          if (inst.mult && inst.mult !== 1) pc = pc * inst.mult;
+          prevClose[sym] = +pc.toFixed(inst.dp);
+        }
+      }
+      updated++;
+    }
+    // Compute derived metals pairs
+    if (prices['XAU/USD'] && prices['EUR/USD']) {
+      prices['XAU/EUR'] = +(prices['XAU/USD'] / prices['EUR/USD']).toFixed(2);
+      if (prevClose['XAU/USD'] && prevClose['EUR/USD']) {
+        prevClose['XAU/EUR'] = +(prevClose['XAU/USD'] / prevClose['EUR/USD']).toFixed(2);
+      }
+    }
+    if (prices['XAU/USD'] && prices['GBP/USD']) {
+      prices['XAU/GBP'] = +(prices['XAU/USD'] / prices['GBP/USD']).toFixed(2);
+      if (prevClose['XAU/USD'] && prevClose['GBP/USD']) {
+        prevClose['XAU/GBP'] = +(prevClose['XAU/USD'] / prevClose['GBP/USD']).toFixed(2);
+      }
+    }
+    liveCount = updated;
+    if (updated > 5) {
+      _backendLive = true;
+      if (typeof _checkSimBanner === 'function') _checkSimBanner();
+    }
+    return updated > 5;
+  } catch(e) { console.warn('Backend price fetch error:', e.message); return false; }
+}
+
+// ── TWELVE DATA FETCH (optional — only runs if user added a key) ──
 async function fetchTwelveData() {
   const key = localStorage.getItem('apex_td_key') || '';
   if (!key) return false;
@@ -3107,7 +3164,7 @@ async function fetchTwelveData() {
       const raw = data[inst.td];
       if (!raw?.price || isNaN(parseFloat(raw.price))) continue;
       let p = parseFloat(raw.price);
-      if (inst.mult) p = p * inst.mult;
+      if (inst.mult && inst.mult !== 1) p = p * inst.mult;
       p = +p.toFixed(inst.dp);
       if (!dayOpen[sym] || dayOpen[sym] === inst.base) dayOpen[sym] = p;
       prices[sym] = p;
@@ -3236,23 +3293,23 @@ async function fetchPrices() {
   fetchBusy = true;
 
   try {
-    // Fetch previous close on first load for accurate % change
-    if (!prevCloseFetched) await fetchPrevClose();
-
-    // Run TD (forex+metals) — ASX prices come from background engine
+    // Run backend (Yahoo) first — no key required. TD is optional secondary.
     liveCount = 0;
-    const [tdOk] = await Promise.allSettled([fetchTwelveData()]);
+    const [backendOk, tdOk] = await Promise.allSettled([
+      fetchBackendPrices(),
+      fetchTwelveData(),
+    ]);
     const asxSynced = syncAsxPricesToApp(); // copy cached ASX prices
-    const anyLive = tdOk.value || asxSynced > 0;
-    if (!anyLive) simTick(); // fallback simulation
+    const anyLive = backendOk.value || tdOk.value || asxSynced > 0;
+    if (!anyLive) simTick(); // fallback simulation only if everything failed
 
     updatePriceEls();
 
     const t   = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false,timeZone:'Australia/Perth'});
     const tdKey = localStorage.getItem('apex_td_key');
     const src = liveCount > 0
-      ? `${liveCount} pairs live · TD + Yahoo`
-      : tdKey ? 'Connecting...' : 'Simulation · Add TD key in Settings';
+      ? `${liveCount} pairs live · Yahoo${tdKey ? ' + TD' : ''}`
+      : 'Connecting...';
 
     const ds = document.getElementById('dstatus');
     if (ds) { ds.textContent = 'LIVE · ' + t; ds.className = 'live'; }
@@ -7388,12 +7445,16 @@ priceTimer = setInterval(function() {
 
 // ═══════════════════════════════════════════════════════
 // SIMULATED DATA BANNER
+// Shows only when the backend proxy is unreachable AND no TD key is set.
+// (Backend Yahoo feed is free and the default — no key required.)
 // ═══════════════════════════════════════════════════════
+var _backendLive = false; // flipped true once fetchBackendPrices() succeeds
 function _checkSimBanner() {
   var banner = document.getElementById('sim-data-banner');
   if (!banner) return;
   var tdKey = localStorage.getItem('apex_td_key');
-  banner.style.display = tdKey ? 'none' : 'flex';
+  var live = _backendLive || !!tdKey;
+  banner.style.display = live ? 'none' : 'flex';
 }
 _checkSimBanner();
 
@@ -7423,13 +7484,18 @@ setInterval(function() {
   });
 }, 10000);
 
-// Welcome toast
+// Welcome toast — reflects actual data state, not just TD key presence
 setTimeout(function() {
   var tdKey = localStorage.getItem('apex_td_key');
-  if (tdKey) {
-    showToast('ApexTrade Live', 'All systems connected · Scanning markets', 'success', 3000);
+  if (_backendLive || tdKey) {
+    var detail = _backendLive && tdKey
+      ? 'Yahoo + Twelve Data connected · Scanning markets'
+      : _backendLive
+        ? 'Yahoo Finance connected · Scanning markets'
+        : 'Twelve Data connected · Scanning markets';
+    showToast('ApexTrade Live', detail, 'success', 3000);
   } else {
-    showToast('Setup Required', 'Add Twelve Data key in Settings for live prices', 'warning', 5000);
+    showToast('Connecting...', 'Contacting backend price proxy', 'warning', 5000);
   }
   _checkSimBanner();
 }, 2000);
