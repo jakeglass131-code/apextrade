@@ -6672,7 +6672,6 @@ function renderRegimeBanner() {
       label = 'BEARISH'; color = 'var(--red)'; bg = 'rgba(255,68,102,.06)';
     }
     var crossLabel = r.goldenCross ? '<span style="color:var(--green)">Golden cross</span>' : '<span style="color:var(--red)">Death cross</span>';
-    var pf = r.bullish ? '(2.21 PF)' : '(quality filter setups still profitable)';
     el.style.background = bg;
     el.innerHTML = '<span style="margin-right:6px">📈</span>'
       + '<span style="font-weight:700;color:var(--text3)">MARKET: </span>'
@@ -6682,8 +6681,7 @@ function renderRegimeBanner() {
       + ' <span style="color:var(--text3)">EMA50 ' + Math.round(r.ema50) + '</span> and'
       + (r.aboveEma200 ? ' <span style="color:var(--green)">above</span>' : ' <span style="color:var(--red)">below</span>')
       + ' <span style="color:var(--text3)">EMA200 ' + Math.round(r.ema200) + '</span>'
-      + ' &mdash; ' + crossLabel
-      + ' <span style="color:var(--text3);margin-left:6px">' + pf + '</span>';
+      + ' &mdash; ' + crossLabel;
   });
 }
 
@@ -8843,7 +8841,6 @@ const OVERNIGHT_INSTRUMENTS = [
   { sym:'CL=F',    label:'WTI',  name:'Crude Oil',     dp:2 },
   { sym:'BTC-USD', label:'BTC',  name:'Bitcoin',       dp:0 },
   { sym:'DX-Y.NYB',label:'DXY',  name:'US Dollar Idx', dp:2 },
-  { sym:'AUDUSD=X',label:'AUD',  name:'AUD/USD',       dp:4 },
 ];
 
 let overnightData = {};
