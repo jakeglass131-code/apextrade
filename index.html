@@ -1668,15 +1668,9 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:300px 1fr;min-height:300px;margin-top:16px">
+      <div id="asx-intel-panel" style="display:none;grid-template-columns:300px 1fr;min-height:300px;margin-top:16px">
         <div style="border-right:1px solid var(--border2);padding:20px;overflow-y:auto">
-          <div id="asx-intel-score">
-            <div style="text-align:center;padding:32px 16px;color:var(--text3)">
-              <div style="font-size:13px;font-weight:600;color:var(--text2);margin-bottom:8px">Select a stock above</div>
-              <div style="font-size:11px;margin-bottom:14px">RSI · MACD · Bollinger · Volume · MTF · CRT</div>
-              <button onclick="runAsxIntel()" class="btn g" style="font-size:11px">Analyse</button>
-            </div>
-          </div>
+          <div id="asx-intel-score"></div>
         </div>
         <div style="padding:20px;overflow-y:auto"><div id="asx-intel-detail"></div></div>
       </div>
@@ -9587,6 +9581,8 @@ async function runAsxIntel() {
   const raw = (document.getElementById('asx-intel-sym')?.value || '').trim().toUpperCase();
   if (!raw) { showToast('Enter a ticker', 'Type an ASX ticker code to analyse', 'warning'); return; }
   const ticker = raw.replace('.ASX','').replace('.AX','');
+  const panel = document.getElementById('asx-intel-panel');
+  if (panel) panel.style.display = 'grid';
   const scoreEl = document.getElementById('asx-intel-score');
   const detailEl = document.getElementById('asx-intel-detail');
   if (scoreEl) scoreEl.innerHTML = '<div style="text-align:center;padding:40px"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px;display:block"></div><div style="font-size:13px;color:var(--text2);margin-top:8px">Deep analysis: ' + ticker + '</div><div style="font-size:11px;color:var(--text3);margin-top:4px">Fetching fundamentals, macro context & CRT technicals...</div></div>';
