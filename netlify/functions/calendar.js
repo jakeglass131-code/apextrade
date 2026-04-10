@@ -118,9 +118,17 @@ exports.handler = async (event) => {
         const evDateStr = formatDate(awstDate);
         if (scope === "today" && evDateStr !== todayStr) return null;
 
+        // Preserve the true UTC timestamp so clients can reformat in any TZ
+        let dateUtc = null;
+        try {
+          const u = new Date(ev.date);
+          if (!isNaN(u.getTime())) dateUtc = u.toISOString();
+        } catch (e) { /* ignore */ }
+
         return {
-          time: formatTime(awstDate),
-          date: evDateStr,
+          time: formatTime(awstDate),          // pre-shifted AWST HH:MM (legacy)
+          dateUtc,                              // full ISO UTC — client reformats
+          date: evDateStr,                      // AWST date key
           day: dayName(awstDate),
           title: ev.title || "",
           impact: normaliseImpact(ev.impact),
