@@ -1631,8 +1631,6 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
       </script>
     </div>
   </div>
-  <!-- Market regime banner (hidden) -->
-  <div id="asx-regime-banner" style="display:none"></div>
   <!-- Sector pulse (hidden) -->
   <div id="asx-sector-pulse" style="display:none"></div>
   <!-- INTEL panel -->
@@ -1790,9 +1788,6 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
       <span style="font-size:9px;color:var(--text3);font-weight:700;letter-spacing:.06em;margin-right:4px">PRESETS</span>
       <div id="asx-preset-chips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
     </div>
-
-    <!-- Market regime banner (hidden) -->
-    <div id="asx-regime-banner2" class="regime-banner bear" style="display:none"></div>
 
     <!-- Scan KPIs -->
     <div style="display:flex;gap:1px;background:var(--border);flex-shrink:0">
@@ -6654,7 +6649,7 @@ function computeEMA(prices, period) {
 // Market regime banner
 function renderRegimeBanner() {
   var r = window._marketRegime;
-  ['asx-regime-banner', 'fut-regime-banner'].forEach(function(id) {
+  ['fut-regime-banner'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
     if (!r) { el.style.display = 'none'; return; }
