@@ -1421,8 +1421,6 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
     </div>
   </div>
   <div class="scroll">
-    <!-- regime banner removed -->
-    <div id="dash-regime-banner" style="display:none"></div>
     <!-- ── Last scan summary ── -->
     <div id="dash-scan-summary" style="display:none;margin-bottom:12px">
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
@@ -6656,7 +6654,7 @@ function computeEMA(prices, period) {
 // Market regime banner
 function renderRegimeBanner() {
   var r = window._marketRegime;
-  ['asx-regime-banner', 'fut-regime-banner', 'dash-regime-banner'].forEach(function(id) {
+  ['asx-regime-banner', 'fut-regime-banner'].forEach(function(id) {
     var el = document.getElementById(id);
     if (!el) return;
     if (!r) { el.style.display = 'none'; return; }
