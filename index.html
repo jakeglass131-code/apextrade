@@ -196,13 +196,47 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .rc-res-val{font-weight:700;font-family:var(--fd)}
 
 /* Economic Calendar */
-.cal-row{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.cal-row{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;transition:background .15s ease}
 .cal-row:last-child{border-bottom:none}
+.cal-row:hover{background:rgba(6,182,212,.04)}
+.cal-row.is-past{opacity:.55}
+.cal-row.is-now{background:rgba(6,182,212,.08);border-left:2px solid var(--accent);padding-left:14px}
 .cal-time{font-size:11px;color:var(--text3);min-width:50px;font-family:var(--fm)}
-.cal-impact{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.cal-event{font-size:12px;font-weight:500;color:var(--text);flex:1}
+.cal-impact{width:10px;height:10px;border-radius:2px;flex-shrink:0;box-shadow:0 0 0 1px rgba(0,0,0,.35) inset}
+.cal-impact.high{background:#ef4444;box-shadow:0 0 8px rgba(239,68,68,.45),0 0 0 1px rgba(0,0,0,.35) inset}
+.cal-impact.medium{background:#f59e0b}
+.cal-impact.low{background:#6b7280}
+.cal-impact.holiday{background:#8b5cf6}
+.cal-ccy{display:inline-block;font-size:10px;font-weight:800;color:var(--text);background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:2px 6px;min-width:36px;text-align:center;letter-spacing:.02em;margin-right:6px}
+.cal-ccy.USD{border-color:rgba(34,197,94,.35);color:#22c55e}
+.cal-ccy.EUR{border-color:rgba(59,130,246,.35);color:#3b82f6}
+.cal-ccy.GBP{border-color:rgba(139,92,246,.35);color:#8b5cf6}
+.cal-ccy.JPY{border-color:rgba(236,72,153,.35);color:#ec4899}
+.cal-ccy.AUD{border-color:rgba(6,182,212,.4);color:#06b6d4}
+.cal-ccy.NZD{border-color:rgba(16,185,129,.35);color:#10b981}
+.cal-ccy.CAD{border-color:rgba(244,114,182,.35);color:#f472b6}
+.cal-ccy.CHF{border-color:rgba(239,68,68,.35);color:#ef4444}
+.cal-ccy.CNY{border-color:rgba(234,179,8,.4);color:#eab308}
+.cal-event{font-size:12px;font-weight:500;color:var(--text);flex:1;display:flex;align-items:center}
 .cal-prev{font-size:10px;color:var(--text3)}
-.cal-act{font-size:11px;font-weight:600;min-width:60px;text-align:right}
+.cal-act{font-size:11px;font-weight:700;min-width:68px;text-align:right;padding:3px 7px;border-radius:4px}
+.cal-act.am{color:var(--amber);background:rgba(245,158,11,.08)}
+.cal-act.up{color:var(--green);background:rgba(34,197,94,.08)}
+.cal-act.dn{color:var(--red);background:rgba(239,68,68,.08)}
+.cal-day-head{padding:8px 16px;background:var(--bg4);border-bottom:1px solid var(--border);font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);position:sticky;top:0;z-index:2}
+.cal-day-head.is-today{color:var(--accent)}
+.cal-empty{padding:24px 16px;text-align:center;color:var(--text3);font-size:11px}
+
+/* Filter chips */
+.cal-flabel{font-size:9px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.08em;margin-right:2px}
+.cal-chip{font-size:10px;font-weight:600;padding:4px 10px;border-radius:99px;border:1px solid var(--border2);background:var(--bg4);color:var(--text3);cursor:pointer;transition:all .18s ease;font-family:inherit}
+.cal-chip:hover{border-color:var(--accent);color:var(--text)}
+.cal-chip.active{background:rgba(6,182,212,.14);border-color:rgba(6,182,212,.45);color:var(--accent);box-shadow:0 0 0 1px rgba(6,182,212,.15) inset}
+.cal-chip.imp.high.active{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.5);color:#f87171;box-shadow:0 0 0 1px rgba(239,68,68,.2) inset}
+.cal-chip.imp.med.active{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.5);color:#fbbf24;box-shadow:0 0 0 1px rgba(245,158,11,.2) inset}
+.cal-chip.imp.low.active{background:rgba(107,114,128,.2);border-color:rgba(107,114,128,.5);color:var(--text);box-shadow:0 0 0 1px rgba(107,114,128,.2) inset}
+.cal-chip.cur-all{opacity:.7;font-size:9px;padding:4px 8px}
+.cal-chip.cur-all:hover{opacity:1}
 
 /* ═══════════════════════════════
    JOURNAL STYLES
@@ -1426,11 +1460,38 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
         <div class="phead">
           <div class="ptitle">Economic calendar</div>
           <div style="display:flex;align-items:center;gap:8px">
-            <div class="pmeta" id="cal-time">Loading...</div>
+            <div class="pmeta" id="cal-time" style="color:var(--text4)">—</div>
             <button class="btn" onclick="fetchCalendar()" style="font-size:10px;padding:3px 8px">Refresh</button>
           </div>
         </div>
-        <div id="calendar-body">
+        <!-- Filter bar: impact + day + currency chips -->
+        <div class="cal-filters" style="padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg3);display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="cal-flabel">Impact</span>
+            <button class="cal-chip imp high active" data-imp="high"   onclick="calToggle('imp','high',this)" title="High-impact / red folder">High</button>
+            <button class="cal-chip imp med  active" data-imp="medium" onclick="calToggle('imp','medium',this)" title="Medium impact">Med</button>
+            <button class="cal-chip imp low"         data-imp="low"    onclick="calToggle('imp','low',this)" title="Low impact">Low</button>
+            <span style="width:1px;height:16px;background:var(--border);margin:0 4px"></span>
+            <span class="cal-flabel">Day</span>
+            <button class="cal-chip day active" data-day="today" onclick="calToggle('day','today',this)">Today</button>
+            <button class="cal-chip day"        data-day="week"  onclick="calToggle('day','week',this)">This week</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span class="cal-flabel">Currencies</span>
+            <button class="cal-chip cur active" data-cur="USD" onclick="calToggle('cur','USD',this)">🇺🇸 USD</button>
+            <button class="cal-chip cur active" data-cur="EUR" onclick="calToggle('cur','EUR',this)">🇪🇺 EUR</button>
+            <button class="cal-chip cur active" data-cur="GBP" onclick="calToggle('cur','GBP',this)">🇬🇧 GBP</button>
+            <button class="cal-chip cur active" data-cur="JPY" onclick="calToggle('cur','JPY',this)">🇯🇵 JPY</button>
+            <button class="cal-chip cur active" data-cur="AUD" onclick="calToggle('cur','AUD',this)">🇦🇺 AUD</button>
+            <button class="cal-chip cur"        data-cur="NZD" onclick="calToggle('cur','NZD',this)">🇳🇿 NZD</button>
+            <button class="cal-chip cur"        data-cur="CAD" onclick="calToggle('cur','CAD',this)">🇨🇦 CAD</button>
+            <button class="cal-chip cur"        data-cur="CHF" onclick="calToggle('cur','CHF',this)">🇨🇭 CHF</button>
+            <button class="cal-chip cur"        data-cur="CNY" onclick="calToggle('cur','CNY',this)">🇨🇳 CNY</button>
+            <button class="cal-chip cur-all"    onclick="calToggleAll(true)"  title="Select all currencies">All</button>
+            <button class="cal-chip cur-all"    onclick="calToggleAll(false)" title="Clear all currencies">None</button>
+          </div>
+        </div>
+        <div id="calendar-body" style="max-height:420px;overflow-y:auto">
           <div style="padding:24px 20px;display:flex;flex-direction:column;gap:10px">
             <div class="skel skel-text" style="width:90%;height:14px"></div>
             <div class="skel skel-text" style="width:70%;height:10px"></div>
@@ -4320,22 +4381,39 @@ async function fetchNews() {
   const newsContainers = document.querySelectorAll('#news-feed, #sector-news-feed, #asx-news-feed, #fut-news-feed');
   newsContainers.forEach(function(el){ el.classList.add('refreshing'); });
 
-  // News fetch chain — proxy-first for reliable CORS, fallback to direct RSS
-  const sources = [
-    // AFR — Australian Financial Review (priority for ASX traders)
-    () => fetchRSSviaProxy('https://www.afr.com/rss', 'AFR'),
-    () => fetchRSSviaProxy('https://www.afr.com/rss/markets', 'AFR Markets'),
-    // BBC Business
-    () => fetchRSSviaProxy('https://feeds.bbci.co.uk/news/business/rss.xml', 'BBC Business'),
-    // Yahoo Finance AU
-    () => fetchRSSviaProxy('https://au.finance.yahoo.com/rss/topstories', 'Yahoo Finance AU'),
-    // ABC Business AU
-    () => fetchRSSviaProxy('https://www.abc.net.au/news/feed/2811686/rss.xml', 'ABC Business'),
-    // NY Times Business (fallback)
-    () => fetchRSSviaProxy('https://rss.nytimes.com/services/xml/rss/nyt/Business.xml', 'NY Times'),
-  ];
-
   try {
+    // Primary: our own Netlify function aggregates 18 finance-only RSS feeds
+    // (MarketWatch, CNBC, Yahoo Finance, FT, Reuters, Investing.com, Seeking Alpha,
+    // AFR, ABC Business AU). Items are filtered by finance keywords + deduped.
+    try {
+      const r = await fetch('/.netlify/functions/news', { signal: AbortSignal.timeout(12000) });
+      if (r.ok) {
+        const data = await r.json();
+        if (data && Array.isArray(data.items) && data.items.length >= 3) {
+          const items = data.items.map(it => ({
+            title: it.title,
+            source: it.source,
+            pubDate: new Date(it.pubDate),
+            link: it.link || '#',
+            description: it.description || '',
+          }));
+          renderNewsItems(items);
+          return;
+        }
+      }
+    } catch(e) {
+      console.warn('[news] proxy endpoint failed:', e.message);
+    }
+
+    // Fallback: CORS proxies to direct RSS feeds (unreliable but last-resort)
+    const sources = [
+      () => fetchRSSviaProxy('https://feeds.content.dowjones.io/public/rss/mw_topstories', 'MarketWatch'),
+      () => fetchRSSviaProxy('https://feeds.content.dowjones.io/public/rss/mw_marketpulse', 'MarketWatch Pulse'),
+      () => fetchRSSviaProxy('https://www.cnbc.com/id/15839069/device/rss/rss.html', 'CNBC Markets'),
+      () => fetchRSSviaProxy('https://www.investing.com/rss/news.rss', 'Investing.com'),
+      () => fetchRSSviaProxy('https://finance.yahoo.com/news/rssindex', 'Yahoo Finance'),
+      () => fetchRSSviaProxy('https://www.afr.com/rss/markets', 'AFR Markets'),
+    ];
     for (const src of sources) {
       try {
         const items = await src();
@@ -4397,7 +4475,8 @@ function renderNewsItems(items) {
   _newsLastFetchTime = Date.now();
   _newsIsLive = true;
   feed.innerHTML = items.map(item => {
-    const title = (item.title||'').replace(/&amp;/g,'&').replace(/&#39;/g,"'").substring(0,110);
+    const title = (item.title||'').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&quot;/g,'"').substring(0,140);
+    const desc = (item.description||'').replace(/&amp;/g,'&').replace(/&#39;/g,"'").replace(/&quot;/g,'"').substring(0,180);
     const up = title.toUpperCase();
     const impact = HIGH_IMPACT.some(k => up.includes(k.toUpperCase())) ? 'high' : MED_IMPACT.some(k => up.includes(k.toUpperCase())) ? 'med' : 'low';
     const dotCol = impact==='high'?'var(--red)':impact==='med'?'var(--amber)':'var(--text4)';
@@ -4406,10 +4485,12 @@ function renderNewsItems(items) {
     const pub = item.pubDate instanceof Date ? item.pubDate.getTime() : Date.now();
     const mins = Math.floor((Date.now()-pub)/60000);
     const ago = mins<1?'Just now':mins<60?`${mins}m ago`:mins<1440?`${Math.floor(mins/60)}h ago`:`${Math.floor(mins/1440)}d ago`;
-    return `<div class="iitem" onclick="window.open('${item.link||'#'}','_blank')" style="cursor:pointer">
+    const descHtml = desc ? `<div style="font-size:10px;color:var(--text3);margin-top:3px;line-height:1.45">${_escHtml(desc)}${desc.length>=180?'…':''}</div>` : '';
+    return `<div class="iitem" onclick="window.open('${(item.link||'#').replace(/'/g,'%27')}','_blank')" style="cursor:pointer">
       <div class="idot" style="background:${dotCol}"></div>
-      <div><div class="itext"><strong>${title}</strong></div>
-        <div class="imeta"><span class="itime">${ago} · ${item.source}</span><span class="itag ${tagCls}">${tagLbl}</span></div>
+      <div style="flex:1;min-width:0"><div class="itext"><strong>${_escHtml(title)}</strong></div>
+        ${descHtml}
+        <div class="imeta"><span class="itime">${ago} · ${_escHtml(item.source||'')}</span><span class="itag ${tagCls}">${tagLbl}</span></div>
       </div>
     </div>`;
   }).join('');
@@ -4442,41 +4523,169 @@ function renderNewsPlaceholder() {
 // LIVE ECONOMIC CALENDAR — Forex Factory via Netlify proxy
 // ═══════════════════════════════════════════════════════
 let calendarData = [];
+// ═══════════════════════════════════════════════════════
+// ECONOMIC CALENDAR — ForexFactory-style with filters
+// ═══════════════════════════════════════════════════════
+// Filter state (persisted to localStorage)
+var calFilters = (function(){
+  var defaults = {
+    imp: { high:true, medium:true, low:false },
+    cur: { USD:true, EUR:true, GBP:true, JPY:true, AUD:true, NZD:false, CAD:false, CHF:false, CNY:false },
+    day: 'today'   // 'today' | 'week'
+  };
+  try {
+    var saved = JSON.parse(localStorage.getItem('apex_cal_filters') || 'null');
+    if (saved && saved.imp && saved.cur && saved.day) return saved;
+  } catch(e){}
+  return defaults;
+})();
+
+function _calSaveFilters() {
+  try { localStorage.setItem('apex_cal_filters', JSON.stringify(calFilters)); } catch(e){}
+}
+
+function calToggle(group, key, btnEl) {
+  if (group === 'day') {
+    calFilters.day = key;
+    document.querySelectorAll('.cal-chip.day').forEach(function(el){ el.classList.toggle('active', el.getAttribute('data-day') === key); });
+  } else if (group === 'imp') {
+    calFilters.imp[key] = !calFilters.imp[key];
+    if (btnEl) btnEl.classList.toggle('active', calFilters.imp[key]);
+  } else if (group === 'cur') {
+    calFilters.cur[key] = !calFilters.cur[key];
+    if (btnEl) btnEl.classList.toggle('active', calFilters.cur[key]);
+  }
+  _calSaveFilters();
+  _calRender();
+}
+
+function calToggleAll(on) {
+  Object.keys(calFilters.cur).forEach(function(k){ calFilters.cur[k] = !!on; });
+  document.querySelectorAll('.cal-chip.cur').forEach(function(el){
+    var k = el.getAttribute('data-cur');
+    if (k) el.classList.toggle('active', !!on);
+  });
+  _calSaveFilters();
+  _calRender();
+}
+
+// Render the calendar list from the cached `calendarData` using current filters.
+function _calRender() {
+  var body = document.getElementById('calendar-body');
+  var timeEl = document.getElementById('cal-time');
+  if (!body) return;
+
+  var all = Array.isArray(calendarData) ? calendarData : [];
+
+  // Apply filters
+  var filtered = all.filter(function(ev){
+    if (!calFilters.imp[ev.impact]) return false;
+    // Allow events with no currency through if any currency is enabled (rare)
+    if (ev.country && !calFilters.cur[ev.country]) return false;
+    if (calFilters.day === 'today' && !ev.isToday) return false;
+    return true;
+  });
+
+  if (!filtered.length) {
+    body.innerHTML = '<div class="cal-empty">No events match your filters</div>';
+    if (timeEl) timeEl.textContent = '0 / ' + all.length + ' events';
+    return;
+  }
+
+  // Group by date
+  var groups = {};
+  var order = [];
+  filtered.forEach(function(ev){
+    var key = ev.date || 'unknown';
+    if (!groups[key]) { groups[key] = []; order.push(key); }
+    groups[key].push(ev);
+  });
+
+  // Determine "now" in AWST HH:MM for highlighting current/past rows
+  var nowHHMM = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', hour12:false, timeZone:'Australia/Perth' });
+  var today = all.length && all.find(function(e){ return e.isToday; });
+  var todayStr = today ? today.date : null;
+
+  var html = '';
+  order.forEach(function(dateKey){
+    var evs = groups[dateKey];
+    if (!evs.length) return;
+    var d = evs[0];
+    var headLabel = d.day + ' · ' + dateKey + (d.isToday ? ' · TODAY' : '');
+    if (calFilters.day === 'week') {
+      html += '<div class="cal-day-head' + (d.isToday ? ' is-today' : '') + '">' + headLabel + '</div>';
+    }
+    evs.forEach(function(ev){
+      var actClass, actText;
+      if (ev.actual) {
+        var a = parseFloat(ev.actual), f = parseFloat(ev.forecast);
+        actClass = (!isNaN(a) && !isNaN(f)) ? (a >= f ? 'up' : 'dn') : 'up';
+        actText = ev.actual;
+      } else {
+        actClass = 'am';
+        actText = 'PENDING';
+      }
+      var prev = ev.previous ? 'Prev: ' + ev.previous : '';
+      var fore = ev.forecast ? 'Exp: ' + ev.forecast : '';
+      var meta = [prev, fore].filter(Boolean).join(' · ') || '—';
+      var isPast = ev.isToday && ev.time && ev.time < nowHHMM && !ev.actual;
+      var isNow = ev.isToday && ev.time && Math.abs(_calHHMMDiff(ev.time, nowHHMM)) <= 15;
+      var rowClass = 'cal-row' + (isPast ? ' is-past' : '') + (isNow ? ' is-now' : '');
+      html += '<div class="' + rowClass + '">' +
+        '<div class="cal-time">' + (ev.time || 'TBD') + '</div>' +
+        '<div class="cal-impact ' + ev.impact + '" title="' + ev.impact + ' impact"></div>' +
+        '<div class="cal-event"><span class="cal-ccy ' + (ev.country || '') + '">' + (ev.country || '—') + '</span>' + _escHtml(ev.title) + '</div>' +
+        '<div class="cal-prev">' + meta + '</div>' +
+        '<div class="cal-act ' + actClass + '">' + actText + '</div>' +
+      '</div>';
+    });
+  });
+
+  body.innerHTML = html;
+  if (timeEl) {
+    var t = new Date().toLocaleTimeString('en-AU', { hour:'2-digit', minute:'2-digit', timeZone:'Australia/Perth' });
+    timeEl.textContent = filtered.length + ' / ' + all.length + ' events · ' + t + ' AWST';
+  }
+}
+
+function _calHHMMDiff(a, b) {
+  // minutes between two HH:MM strings
+  var pa = a.split(':'), pb = b.split(':');
+  return (parseInt(pa[0],10)*60 + parseInt(pa[1],10)) - (parseInt(pb[0],10)*60 + parseInt(pb[1],10));
+}
+
+function _escHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, function(c){ return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]; });
+}
+
 async function fetchCalendar() {
   const body = document.getElementById('calendar-body');
-  const timeEl = document.getElementById('cal-time');
   try {
-    const r = await fetch('/.netlify/functions/calendar', { signal: AbortSignal.timeout(12000) });
+    const r = await fetch('/.netlify/functions/calendar?scope=week', { signal: AbortSignal.timeout(12000) });
     const data = await r.json();
     calendarData = data.events || [];
-    if (!calendarData.length) {
-      if (body) body.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">No high-impact events today</div>';
-      if (timeEl) timeEl.textContent = 'No events';
-      return;
-    }
-    if (body) body.innerHTML = calendarData.map(ev => {
-      const impCol = ev.impact === 'high' ? 'var(--red)' : ev.impact === 'medium' ? 'var(--amber)' : 'var(--text4)';
-      const actClass = ev.actual ? 'up' : 'am';
-      const actText = ev.actual || 'PENDING';
-      const prev = ev.previous ? 'Prev: ' + ev.previous : '';
-      const fore = ev.forecast ? 'Exp: ' + ev.forecast : '';
-      const meta = [prev, fore].filter(Boolean).join(' · ') || '—';
-      return `<div class="cal-row">
-        <div class="cal-time">${ev.time || 'TBD'}</div>
-        <div class="cal-impact" style="background:${impCol}"></div>
-        <div class="cal-event">${ev.country ? '<span style="font-weight:700;margin-right:4px">' + ev.country + '</span>' : ''}${ev.title}</div>
-        <div class="cal-prev" style="min-width:100px;font-size:10px;color:var(--text3)">${meta}</div>
-        <div class="cal-act ${actClass}">${actText}</div>
-      </div>`;
-    }).join('');
-    if (timeEl) {
-      const t = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
-      timeEl.textContent = `${calendarData.length} events · ${t} AWST`;
-    }
+    // Sync filter chips to saved state on first render
+    _calSyncChips();
+    _calRender();
   } catch(e) {
     console.warn('Calendar fetch failed:', e.message);
-    if (body) body.innerHTML = '<div style="padding:16px;text-align:center;color:var(--text3);font-size:12px">Calendar unavailable — retrying shortly</div>';
+    if (body) body.innerHTML = '<div class="cal-empty">Calendar unavailable — retrying shortly</div>';
   }
+}
+
+// Sync chip .active classes from calFilters (called on first fetch)
+function _calSyncChips() {
+  document.querySelectorAll('.cal-chip.imp').forEach(function(el){
+    var k = el.getAttribute('data-imp');
+    if (k) el.classList.toggle('active', !!calFilters.imp[k]);
+  });
+  document.querySelectorAll('.cal-chip.cur').forEach(function(el){
+    var k = el.getAttribute('data-cur');
+    if (k) el.classList.toggle('active', !!calFilters.cur[k]);
+  });
+  document.querySelectorAll('.cal-chip.day').forEach(function(el){
+    el.classList.toggle('active', el.getAttribute('data-day') === calFilters.day);
+  });
 }
 
 // ═══════════════════════════════════════════════════════
@@ -8615,13 +8824,76 @@ RULES:
       badge.style.borderColor = biasCol.replace('var(--','rgba(').replace(')',',.35)');
     }
   } catch(e) {
-    const isProxyErr = e.message.includes('ANTHROPIC_API_KEY') || e.message.includes('503') || e.message.includes('not configured');
-    // Even without AI, show the tech dashboard
-    const errMsg = isProxyErr
-      ? '<div style="font-size:11px;color:var(--text4);margin-top:8px">Set <code>ANTHROPIC_API_KEY</code> on apextrade-proxy.netlify.app for AI prediction text.</div>'
-      : `<div style="font-size:11px;color:var(--red);margin-top:8px">AI prediction failed: ${e.message}</div>`;
-    body.innerHTML = techDashHTML + `<div style="text-align:center;padding:16px">${errMsg}</div>`;
-    if (badge) { badge.textContent = isProxyErr ? 'Setup needed' : 'Retry'; badge.style.color='var(--amber)'; badge.style.borderColor='rgba(255,170,0,.3)'; }
+    console.warn('[predict] AI request failed:', e);
+    // Always render a useful rule-based prediction as fallback.
+    // Rules: combine tech signals (RSI, MACD, EMA, trend) + overnight futures flow.
+    const nq = overnightData['NQ=F']?.chgPct || 0;
+    const es = overnightData['ES=F']?.chgPct || 0;
+    const btc = overnightData['BTC-USD']?.chgPct || 0;
+    const avgEquity = (nq + es) / 2;
+    const overnightBias = avgEquity > 0.3 ? 1 : avgEquity < -0.3 ? -1 : 0;
+
+    function _ruleCard(idxLabel, name, t) {
+      if (!t) {
+        return `<div class="pred-idx-card neutral"><div class="pred-call">NO DATA</div><div class="pred-range">${idxLabel} (${name})</div><div class="pred-conf">Candle fetch failed</div></div>`;
+      }
+      const techBias = (t.rsi > 55 && t.emaAlign === 'BULLISH' ? 1 : 0) + (t.rsi < 45 && t.emaAlign === 'BEARISH' ? -1 : 0) + (t.macdHist > 0 ? 0.5 : -0.5) + (t.trend === 'UPTREND' ? 0.5 : t.trend === 'DOWNTREND' ? -0.5 : 0);
+      const combined = techBias + overnightBias;
+      const call = combined > 0.5 ? 'BULL' : combined < -0.5 ? 'BEAR' : 'NEUTRAL';
+      const klass = call === 'BULL' ? 'bull' : call === 'BEAR' ? 'bear' : 'neutral';
+      // ATR-based range
+      const atr = t.atr || (Math.abs(t.last) * 0.01);
+      const low = (t.last - atr).toFixed(1);
+      const high = (t.last + atr).toFixed(1);
+      // Confidence: how many signals align
+      const signals = [
+        t.rsi > 55 ? 1 : t.rsi < 45 ? -1 : 0,
+        t.emaAlign === 'BULLISH' ? 1 : t.emaAlign === 'BEARISH' ? -1 : 0,
+        t.macdHist > 0 ? 1 : -1,
+        t.trend === 'UPTREND' ? 1 : t.trend === 'DOWNTREND' ? -1 : 0,
+        overnightBias
+      ];
+      const aligned = Math.abs(signals.reduce((a,b)=>a+b, 0));
+      const conf = Math.round(40 + aligned * 12);
+      return `<div class="pred-idx-card ${klass}">
+        <div class="pred-call">${call}</div>
+        <div class="pred-range">Range: ${low} — ${high}</div>
+        <div class="pred-conf">Confidence: ${conf}%</div>
+        <div style="font-size:10px;color:var(--text4);margin-top:6px">Support ${t.prev5L} · Resistance ${t.prev5H}</div>
+      </div>`;
+    }
+
+    const ruleHTML = '<h3 style="margin-top:0">📊 Rule-based prediction <span style="font-size:10px;color:var(--text4);font-weight:500">(technicals + overnight flow)</span></h3>' +
+      '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">' +
+      PRED_INDICES.map(idx => _ruleCard(idx.label, idx.name, techData[idx.label]?.tech)).join('') +
+      '</div>';
+
+    // Bias summary same as the AI success path
+    const asxTech = techData['ASX200']?.tech;
+    const techBias = asxTech ? (asxTech.rsi > 55 && asxTech.emaAlign === 'BULLISH' ? 1 : asxTech.rsi < 45 && asxTech.emaAlign === 'BEARISH' ? -1 : 0) : 0;
+    const combinedBias = techBias + overnightBias;
+    const bias = combinedBias > 0 ? 'BULLISH' : combinedBias < 0 ? 'BEARISH' : 'NEUTRAL';
+    const biasCol = bias === 'BULLISH' ? 'var(--green)' : bias === 'BEARISH' ? 'var(--red)' : 'var(--amber)';
+    const verdictHTML = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;padding:12px 16px;background:var(--bg4);border:1px solid ${biasCol.replace('var(--','rgba(').replace(')',',.25)')};border-radius:10px">
+      <div style="text-align:center"><div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.05em">Overall Bias</div><div style="font-size:18px;font-weight:900;color:${biasCol}">${bias}</div></div>
+      <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">NQ Overnight</div><div style="font-size:15px;font-weight:800;color:${nq>=0?'var(--green)':'var(--red)'}">${nq>=0?'+':''}${nq.toFixed(2)}%</div></div>
+      <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">ES Overnight</div><div style="font-size:15px;font-weight:800;color:${es>=0?'var(--green)':'var(--red)'}">${es>=0?'+':''}${es.toFixed(2)}%</div></div>
+      <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">BTC Risk Proxy</div><div style="font-size:15px;font-weight:800;color:${btc>=0?'var(--green)':'var(--red)'}">${btc>=0?'+':''}${btc.toFixed(2)}%</div></div>
+    </div>`;
+
+    const isProxyErr = /ANTHROPIC_API_KEY|not configured|503/.test(e.message || '');
+    const isNetworkErr = /Failed to fetch|NetworkError|TypeError/.test(e.message || '');
+    let footer;
+    if (isProxyErr) {
+      footer = '<div style="margin-top:10px;padding:10px 12px;background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.2);border-radius:8px;font-size:11px;color:var(--text3);text-align:center"><span style="color:var(--accent);font-weight:700">ℹ AI narrative disabled</span> · Add <code style="background:var(--bg3);padding:1px 6px;border-radius:3px">ANTHROPIC_API_KEY</code> in Netlify env vars to enable the LLM-generated forecast text.</div>';
+    } else if (isNetworkErr) {
+      footer = `<div style="margin-top:10px;padding:10px 12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:11px;color:var(--text3);text-align:center"><span style="color:var(--amber);font-weight:700">⚠ AI backend unreachable</span> · Serving rule-based prediction. <button class="btn" onclick="runMarketPrediction()" style="font-size:10px;padding:3px 10px;margin-left:6px">Retry</button></div>`;
+    } else {
+      footer = `<div style="margin-top:10px;font-size:11px;color:var(--text4);text-align:center">AI prediction error: ${_escHtml(e.message || 'unknown')} · <button class="btn" onclick="runMarketPrediction()" style="font-size:10px;padding:3px 10px">Retry</button></div>`;
+    }
+
+    body.innerHTML = verdictHTML + techDashHTML + ruleHTML + footer;
+    if (badge) { badge.textContent = bias; badge.style.color = biasCol; badge.style.borderColor = biasCol.replace('var(--','rgba(').replace(')',',.35)'); }
   }
 
   if (btn) btn.disabled = false;
