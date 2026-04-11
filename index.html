@@ -10600,8 +10600,130 @@ function renderAsxSignalRow(sig) {
       <div style="font-size:18px;font-weight:800;color:${confBarCol};font-family:var(--fd);margin-top:4px">${conf}%</div>
     </div>`;
 
-  div.onclick = () => window.open('https://www.tradingview.com/chart/?symbol=ASX:' + sig.ticker, '_blank');
+  div.onclick = () => {
+    if (sig.smtPair && !sig.smtContra) {
+      showSmtComparison(sig.ticker, sig.smtPair, sig.smtTf, sig.direction, sig.smtDirection);
+    } else {
+      window.open('https://www.tradingview.com/chart/?symbol=ASX:' + sig.ticker, '_blank');
+    }
+  };
   return div;
+}
+
+// ── SMT side-by-side comparison modal ──
+function showSmtComparison(ticker, smtPair, smtTf, sigDir, smtDir) {
+  // Map SMT TF to TradingView interval
+  const tvInterval = { '2W': 'W', '1M': 'M', '2M': 'M', '3M': 'M', '6M': 'M', '9M': 'M', '12M': 'M' }[smtTf] || 'M';
+
+  // Map partner ticker to TradingView symbol
+  function toTvSymbol(tk) {
+    tk = tk.replace('.AX','');
+    if (/\.L$/.test(tk)) return 'LSE:' + tk.replace('.L','');
+    if (/\.TO$/.test(tk)) return 'TSX:' + tk.replace('.TO','');
+    // Check if it's an ASX ticker (exists in our SMT data as t1)
+    if (typeof _SMT_S !== 'undefined' && _SMT_S[tk]) return 'ASX:' + tk;
+    if (typeof _SMT_W !== 'undefined' && _SMT_W[tk]) return 'ASX:' + tk;
+    // Default: try US market
+    return tk;
+  }
+
+  const sym1 = 'ASX:' + ticker.replace('.AX','');
+  const sym2 = toTvSymbol(smtPair);
+  const dirCol = smtDir === 'BULLISH' ? '#00d4a8' : '#ff4466';
+  const dirLabel = smtDir === 'BULLISH' ? 'BULLISH SMT' : 'BEARISH SMT';
+
+  // Remove existing modal if any
+  const old = document.getElementById('smt-modal');
+  if (old) old.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'smt-modal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px';
+
+  const uid1 = 'tv_smt_' + Date.now() + '_1';
+  const uid2 = 'tv_smt_' + Date.now() + '_2';
+
+  modal.innerHTML = `
+    <div style="width:100%;max-width:1600px;display:flex;flex-direction:column;gap:0;height:85vh;max-height:900px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:var(--bg2);border-radius:12px 12px 0 0;border:1px solid var(--border2);border-bottom:none">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font-size:18px;font-weight:800;color:#fff">${ticker.replace('.AX','')}</span>
+          <span style="font-size:13px;color:var(--text4)">vs</span>
+          <span style="font-size:18px;font-weight:800;color:#fff">${smtPair}</span>
+          <span style="font-size:11px;padding:3px 10px;border-radius:4px;background:${smtDir==='BULLISH'?'rgba(0,212,168,.15)':'rgba(255,68,102,.15)'};color:${dirCol};font-weight:700">${dirLabel}</span>
+          <span style="font-size:11px;padding:3px 8px;border-radius:4px;background:var(--bg5);color:var(--text2);font-weight:600">${smtTf} timeframe</span>
+        </div>
+        <button onclick="document.getElementById('smt-modal').remove()" style="background:none;border:1px solid var(--border2);color:var(--text2);font-size:18px;cursor:pointer;padding:4px 12px;border-radius:6px;font-weight:700">&times;</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border2);flex:1;border:1px solid var(--border2);border-radius:0 0 12px 12px;overflow:hidden">
+        <div style="background:var(--bg1);position:relative">
+          <div style="position:absolute;top:8px;left:12px;z-index:10;font-size:11px;font-weight:700;color:var(--text2);background:rgba(17,17,27,.8);padding:3px 8px;border-radius:4px">${ticker.replace('.AX','')} · ${tvInterval === 'M' ? 'Monthly' : 'Weekly'}</div>
+          <div id="${uid1}" style="width:100%;height:100%"></div>
+        </div>
+        <div style="background:var(--bg1);position:relative">
+          <div style="position:absolute;top:8px;left:12px;z-index:10;font-size:11px;font-weight:700;color:var(--text2);background:rgba(17,17,27,.8);padding:3px 8px;border-radius:4px">${smtPair} · ${tvInterval === 'M' ? 'Monthly' : 'Weekly'}</div>
+          <div id="${uid2}" style="width:100%;height:100%"></div>
+        </div>
+      </div>
+    </div>`;
+
+  // Close on background click
+  modal.addEventListener('click', function(e) { if (e.target === modal) modal.remove(); });
+  // Close on Escape
+  const escHandler = function(e) { if (e.key === 'Escape') { modal.remove(); document.removeEventListener('keydown', escHandler); } };
+  document.addEventListener('keydown', escHandler);
+
+  document.body.appendChild(modal);
+
+  // Load TradingView widgets
+  if (typeof TradingView !== 'undefined') {
+    try {
+      new TradingView.widget({
+        autosize: true,
+        symbol: sym1,
+        interval: tvInterval,
+        timezone: 'Australia/Sydney',
+        theme: 'dark',
+        style: '1',
+        locale: 'en',
+        toolbar_bg: '#11111b',
+        enable_publishing: false,
+        hide_side_toolbar: true,
+        hide_top_toolbar: false,
+        allow_symbol_change: true,
+        container_id: uid1,
+        backgroundColor: '#11111b',
+        gridColor: 'rgba(255,255,255,0.03)'
+      });
+      new TradingView.widget({
+        autosize: true,
+        symbol: sym2,
+        interval: tvInterval,
+        timezone: 'Australia/Sydney',
+        theme: 'dark',
+        style: '1',
+        locale: 'en',
+        toolbar_bg: '#11111b',
+        enable_publishing: false,
+        hide_side_toolbar: true,
+        hide_top_toolbar: false,
+        allow_symbol_change: true,
+        container_id: uid2,
+        backgroundColor: '#11111b',
+        gridColor: 'rgba(255,255,255,0.03)'
+      });
+    } catch(e) {
+      // Fallback: open both in new tabs
+      window.open('https://www.tradingview.com/chart/?symbol=' + sym1, '_blank');
+      window.open('https://www.tradingview.com/chart/?symbol=' + sym2, '_blank');
+      modal.remove();
+    }
+  } else {
+    // TradingView library not loaded — open in new tabs
+    window.open('https://www.tradingview.com/chart/?symbol=' + sym1, '_blank');
+    window.open('https://www.tradingview.com/chart/?symbol=' + sym2, '_blank');
+    modal.remove();
+  }
 }
 
 function renderAsxCrtRows() {
