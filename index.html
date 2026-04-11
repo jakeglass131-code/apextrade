@@ -10528,8 +10528,11 @@ function renderAsxSignalRow(sig) {
   if ((sig.tbosAge||0) > 3) tags.push(['AGING SETUP', 'sig-tag-warn']);
   if (sig.mlScore && sig.mlScore > 5) tags.push(['ML CONFIRMED', 'sig-tag-bull']);
   if (sig.mlScore && sig.mlScore < -3) tags.push(['ML DIVERGENCE', 'sig-tag-warn']);
+  // SMT confluence tags
+  if (sig.smtPair && !sig.smtContra) tags.push(['SMT ' + sig.smtDirection + ' · ' + sig.smtPair + ' (' + sig.smtTf + ')', 'sig-tag-bull']);
+  if (sig.smtPair && sig.smtContra) tags.push(['SMT CONTRA · ' + sig.smtPair + ' (' + sig.smtTf + ')', 'sig-tag-warn']);
 
-  const tagsHtml = tags.slice(0,4).map(([lbl,cls]) =>
+  const tagsHtml = tags.slice(0,5).map(([lbl,cls]) =>
     `<span class="sig-tag ${cls}">${lbl}</span>`
   ).join('');
 
@@ -10880,22 +10883,119 @@ async function startAsxCrtScan() {
     await new Promise(r => setTimeout(r, 50));
   }
 
-  // Done
+  // CRT scan done — now enrich with SMT divergences
   _asxCrtScanning = false;
   if (prog) prog.style.display = 'none';
   asxCrtSignals.sort((a, b) => (b.finalConfidence || 0) - (a.finalConfidence || 0));
   updateAsxScanKPIs();
   renderAsxCrtRows();
+
   const t2 = new Date().toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',timeZone:'Australia/Perth'});
   const set = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
   set('asx-stat-time', t2 + ' AWST');
   set('asx-stat-total', asxCrtSignals.length);
   const stats = document.getElementById('asx-stats'); if(stats) stats.style.display='flex';
-  if (asxCrtSignals.length > 0) showToast('ASX CRT Scan complete', asxCrtSignals.length + ' signals found · ' + asxCrtSignals.filter(s=>gradeSignal(s.finalConfidence||0)==='A+'||gradeSignal(s.finalConfidence||0)==='A').length + ' A/A+ grade', 'success', 5000);
-  else {
+
+  if (asxCrtSignals.length > 0) {
+    showToast('ASX CRT Scan complete', asxCrtSignals.length + ' signals found · enriching with SMT...', 'success', 3000);
+    // Phase 2: SMT enrichment
+    await enrichCrtWithSmt();
+  } else {
     const rowsEl = document.getElementById('asx-crt-rows');
     if (rowsEl) rowsEl.innerHTML = '<div style="padding:40px;text-align:center;color:var(--text3);font-size:12px">No setups found across ' + scanned + ' stocks.</div>';
   }
+}
+
+// ── SMT enrichment for CRT signals ──────────────────────────────────
+async function enrichCrtWithSmt() {
+  // Get unique tickers that have CRT signals
+  const tickerSet = {};
+  asxCrtSignals.forEach(s => { tickerSet[s.ticker.replace('.AX','')] = true; });
+  const uniqueTickers = Object.keys(tickerSet);
+  if (!uniqueTickers.length) return;
+
+  const txt = document.getElementById('asx-crt-txt');
+  if (txt) txt.textContent = 'Enriching ' + uniqueTickers.length + ' tickers with SMT divergences...';
+  const progEl = document.getElementById('asx-crt-progress');
+  if (progEl) progEl.style.display = 'block';
+
+  let enriched = 0;
+  for (let i = 0; i < uniqueTickers.length; i++) {
+    const tk = uniqueTickers[i];
+
+    // Look up SMT partners from compact data
+    const strongStr = (typeof _SMT_S !== 'undefined' && _SMT_S[tk]) ? _SMT_S[tk] : '';
+    const weakStr   = (typeof _SMT_W !== 'undefined' && _SMT_W[tk]) ? _SMT_W[tk] : '';
+    const allPartners = (strongStr + (strongStr && weakStr ? ',' : '') + weakStr).split(',').filter(Boolean);
+    if (!allPartners.length) continue;
+
+    // Take top 3 strongest partners
+    const top3 = allPartners
+      .map(e => { const p = e.split(':'); return p.length === 2 ? { t2: p[0], c: parseInt(p[1]) } : null; })
+      .filter(Boolean)
+      .sort((a, b) => b.c - a.c)
+      .slice(0, 3);
+    if (!top3.length) continue;
+
+    const partnerStr = top3.map(p => p.t2 + ':' + p.c).join(',');
+
+    try {
+      const r = await fetch(PROXY + '/smt-engine?t1=' + tk + '.AX&partners=' + partnerStr, { signal: AbortSignal.timeout(25000) });
+      const data = await r.json();
+
+      if (data.results) {
+        data.results.forEach(res => {
+          if (!res.divergences || !res.divergences.length) return;
+          // Attach SMT data to matching CRT signals for this ticker
+          asxCrtSignals.forEach(sig => {
+            if (sig.ticker.replace('.AX','') !== tk) return;
+            // Find divergences matching signal direction
+            const matchingDivs = res.divergences.filter(d => d.direction === sig.direction);
+            const anyDivs = res.divergences;
+
+            if (matchingDivs.length > 0) {
+              // Direction-matching SMT = strong confluence
+              const best = matchingDivs[0];
+              sig.smtPair = (res.t2 || '').replace('.AX','');
+              sig.smtTf = best.tf;
+              sig.smtDirection = best.direction;
+              sig.smtDescription = best.description;
+              sig.smtHistorical = best.historical;
+              sig.smtCorrelation = res.correlation;
+              sig.smtSweepDepth = best.sweepDepth;
+              // Boost confidence — SMT is major confluence
+              sig.finalConfidence = Math.min((sig.finalConfidence || 60) + 8, 99);
+            } else if (anyDivs.length > 0 && !sig.smtPair) {
+              // Opposite direction SMT = warning
+              const best = anyDivs[0];
+              sig.smtPair = (res.t2 || '').replace('.AX','');
+              sig.smtTf = best.tf;
+              sig.smtDirection = best.direction;
+              sig.smtContra = true;
+              sig.smtCorrelation = res.correlation;
+            }
+          });
+        });
+      }
+    } catch(e) { /* skip on timeout */ }
+
+    enriched++;
+    if (i % 2 === 0 || i === uniqueTickers.length - 1) {
+      const pct = Math.round(enriched / uniqueTickers.length * 100);
+      const fill = document.getElementById('asx-crt-fill');
+      if (fill) fill.style.width = pct + '%';
+      if (txt) txt.textContent = 'SMT enrichment ' + enriched + '/' + uniqueTickers.length + ' · ' + asxCrtSignals.filter(s => s.smtPair).length + ' SMT matches';
+      // Re-sort and re-render with SMT data
+      asxCrtSignals.sort((a, b) => (b.finalConfidence || 0) - (a.finalConfidence || 0));
+      renderAsxCrtRows();
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+
+  if (progEl) progEl.style.display = 'none';
+  const smtCount = asxCrtSignals.filter(s => s.smtPair && !s.smtContra).length;
+  if (smtCount > 0) showToast('SMT Enrichment', smtCount + ' signals with SMT confluence', 'success', 4000);
+  renderAsxCrtRows();
 }
 
 
