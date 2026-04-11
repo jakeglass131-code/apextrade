@@ -8675,6 +8675,7 @@ if (pb) pb.addEventListener('click', requestPushPermission);
 const pb2 = document.getElementById('push-btn-settings');
 if (pb2) pb2.addEventListener('click', requestPushPermission);
 </script>
+<script src="smt_pairs_data.js"></script>
 <script>
 // ═══════════════════════════════════════════════════════
 // GLOBAL TIMEFRAME SELECTOR
@@ -11214,14 +11215,22 @@ setInterval(() => {
 }, 6 * 3600 * 1000);
 
 
-// SMT pair universe — generated from smt_master Excel (1722 ASX tickers)
-// c = pre-computed correlation from Excel. Self-pairs and reverse dups removed.
-
+// SMT pair universe — expanded from smt_pairs_data.js (1722 ASX tickers, 17195 pairs)
 const SMT_STRONG_PAIRS = [];
-
 const SMT_WEAK_PAIRS = [];
-
-
+(function(){
+  function expand(obj,arr){
+    if(!obj)return;
+    for(var t1 in obj){
+      obj[t1].split(',').forEach(function(e){
+        var p=e.split(':');
+        if(p.length===2)arr.push({t1:t1,t2:p[0],c:parseInt(p[1])/100});
+      });
+    }
+  }
+  if(typeof _SMT_S!=='undefined')expand(_SMT_S,SMT_STRONG_PAIRS);
+  if(typeof _SMT_W!=='undefined')expand(_SMT_W,SMT_WEAK_PAIRS);
+})();
 const SMT_ALL_PAIRS = [...SMT_STRONG_PAIRS, ...SMT_WEAK_PAIRS].filter(function(p){return p && p.t1 && p.t2;});
 
 // Build ASX ticker set (all t1 values are ASX)
