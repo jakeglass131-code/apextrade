@@ -11377,150 +11377,92 @@ async function startSmtScan() {
   smtScanning = true;
   smtAbort = false;
   smtResults = [];
-  smtCandleCache = {};
   try {
 
   document.getElementById('smt-scan-btn').style.display = 'none';
   document.getElementById('smt-stop-btn').style.display = 'flex';
   document.getElementById('smt-progress').style.display = 'block';
 
-  var asxSet = {}, nonAsx = {};
-  SMT_ALL_PAIRS.forEach(function(p) { asxSet[p.t1] = 1; if (!asxSet[p.t2]) nonAsx[p.t2] = 1; });
-  SMT_ALL_PAIRS.forEach(function(p) { if (asxSet[p.t2]) delete nonAsx[p.t2]; });
-  var asxList = Object.keys(asxSet), nonAsxList = Object.keys(nonAsx);
-  var total = SMT_ALL_PAIRS.length;
+  // Group pairs by t1 — one engine call per ASX ticker covers all its partners
+  var byTicker = {};
+  SMT_ALL_PAIRS.forEach(function(p) {
+    if (!byTicker[p.t1]) byTicker[p.t1] = [];
+    byTicker[p.t1].push(p);
+  });
+  var tickers = Object.keys(byTicker);
+  var total = tickers.length;
 
-  document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div id="smt-scan-counter" style="font-size:13px;color:var(--text2)">Fetching ' + asxList.length + ' ASX + ' + nonAsxList.length + ' intl tickers via TradingView...</div></div>';
+  document.getElementById('smt-results-grid').innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--text3)"><div class="lpulse" style="background:var(--accent);margin:0 auto 10px"></div><div id="smt-scan-counter" style="font-size:13px;color:var(--text2)">Scanning ' + total + ' ASX tickers via SMT engine (2W–12M relevant levels)...</div></div>';
 
-  // Phase 1: Bulk fetch via TradingView Scanner API
-  var TV_SCAN = 'https://apextrade-proxy.netlify.app/.netlify/functions/tv-scan';
-  var TV_COLS = ['close','open','high','low','volume','change','change|1','change|5','Perf.W','Perf.1M','Perf.3M','Perf.6M','Perf.Y'];
-  var tvData = {};
-
-  function parseTVBatch(data, stripPrefix) {
-    if (!data || !data.data) return;
-    data.data.forEach(function(item) {
-      var tk = stripPrefix ? item.s.replace(/^[A-Z]+:/, '') : item.s;
-      var d = item.d;
-      if (d[0] != null) tvData[tk] = { close:d[0], open:d[1], high:d[2], low:d[3], vol:d[4], chg:d[5], chg1:d[6], chg5:d[7], perfW:d[8], perf1M:d[9], perf3M:d[10], perf6M:d[11], perfY:d[12] };
-    });
-  }
-
-  var fetched = 0;
-  for (let i = 0; i < asxList.length; i += 500) {
-    if (smtAbort) break;
-    var batch = asxList.slice(i, i + 500).map(function(t) { return 'ASX:' + t; });
-    try {
-      var r = await fetch(TV_SCAN + '?market=australia', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbols:{tickers:batch},columns:TV_COLS}), signal:AbortSignal.timeout(15000) });
-      parseTVBatch(await r.json(), true);
-    } catch(e) { console.warn('TV ASX batch error:', e); }
-    fetched += batch.length;
-    document.getElementById('smt-progress-fill').style.width = Math.round(fetched / (asxList.length + nonAsxList.length) * 40) + '%';
-    document.getElementById('smt-progress-text').textContent = 'TradingView: ' + Object.keys(tvData).length + ' tickers loaded...';
-  }
-
-  if (nonAsxList.length > 0 && !smtAbort) {
-    // Split non-ASX by likely exchange
-    var ukTickers = [], usTickers = [];
-    nonAsxList.forEach(function(t) {
-      if (/\.L$/.test(t)) ukTickers.push(t);
-      else usTickers.push(t);
-    });
-
-    // US tickers: try NASDAQ then NYSE prefixes
-    var exchanges = ['NASDAQ','NYSE','AMEX'];
-    for (let ex = 0; ex < exchanges.length && !smtAbort; ex++) {
-      // Only fetch tickers not yet loaded
-      var need = usTickers.filter(function(t) { return !tvData[t]; });
-      if (need.length === 0) break;
-      for (let i = 0; i < need.length; i += 500) {
-        if (smtAbort) break;
-        var batch = need.slice(i, i + 500).map(function(t) { return exchanges[ex] + ':' + t; });
-        try {
-          var r = await fetch(TV_SCAN + '?market=america', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbols:{tickers:batch},columns:TV_COLS}), signal:AbortSignal.timeout(15000) });
-          parseTVBatch(await r.json(), true);
-        } catch(e) {}
-      }
-      document.getElementById('smt-progress-text').textContent = 'TradingView: ' + Object.keys(tvData).length + ' tickers loaded (' + exchanges[ex] + ')...';
-    }
-
-    // UK tickers: LSE prefix
-    if (ukTickers.length > 0 && !smtAbort) {
-      for (let i = 0; i < ukTickers.length; i += 500) {
-        if (smtAbort) break;
-        var batch = ukTickers.slice(i, i + 500).map(function(t) { return 'LSE:' + t.replace('.L',''); });
-        try {
-          var r = await fetch(TV_SCAN + '?market=uk', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({symbols:{tickers:batch},columns:TV_COLS}), signal:AbortSignal.timeout(15000) });
-          // Map back: LSE:BHP -> BHP.L
-          var data = await r.json();
-          if (data && data.data) {
-            data.data.forEach(function(item) {
-              var tk = item.s.replace(/^LSE:/, '') + '.L';
-              var d = item.d;
-              if (d[0] != null) tvData[tk] = { close:d[0], open:d[1], high:d[2], low:d[3], vol:d[4], chg:d[5], chg1:d[6], chg5:d[7], perfW:d[8], perf1M:d[9], perf3M:d[10], perf6M:d[11], perfY:d[12] };
-            });
-          }
-        } catch(e) {}
-      }
-    }
-    fetched = asxList.length + nonAsxList.length;
-    document.getElementById('smt-progress-fill').style.width = '40%';
-  }
-
-  var loadedCount = Object.keys(tvData).length;
-  var ctr = document.getElementById('smt-scan-counter');
-  if (ctr) ctr.textContent = 'Loaded ' + loadedCount + ' tickers \u00b7 Analysing ' + total + ' pairs...';
-  if (smtAbort) { smtFinish(0, 0, 0, 0, 0); return; }
-
-  // Phase 2: Analyse all pairs using TV scanner data + pre-computed correlation
+  var SMT_ENGINE = PROXY + '/smt-engine';
   var scanned = 0, valid = 0, divs = 0, bull = 0, bear = 0;
+
+  // Scan each ASX ticker with its top 5 strongest partners
   for (let i = 0; i < total; i++) {
     if (smtAbort) break;
-    var pair = SMT_ALL_PAIRS[i];
-    var d1 = tvData[pair.t1], d2 = tvData[pair.t2];
-    scanned++;
-    if (!d1 || !d2 || !d1.close || !d2.close) continue;
+    var t1 = tickers[i];
+    var partners = byTicker[t1]
+      .sort(function(a,b) { return (b.c||0)-(a.c||0); })
+      .slice(0, 5)
+      .map(function(p) { return p.t2 + ':' + Math.round((p.c||0)*100); })
+      .join(',');
 
-    var corr = pair.c || 0;
-    var isValid = corr >= 0.70;
-    var ta = (d1.perfW != null && d2.perfW != null) ? ((d1.perfW > 0 && d2.perfW > 0) || (d1.perfW < 0 && d2.perfW < 0)) : false;
-    var diff = (d1.perfW != null && d2.perfW != null) ? Math.abs(d1.perfW - d2.perfW) : 0;
+    try {
+      var r = await fetch(SMT_ENGINE + '?t1=' + t1 + '.AX&partners=' + partners, { signal: AbortSignal.timeout(30000) });
+      var data = await r.json();
+      if (data.results) {
+        data.results.forEach(function(res) {
+          var corr = res.correlation || 0;
+          var hasDivs = res.divergences && res.divergences.length > 0;
+          var topDiv = hasDivs ? res.divergences[0] : null;
+          var isValid = corr >= 0.70;
+          var strength = corr >= 0.70 ? 'strong' : 'weak';
 
-    var activeDivergence = null;
-    if (corr >= 0.70 && d1.perfW != null && d2.perfW != null && diff >= 4) {
-      if (d1.perfW > 1.5 && d2.perfW < -1.5) {
-        activeDivergence = {type:'BEARISH', tf:'weekly', description:pair.t1+' higher high (+'+d1.perfW.toFixed(1)+'%), '+pair.t2+' lower high ('+d2.perfW.toFixed(1)+'%)', age:1, date:new Date().toISOString().slice(0,10)};
-      } else if (d2.perfW > 1.5 && d1.perfW < -1.5) {
-        activeDivergence = {type:'BEARISH', tf:'weekly', description:pair.t2+' higher high (+'+d2.perfW.toFixed(1)+'%), '+pair.t1+' lower high ('+d1.perfW.toFixed(1)+'%)', age:1, date:new Date().toISOString().slice(0,10)};
-      } else if (d1.perfW < -1.5 && d2.perfW > 1.5) {
-        activeDivergence = {type:'BULLISH', tf:'weekly', description:pair.t1+' lower low ('+d1.perfW.toFixed(1)+'%), '+pair.t2+' higher low (+'+d2.perfW.toFixed(1)+'%)', age:1, date:new Date().toISOString().slice(0,10)};
-      } else if (d2.perfW < -1.5 && d1.perfW > 1.5) {
-        activeDivergence = {type:'BULLISH', tf:'weekly', description:pair.t2+' lower low ('+d2.perfW.toFixed(1)+'%), '+pair.t1+' higher low (+'+d1.perfW.toFixed(1)+'%)', age:1, date:new Date().toISOString().slice(0,10)};
+          // Score based on correlation + divergence quality
+          var sc = 0;
+          if (corr >= 0.90) sc += 3; else if (corr >= 0.80) sc += 2; else if (corr >= 0.70) sc += 1;
+          if (hasDivs) sc += 2;
+          if (topDiv && topDiv.historical) sc += 1; // historical extreme sweep = bonus
+          if (res.divergences && res.divergences.length >= 2) sc += 1; // multi-TF divergence
+          var grade = sc >= 5 ? 'A+' : sc >= 4 ? 'A' : sc >= 3 ? 'B' : sc >= 2 ? 'C' : 'D';
+
+          var activeDivergence = topDiv ? {
+            type: topDiv.direction,
+            tf: topDiv.tf,
+            description: topDiv.description,
+            age: topDiv.sweepAge || 0,
+            date: topDiv.sweepDate || '',
+            sweepDepth: topDiv.sweepDepth,
+            holderMargin: topDiv.holderMargin,
+            historical: topDiv.historical
+          } : null;
+
+          smtResults.push({
+            t1: t1, t2: (res.t2 || '').replace('.AX',''), pearson: corr,
+            isValid: isValid, grade: grade, score: sc,
+            divergences: (res.divergences || []).map(function(d) {
+              return { type:d.direction, tf:d.tf, description:d.description, age:d.sweepAge||0, date:d.sweepDate, historical:d.historical };
+            }),
+            activeDivergence: activeDivergence,
+            t1Levels: res.t1Levels, t2Levels: res.t2Levels,
+            sector: 'ASX', strength: strength
+          });
+
+          if (isValid) valid++;
+          if (activeDivergence) {
+            divs++;
+            if (activeDivergence.type === 'BULLISH') bull++; else bear++;
+          }
+        });
       }
-    }
+    } catch(e) { console.warn('SMT engine error for ' + t1 + ':', e.message); }
 
-    var sc = 0;
-    if (corr >= 0.90) sc += 3; else if (corr >= 0.80) sc += 2; else if (corr >= 0.70) sc += 1;
-    if (ta) sc += 1;
-    if (diff >= 6) sc += 2; else if (diff >= 4) sc += 1;
-    var grade = sc >= 5 ? 'A+' : sc >= 4 ? 'A' : sc >= 3 ? 'B' : sc >= 2 ? 'C' : 'D';
-
-    smtResults.push({
-      t1:pair.t1, t2:pair.t2, pearson:corr, spearman:null, rSquared:null, atrRatio:null, rollingAvg:null,
-      trendAligned:ta, isValid:isValid, grade:grade, score:sc, dataPoints:0,
-      lastPrice1:d1.close, lastPrice2:d2.close,
-      perfW1:d1.perfW, perfW2:d2.perfW, perf1M1:d1.perf1M, perf1M2:d2.perf1M,
-      divergences:activeDivergence?[activeDivergence]:[], activeDivergence:activeDivergence,
-      sector:'ASX', strength:corr >= 0.70 ? 'strong' : 'weak'
-    });
-    if (isValid) valid++;
-    if (activeDivergence) { divs++; if (activeDivergence.type === 'BULLISH') bull++; else bear++; }
-
-    if (i % 500 === 0 || i === total - 1) {
+    scanned++;
+    if (i % 3 === 0 || i === total - 1) {
       smtScannedCount = scanned;
-      var pct = 40 + Math.round(scanned / total * 60);
+      var pct = Math.round(scanned / total * 100);
       document.getElementById('smt-progress-fill').style.width = pct + '%';
-      document.getElementById('smt-progress-text').textContent = 'Analysing ' + scanned + ' / ' + total + ' \u00b7 ' + valid + ' valid \u00b7 ' + divs + ' divergences';
+      document.getElementById('smt-progress-text').textContent = 'Scanning ' + scanned + ' / ' + total + ' tickers · ' + divs + ' divergences found';
       updateSmtKPIs(scanned, valid, divs, bull, bear);
       renderSmtResults();
       await new Promise(function(r) { setTimeout(r, 0); });
