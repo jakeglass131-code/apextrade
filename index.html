@@ -446,45 +446,179 @@ footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:40
           <div class="pf-url">apextrade-proxy.netlify.app/app</div>
         </div>
         <div class="pf-body" style="position:relative">
-          <div class="mock-w wide scanning">
+
+          <!-- Overnight Futures — spans 2 cols -->
+          <div class="mock-w wide" style="padding:12px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase">Overnight &middot; Global Indices</span>
+              <span style="font-size:9px;color:var(--text4)">11:31 am AWST</span>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+              <div style="background:rgba(255,255,255,.015);border-radius:8px;padding:8px 10px">
+                <div style="font-size:9px;color:var(--text4);font-weight:600">ES &middot; S&amp;P 500</div>
+                <div style="font-size:16px;font-weight:800;margin:2px 0">6,865</div>
+                <div style="font-size:10px;font-weight:700;color:var(--green)">+0.83%</div>
+                <svg viewBox="0 0 100 24" style="width:100%;height:18px;margin-top:4px" preserveAspectRatio="none"><path d="M0,18 C15,16 25,20 40,14 C55,8 65,12 80,9 C90,7 95,5 100,4" fill="none" stroke="var(--green)" stroke-width="1.2" opacity=".6"/></svg>
+              </div>
+              <div style="background:rgba(255,255,255,.015);border-radius:8px;padding:8px 10px">
+                <div style="font-size:9px;color:var(--text4);font-weight:600">NQ &middot; NASDAQ 100</div>
+                <div style="font-size:16px;font-weight:800;margin:2px 0">25,285</div>
+                <div style="font-size:10px;font-weight:700;color:var(--green)">+1.08%</div>
+                <svg viewBox="0 0 100 24" style="width:100%;height:18px;margin-top:4px" preserveAspectRatio="none"><path d="M0,20 C12,18 28,22 42,12 C56,4 68,10 82,6 C92,3 97,4 100,2" fill="none" stroke="var(--green)" stroke-width="1.2" opacity=".6"/></svg>
+              </div>
+              <div style="background:rgba(255,255,255,.015);border-radius:8px;padding:8px 10px">
+                <div style="font-size:9px;color:var(--text4);font-weight:600">GOLD</div>
+                <div style="font-size:16px;font-weight:800;margin:2px 0">4,782</div>
+                <div style="font-size:10px;font-weight:700;color:var(--green)">+0.79%</div>
+                <svg viewBox="0 0 100 24" style="width:100%;height:18px;margin-top:4px" preserveAspectRatio="none"><path d="M0,16 C20,14 35,18 50,10 C65,5 78,8 90,6 C95,5 98,4 100,3" fill="none" stroke="var(--green)" stroke-width="1.2" opacity=".6"/></svg>
+              </div>
+              <div style="background:rgba(255,255,255,.015);border-radius:8px;padding:8px 10px">
+                <div style="font-size:9px;color:var(--text4);font-weight:600">DXY &middot; US DOLLAR</div>
+                <div style="font-size:16px;font-weight:800;margin:2px 0">98.87</div>
+                <div style="font-size:10px;font-weight:700;color:var(--red)">-0.21%</div>
+                <svg viewBox="0 0 100 24" style="width:100%;height:18px;margin-top:4px" preserveAspectRatio="none"><path d="M0,6 C15,8 30,4 45,10 C60,16 72,12 85,18 C92,20 97,19 100,20" fill="none" stroke="var(--red)" stroke-width="1.2" opacity=".6"/></svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Prediction -->
+          <div class="mock-w" style="padding:12px 14px">
+            <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">AI Prediction</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">
+              <span style="font-size:11px;font-weight:800;color:var(--green);background:rgba(0,212,168,.1);padding:2px 8px;border-radius:4px">BULL</span>
+              <span style="font-size:11px;color:var(--text2);font-weight:700">ASX 200</span>
+            </div>
+            <div style="font-size:20px;font-weight:900;color:var(--green);margin-bottom:2px">8,420 &ndash; 8,510</div>
+            <div style="font-size:10px;color:var(--text4);margin-bottom:8px">Confidence 72% &middot; Range 90pts</div>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <span style="font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(0,212,168,.08);color:var(--green);font-weight:700">RSI 62</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(0,212,168,.08);color:var(--green);font-weight:700">MACD &#8593;</span>
+              <span style="font-size:9px;padding:2px 6px;border-radius:3px;background:rgba(0,212,168,.08);color:var(--green);font-weight:700">EMA Aligned</span>
+            </div>
+          </div>
+
+          <!-- Scanner -->
+          <div class="mock-w scanning" style="padding:12px 14px">
             <div class="mw-scan-line"></div>
-            <div class="mw-title"></div><div class="mw-val"></div>
-            <div class="mw-chart"><svg viewBox="0 0 300 50" preserveAspectRatio="none"><path d="M0,35 C40,30 60,42 100,28 C140,14 170,22 210,18 C250,14 280,8 300,10" fill="none" stroke="var(--cyan)" stroke-width="1.5" opacity=".5"/><path d="M0,35 C40,30 60,42 100,28 C140,14 170,22 210,18 C250,14 280,8 300,10 L300,50 L0,50Z" fill="url(#cg1)"/></svg></div>
-          </div>
-          <div class="mock-w">
-            <div class="mw-title" style="width:35%"></div><div class="mw-val" style="width:50%"></div>
-            <div class="mw-chart"><svg viewBox="0 0 300 50" preserveAspectRatio="none"><path d="M0,40 C50,35 80,20 130,25 C180,30 210,15 260,18 C280,20 295,12 300,10" fill="none" stroke="var(--green)" stroke-width="1.5" opacity=".5"/></svg></div>
-          </div>
-          <div class="mock-w">
-            <div class="mw-title" style="width:50%"></div><div class="mw-val" style="width:45%"></div>
-            <div class="mw-chart"><svg viewBox="0 0 300 50" preserveAspectRatio="none"><path d="M0,15 C50,20 80,35 130,30 C180,25 210,40 260,38 C280,36 295,42 300,45" fill="none" stroke="var(--red)" stroke-width="1.5" opacity=".5"/></svg></div>
-          </div>
-          <div class="mock-w wide">
-            <div class="mw-title" style="width:25%"></div>
-            <div style="display:flex;gap:8px;margin-top:6px">
-              <div style="flex:1;height:6px;background:rgba(0,229,255,.08);border-radius:3px"></div>
-              <div style="flex:1;height:6px;background:rgba(139,92,246,.08);border-radius:3px"></div>
-              <div style="flex:1;height:6px;background:rgba(0,212,168,.08);border-radius:3px"></div>
-            </div>
-            <div style="margin-top:10px;display:flex;gap:6px">
-              <div style="flex:1;height:28px;background:rgba(255,255,255,.015);border-radius:4px"></div>
-              <div style="flex:1;height:28px;background:rgba(255,255,255,.015);border-radius:4px"></div>
-              <div style="flex:1;height:28px;background:rgba(255,255,255,.015);border-radius:4px"></div>
-              <div style="flex:1;height:28px;background:rgba(255,255,255,.015);border-radius:4px"></div>
-            </div>
-          </div>
-          <div class="mock-w">
-            <div class="mw-title" style="width:45%"></div>
-            <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">
-              <div style="height:5px;width:90%;background:rgba(0,212,168,.06);border-radius:2px"></div>
-              <div style="height:5px;width:70%;background:rgba(255,176,32,.06);border-radius:2px"></div>
-              <div style="height:5px;width:55%;background:rgba(255,68,102,.06);border-radius:2px"></div>
+            <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">ASX Scanner</div>
+            <div style="font-size:11px">
+              <div style="display:flex;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);gap:6px">
+                <span style="font-weight:800;width:36px;color:var(--text)">BHP</span>
+                <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;background:rgba(0,212,168,.1);color:var(--green)">CRT LONG</span>
+                <span style="margin-left:auto;font-weight:600;color:var(--text2);font-size:10px">$45.20</span>
+                <span style="font-weight:700;color:var(--green);font-size:10px;width:42px;text-align:right">+2.3%</span>
+              </div>
+              <div style="display:flex;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);gap:6px">
+                <span style="font-weight:800;width:36px;color:var(--text)">CBA</span>
+                <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;background:rgba(0,212,168,.1);color:var(--green)">BREAKOUT</span>
+                <span style="margin-left:auto;font-weight:600;color:var(--text2);font-size:10px">$118.50</span>
+                <span style="font-weight:700;color:var(--green);font-size:10px;width:42px;text-align:right">+0.9%</span>
+              </div>
+              <div style="display:flex;align-items:center;padding:4px 0;border-bottom:1px solid var(--border);gap:6px">
+                <span style="font-weight:800;width:36px;color:var(--text)">WDS</span>
+                <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;background:rgba(255,68,102,.1);color:var(--red)">CRT SHORT</span>
+                <span style="margin-left:auto;font-weight:600;color:var(--text2);font-size:10px">$26.80</span>
+                <span style="font-weight:700;color:var(--red);font-size:10px;width:42px;text-align:right">-1.4%</span>
+              </div>
+              <div style="display:flex;align-items:center;padding:4px 0;gap:6px">
+                <span style="font-weight:800;width:36px;color:var(--text)">FMG</span>
+                <span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:3px;background:rgba(0,212,168,.1);color:var(--green)">MOMENTUM</span>
+                <span style="margin-left:auto;font-weight:600;color:var(--text2);font-size:10px">$21.15</span>
+                <span style="font-weight:700;color:var(--green);font-size:10px;width:42px;text-align:right">+3.7%</span>
+              </div>
             </div>
           </div>
-          <div class="mock-w">
-            <div class="mw-title" style="width:60%"></div><div class="mw-val" style="width:40%"></div>
-            <div class="mw-chart"><svg viewBox="0 0 300 50" preserveAspectRatio="none"><path d="M0,30 C40,28 70,35 110,20 C150,5 180,15 220,12 C260,9 280,14 300,8" fill="none" stroke="var(--purple)" stroke-width="1.5" opacity=".5"/></svg></div>
+
+          <!-- News Feed -->
+          <div class="mock-w wide" style="padding:12px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase">News Intel Feed</span>
+              <span style="font-size:9px;color:var(--green)">Live &middot; 11:31 AWST</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;font-size:11px">
+              <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,.015);border-radius:6px;border-left:2px solid var(--red)">
+                <span style="font-size:8px;font-weight:800;padding:1px 5px;border-radius:3px;background:rgba(255,68,102,.1);color:var(--red)">HIGH</span>
+                <span style="color:var(--text2);flex:1;font-weight:500">FOMC holds rates — Powell signals data-dependent path forward</span>
+                <span style="font-size:9px;color:var(--text4);flex-shrink:0">3m ago</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,.015);border-radius:6px;border-left:2px solid var(--amber)">
+                <span style="font-size:8px;font-weight:800;padding:1px 5px;border-radius:3px;background:rgba(255,176,32,.1);color:var(--amber)">MED</span>
+                <span style="color:var(--text2);flex:1;font-weight:500">Iron ore surges 4% on renewed China stimulus expectations</span>
+                <span style="font-size:9px;color:var(--text4);flex-shrink:0">21m ago</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;background:rgba(255,255,255,.015);border-radius:6px;border-left:2px solid var(--text4)">
+                <span style="font-size:8px;font-weight:800;padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.04);color:var(--text4)">LOW</span>
+                <span style="color:var(--text2);flex:1;font-weight:500">ASX tech sector outperforms on Nasdaq overnight strength</span>
+                <span style="font-size:9px;color:var(--text4);flex-shrink:0">1h ago</span>
+              </div>
+            </div>
           </div>
+
+          <!-- Economic Calendar -->
+          <div class="mock-w" style="padding:12px 14px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase">Calendar</span>
+              <span style="font-size:9px;color:var(--text4)">3 / 12 events</span>
+            </div>
+            <div style="display:flex;gap:4px;margin-bottom:8px">
+              <span style="font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(255,68,102,.12);color:var(--red)">High</span>
+              <span style="font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(255,176,32,.1);color:var(--amber)">Med</span>
+              <span style="font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;background:rgba(255,255,255,.04);color:var(--text4)">Low</span>
+            </div>
+            <div style="font-size:10px;display:flex;flex-direction:column;gap:4px">
+              <div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid var(--border)">
+                <span style="color:var(--text4);width:32px;font-weight:500">14:30</span>
+                <span style="width:6px;height:6px;border-radius:1px;background:var(--red);box-shadow:0 0 4px rgba(255,68,102,.4);flex-shrink:0"></span>
+                <span style="font-size:8px;font-weight:800;padding:1px 4px;border-radius:2px;background:rgba(255,255,255,.04);color:var(--text3)">USD</span>
+                <span style="color:var(--text2);flex:1">Non-Farm Payrolls</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid var(--border)">
+                <span style="color:var(--text4);width:32px;font-weight:500">14:30</span>
+                <span style="width:6px;height:6px;border-radius:1px;background:var(--amber);flex-shrink:0"></span>
+                <span style="font-size:8px;font-weight:800;padding:1px 4px;border-radius:2px;background:rgba(255,255,255,.04);color:var(--text3)">AUD</span>
+                <span style="color:var(--text2);flex:1">RBA Rate Decision</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px;padding:3px 0">
+                <span style="color:var(--text4);width:32px;font-weight:500">04:00</span>
+                <span style="width:6px;height:6px;border-radius:1px;background:var(--red);box-shadow:0 0 4px rgba(255,68,102,.4);flex-shrink:0"></span>
+                <span style="font-size:8px;font-weight:800;padding:1px 4px;border-radius:2px;background:rgba(255,255,255,.04);color:var(--text3)">USD</span>
+                <span style="color:var(--text2);flex:1">FOMC Minutes</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sector Rotation -->
+          <div class="mock-w" style="padding:12px 14px">
+            <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Sector Rotation</div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px">
+                <span style="width:52px;color:var(--text2);font-weight:600">Materials</span>
+                <div style="flex:1;height:6px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden"><div style="width:82%;height:100%;background:linear-gradient(90deg,var(--green),rgba(0,212,168,.4));border-radius:3px"></div></div>
+                <span style="font-weight:700;color:var(--green);width:36px;text-align:right;font-size:10px">+2.1%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px">
+                <span style="width:52px;color:var(--text2);font-weight:600">Banks</span>
+                <div style="flex:1;height:6px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden"><div style="width:65%;height:100%;background:linear-gradient(90deg,var(--green),rgba(0,212,168,.4));border-radius:3px"></div></div>
+                <span style="font-weight:700;color:var(--green);width:36px;text-align:right;font-size:10px">+1.4%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px">
+                <span style="width:52px;color:var(--text2);font-weight:600">Energy</span>
+                <div style="flex:1;height:6px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden"><div style="width:55%;height:100%;background:linear-gradient(90deg,var(--green),rgba(0,212,168,.4));border-radius:3px"></div></div>
+                <span style="font-weight:700;color:var(--green);width:36px;text-align:right;font-size:10px">+0.9%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px">
+                <span style="width:52px;color:var(--text2);font-weight:600">Tech</span>
+                <div style="flex:1;height:6px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden"><div style="width:30%;height:100%;background:linear-gradient(90deg,var(--red),rgba(255,68,102,.4));border-radius:3px"></div></div>
+                <span style="font-weight:700;color:var(--red);width:36px;text-align:right;font-size:10px">-0.6%</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:6px;font-size:10px">
+                <span style="width:52px;color:var(--text2);font-weight:600">Health</span>
+                <div style="flex:1;height:6px;background:rgba(255,255,255,.04);border-radius:3px;overflow:hidden"><div style="width:42%;height:100%;background:linear-gradient(90deg,var(--green),rgba(0,212,168,.4));border-radius:3px"></div></div>
+                <span style="font-weight:700;color:var(--green);width:36px;text-align:right;font-size:10px">+0.3%</span>
+              </div>
+            </div>
+          </div>
+
           <div class="pf-glow"></div>
         </div>
       </div>
