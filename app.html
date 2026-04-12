@@ -9186,7 +9186,53 @@ function _renderV2Prediction(v2, body, badge, btn) {
   html += _techCell('Hurst', tech.hurst, function(v) { return v>0.55?'var(--green)':v<0.45?'var(--accent)':'var(--text2)'; });
   html += _techCell('Z-Score', tech.zScore, function(v) { return Math.abs(v)>2?'var(--red)':Math.abs(v)>1.5?'var(--amber)':'var(--text2)'; });
   html += _techCell('Consec', tech.consecutiveDays, function(v) { return v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--text3)'; });
-  html += '</div></div>';
+  html += '</div>';
+
+  // SuperTrend multi-timeframe panel (inside technicals box)
+  var stData = tech.superTrend;
+  if (stData) {
+    html += '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">';
+    html += '<div style="font-size:9px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">SuperTrend (Multi-Timeframe)</div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">';
+    // Daily ST
+    if (stData.daily) {
+      var dStCol = stData.daily.direction === 'BULL' ? 'var(--green)' : 'var(--red)';
+      html += '<div style="padding:8px;background:rgba(255,255,255,.02);border-radius:6px;border-left:3px solid ' + dStCol + '">';
+      html += '<div style="font-size:8px;color:var(--text4);font-weight:700">DAILY</div>';
+      html += '<div style="font-size:16px;font-weight:900;color:' + dStCol + '">' + stData.daily.direction + (stData.daily.flipped ? ' ⚡FLIP' : '') + '</div>';
+      html += '<div style="font-size:10px;color:var(--text3)">Level: ' + stData.daily.level.toFixed(0) + '</div>';
+      html += '<div style="font-size:10px;color:var(--text4)">Distance: ' + (stData.daily.distancePct > 0 ? '+' : '') + stData.daily.distancePct.toFixed(2) + '%</div>';
+      html += '</div>';
+    }
+    // Weekly ST
+    if (stData.weekly) {
+      var wStCol = stData.weekly.direction === 'BULL' ? 'var(--green)' : 'var(--red)';
+      html += '<div style="padding:8px;background:rgba(255,255,255,.02);border-radius:6px;border-left:3px solid ' + wStCol + '">';
+      html += '<div style="font-size:8px;color:var(--text4);font-weight:700">WEEKLY</div>';
+      html += '<div style="font-size:16px;font-weight:900;color:' + wStCol + '">' + stData.weekly.direction + (stData.weekly.flipped ? ' ⚡FLIP' : '') + '</div>';
+      html += '<div style="font-size:10px;color:var(--text3)">Level: ' + stData.weekly.level.toFixed(0) + '</div>';
+      html += '<div style="font-size:10px;color:var(--text4)">Distance: ' + (stData.weekly.distancePct > 0 ? '+' : '') + stData.weekly.distancePct.toFixed(2) + '%</div>';
+      if (stData.weekly.direction === 'BULL' && stData.weekly.distancePct < 1.5 && stData.weekly.distancePct > 0) {
+        html += '<div style="font-size:9px;font-weight:800;color:var(--green);margin-top:3px">BOUNCE ZONE — near weekly support</div>';
+      }
+      if (stData.weekly.direction === 'BEAR' && stData.weekly.distancePct > -1.5 && stData.weekly.distancePct < 0) {
+        html += '<div style="font-size:9px;font-weight:800;color:var(--red);margin-top:3px">REJECTION ZONE — near weekly resistance</div>';
+      }
+      html += '</div>';
+    } else {
+      html += '<div style="padding:8px;background:rgba(255,255,255,.02);border-radius:6px;font-size:10px;color:var(--text4)">Weekly: Insufficient data</div>';
+    }
+    html += '</div>';
+    // MTF confluence note
+    if (stData.daily && stData.weekly) {
+      var mtfAgree = stData.daily.direction === stData.weekly.direction;
+      html += '<div style="margin-top:6px;font-size:9px;font-weight:700;color:' + (mtfAgree ? 'var(--green)' : 'var(--amber)') + '">';
+      html += mtfAgree ? 'Daily + Weekly SuperTrend ALIGNED (' + stData.daily.direction + ') — high conviction' : 'Daily (' + stData.daily.direction + ') vs Weekly (' + stData.weekly.direction + ') DIVERGENCE — reduced conviction';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
 
   // ── Monte Carlo Distribution ──────────────────────────────────────────
   var mcData = v2.monteCarlo;

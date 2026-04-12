@@ -487,6 +487,223 @@ function atrPercentileRank(candles, lookback = 252) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// SuperTrend — multi-timeframe trend-following indicator
+// ═════════════════════════════════════════════════════════════════════════════
+
+// Compute SuperTrend for a given candles array
+// Returns { direction: 'BULL'|'BEAR', level, trend[] } for the last N bars
+function superTrend(candles, period = 10, multiplier = 3) {
+  if (candles.length < period + 1) return null;
+
+  // Compute ATR using Wilder's smoothing (same as TradingView)
+  const trueRanges = [];
+  for (let i = 1; i < candles.length; i++) {
+    trueRanges.push(Math.max(
+      candles[i].h - candles[i].l,
+      Math.abs(candles[i].h - candles[i - 1].c),
+      Math.abs(candles[i].l - candles[i - 1].c)
+    ));
+  }
+
+  // Wilder smoothed ATR
+  const atrArr = [];
+  let atrSum = 0;
+  for (let i = 0; i < period && i < trueRanges.length; i++) atrSum += trueRanges[i];
+  atrArr.push(atrSum / period);
+  for (let i = period; i < trueRanges.length; i++) {
+    atrArr.push((atrArr[atrArr.length - 1] * (period - 1) + trueRanges[i]) / period);
+  }
+
+  // SuperTrend calculation
+  const st = []; // { upper, lower, trend, level }
+  // Candles[0] has no TR, so candles index = i+1 corresponds to atrArr index = i
+  for (let i = 0; i < atrArr.length; i++) {
+    const ci = i + 1; // candle index (offset by 1 because TR starts at index 1)
+    const hl2 = (candles[ci].h + candles[ci].l) / 2;
+    let upperBand = hl2 + multiplier * atrArr[i];
+    let lowerBand = hl2 - multiplier * atrArr[i];
+
+    // Clamp bands to prevent whipsaw
+    if (st.length > 0) {
+      const prev = st[st.length - 1];
+      if (lowerBand > prev.lower && candles[ci - 1].c > prev.lower) {
+        lowerBand = Math.max(lowerBand, prev.lower);
+      }
+      if (upperBand < prev.upper && candles[ci - 1].c < prev.upper) {
+        upperBand = Math.min(upperBand, prev.upper);
+      }
+    }
+
+    let trend;
+    if (st.length === 0) {
+      trend = candles[ci].c > upperBand ? 1 : -1;
+    } else {
+      const prev = st[st.length - 1];
+      if (prev.trend === 1 && candles[ci].c < prev.lower) trend = -1;
+      else if (prev.trend === -1 && candles[ci].c > prev.upper) trend = 1;
+      else trend = prev.trend;
+    }
+
+    const level = trend === 1 ? lowerBand : upperBand;
+    st.push({ upper: upperBand, lower: lowerBand, trend, level });
+  }
+
+  if (st.length < 2) return null;
+  const last = st[st.length - 1];
+  const prev = st[st.length - 2];
+  const lastC = candles[candles.length - 1];
+
+  // Distance from SuperTrend level (as % of price)
+  const distPct = ((lastC.c - last.level) / lastC.c) * 100;
+
+  // Detect flip (trend reversal on most recent bar)
+  const flipped = last.trend !== prev.trend;
+
+  return {
+    direction: last.trend === 1 ? 'BULL' : 'BEAR',
+    level: +last.level.toFixed(2),
+    distancePct: +distPct.toFixed(2),
+    flipped,
+    trend: st.slice(-20).map(s => s.trend), // last 20 bars for analysis
+  };
+}
+
+// Build weekly candles from daily candles (Mon-Fri aggregation)
+function buildWeeklyCandles(dailyCandles) {
+  if (!dailyCandles || dailyCandles.length < 10) return [];
+  const weeks = [];
+  let week = null;
+  for (let i = 0; i < dailyCandles.length; i++) {
+    const d = new Date(dailyCandles[i].t);
+    const dow = d.getUTCDay(); // 0=Sun, 1=Mon, ..., 5=Fri
+    if (!week || dow <= 1 || (d.getTime() - week.startTime > 5 * 86400000)) {
+      if (week) weeks.push(week.candle);
+      week = {
+        startTime: d.getTime(),
+        candle: { t: dailyCandles[i].t, o: dailyCandles[i].o, h: dailyCandles[i].h, l: dailyCandles[i].l, c: dailyCandles[i].c, v: dailyCandles[i].v }
+      };
+    } else {
+      week.candle.h = Math.max(week.candle.h, dailyCandles[i].h);
+      week.candle.l = Math.min(week.candle.l, dailyCandles[i].l);
+      week.candle.c = dailyCandles[i].c;
+      week.candle.v += dailyCandles[i].v || 0;
+    }
+  }
+  if (week) weeks.push(week.candle);
+  return weeks;
+}
+
+// Score SuperTrend across daily + weekly timeframes
+// Key insight: When weekly SuperTrend is bullish and price touches the weekly ST level,
+// there's a high-probability daily bounce. Conversely for bearish.
+function scoreSuperTrend(candles) {
+  if (!candles || candles.length < 30) return { score: 0, detail: 'Insufficient data' };
+
+  const stDaily = superTrend(candles, 10, 3);
+  if (!stDaily) return { score: 0, detail: 'N/A' };
+
+  // Build weekly and compute weekly SuperTrend
+  const weeklyCandles = buildWeeklyCandles(candles);
+  const stWeekly = superTrend(weeklyCandles, 10, 3);
+
+  let score = 0;
+  const notes = [];
+
+  // ── Daily SuperTrend signal ──────────────────────────────────
+  if (stDaily.direction === 'BULL') {
+    score += 0.4;
+    notes.push('D:BULL');
+  } else {
+    score -= 0.4;
+    notes.push('D:BEAR');
+  }
+
+  // Daily flip = strong signal
+  if (stDaily.flipped) {
+    score += stDaily.direction === 'BULL' ? 0.6 : -0.6;
+    notes.push('D:FLIP');
+  }
+
+  // ── Weekly SuperTrend signal ─────────────────────────────────
+  if (stWeekly) {
+    if (stWeekly.direction === 'BULL') {
+      score += 0.3;
+      notes.push('W:BULL');
+    } else {
+      score -= 0.3;
+      notes.push('W:BEAR');
+    }
+
+    // Weekly flip is a major trend change
+    if (stWeekly.flipped) {
+      score += stWeekly.direction === 'BULL' ? 0.8 : -0.8;
+      notes.push('W:FLIP!');
+    }
+
+    // ── Multi-timeframe confluence ────────────────────────────
+    // Both timeframes agree = high conviction
+    if (stDaily.direction === stWeekly.direction) {
+      score += stDaily.direction === 'BULL' ? 0.3 : -0.3;
+      notes.push('MTF-AGREE');
+    } else {
+      // Divergence: weekly trend trumps daily for bias, but reduces conviction
+      notes.push('MTF-DIVERGE');
+    }
+
+    // ── Key level proximity (bounce detection) ────────────────
+    // When price is near the weekly SuperTrend level in a bullish weekly trend,
+    // expect a bounce (support). Same logic inverted for bearish.
+    if (stWeekly.direction === 'BULL' && stWeekly.distancePct < 1.5 && stWeekly.distancePct > 0) {
+      // Price near weekly support in uptrend — bounce zone
+      score += 0.5;
+      notes.push('W:BOUNCE-ZONE');
+    }
+    if (stWeekly.direction === 'BEAR' && stWeekly.distancePct > -1.5 && stWeekly.distancePct < 0) {
+      // Price near weekly resistance in downtrend — rejection zone
+      score -= 0.5;
+      notes.push('W:REJECT-ZONE');
+    }
+
+    // Weekly breakdown below SuperTrend support = major bearish signal
+    if (stWeekly.direction === 'BEAR' && stWeekly.flipped) {
+      score -= 0.5; // Additional penalty for weekly breakdown
+      notes.push('W:BREAKDOWN');
+    }
+    // Weekly breakout above SuperTrend resistance = major bullish signal
+    if (stWeekly.direction === 'BULL' && stWeekly.flipped) {
+      score += 0.5;
+      notes.push('W:BREAKOUT');
+    }
+  }
+
+  // Daily proximity to support/resistance
+  if (stDaily.direction === 'BULL' && Math.abs(stDaily.distancePct) < 0.5) {
+    score += 0.3; // Tight to support, likely bounce
+    notes.push('D:TIGHT-SUPPORT');
+  }
+  if (stDaily.direction === 'BEAR' && Math.abs(stDaily.distancePct) < 0.5) {
+    score -= 0.3;
+    notes.push('D:TIGHT-RESIST');
+  }
+
+  // Trend consistency (how many of last 20 bars were in same direction)
+  if (stDaily.trend && stDaily.trend.length >= 10) {
+    const bullBars = stDaily.trend.filter(t => t === 1).length;
+    const trendStrength = bullBars / stDaily.trend.length;
+    if (trendStrength > 0.8) { score += 0.2; notes.push('D:STRONG-TREND'); }
+    else if (trendStrength < 0.2) { score -= 0.2; notes.push('D:STRONG-DOWNTREND'); }
+    else if (trendStrength > 0.4 && trendStrength < 0.6) { notes.push('D:CHOPPY'); }
+  }
+
+  return {
+    score: Math.max(-3, Math.min(3, +score.toFixed(2))),
+    detail: notes.join(' · '),
+    daily: stDaily,
+    weekly: stWeekly || null,
+  };
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // SCORING FUNCTIONS — 40+ factors
 // ═════════════════════════════════════════════════════════════════════════════
 
@@ -1798,6 +2015,9 @@ exports.handler = async (event) => {
     const kurtVal = kurtosis(closes);
     const vwapVal = vwap(asxHist, 20);
 
+    // SuperTrend (daily + weekly multi-timeframe)
+    const stResult = scoreSuperTrend(asxHist);
+
     // Detect regime
     const regime = detectRegime(asxHist, closes);
 
@@ -1833,6 +2053,9 @@ exports.handler = async (event) => {
     factors.push({ name: 'Parabolic SAR', cat: 'trend', weight: 0.5 * rw.trend, ...scoreSAR(asxHist) });
     factors.push({ name: 'Keltner', cat: 'price', weight: 0.5 * rw.price, ...scoreKeltner(asxHist) });
     factors.push({ name: 'ROC', cat: 'trend', weight: 0.6 * rw.trend, ...scoreROC(closes) });
+
+    // SUPERTREND (multi-timeframe: daily + weekly)
+    factors.push({ name: 'SuperTrend MTF', cat: 'trend', weight: 1.5 * rw.trend, score: stResult.score, detail: stResult.detail });
 
     // TREND & STRUCTURE
     factors.push({ name: 'Mean Reversion', cat: 'price', weight: 1.6 * rw.price, ...scoreMeanReversion(closes) });
@@ -2043,6 +2266,10 @@ exports.handler = async (event) => {
         kurtosis: kurtVal ? +kurtVal.toFixed(2) : null,
         bollingerWidth: bbVal ? +(bbVal.width * 100).toFixed(2) : null,
         vwapDev: vwapVal ? +((lastPrice - vwapVal) / vwapVal * 100).toFixed(2) : null,
+        superTrend: stResult.daily ? {
+          daily: { direction: stResult.daily.direction, level: stResult.daily.level, distancePct: stResult.daily.distancePct, flipped: stResult.daily.flipped },
+          weekly: stResult.weekly ? { direction: stResult.weekly.direction, level: stResult.weekly.level, distancePct: stResult.weekly.distancePct, flipped: stResult.weekly.flipped } : null,
+        } : null,
       },
       monteCarlo: mc || null,
       correlationMatrix: corrMatrix ? {
