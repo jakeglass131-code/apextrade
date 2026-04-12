@@ -39,3 +39,4 @@ logs/
 scratch/
 tmp/
 *.local
+node_modules

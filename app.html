@@ -12644,6 +12644,119 @@ setTimeout(() => {
 
 // Live prices handled by TradingView ticker tape + Scanner API
 
+// ═══════════════════════════════════════════════════════
+// SUBSCRIPTION GATE — checks Stripe status on load
+// ═══════════════════════════════════════════════════════
+(function(){
+  // Skip gate entirely in dev/localhost
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
+
+  var GATE_KEY = 'apex_sub';
+  var CHECK_INTERVAL = 3600000; // Re-verify every hour
+
+  // Check URL for returning checkout session
+  var params = new URLSearchParams(location.search);
+  var sessionId = params.get('session_id');
+  var isWelcome = params.get('welcome');
+
+  // Clean URL params without reload
+  if (sessionId) {
+    history.replaceState({}, '', location.pathname);
+  }
+
+  function showGate(msg) {
+    // Create gate overlay
+    var overlay = document.createElement('div');
+    overlay.id = 'sub-gate';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(8,9,15,.97);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center;font-family:var(--fm,Inter,system-ui,sans-serif)';
+    overlay.innerHTML = '<div style="text-align:center;max-width:420px;padding:24px">'
+      + '<div style="font-size:32px;margin-bottom:16px">📈</div>'
+      + '<h2 style="font-size:24px;font-weight:800;margin-bottom:10px;color:#eef0f6">APEXtrade</h2>'
+      + '<p style="font-size:14px;color:#7d84a0;line-height:1.6;margin-bottom:28px">' + (msg || 'You need an active subscription to access the dashboard.') + '</p>'
+      + '<a href="/#pricing" style="display:inline-block;padding:12px 32px;background:linear-gradient(135deg,#00e5ff,#8b5cf6);color:#fff;font-weight:700;font-size:14px;border-radius:10px;text-decoration:none;margin-bottom:12px">Start Free Trial</a>'
+      + '<br><a href="/" style="font-size:12px;color:#4a5070;text-decoration:none">Back to homepage</a>'
+      + '</div>';
+    document.body.appendChild(overlay);
+  }
+
+  function grantAccess(data) {
+    try {
+      data._ts = Date.now();
+      localStorage.setItem(GATE_KEY, JSON.stringify(data));
+    } catch(e){}
+    var gate = document.getElementById('sub-gate');
+    if (gate) gate.remove();
+
+    // Show welcome toast for new signups
+    if (isWelcome) {
+      var toast = document.createElement('div');
+      toast.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);z-index:99999;padding:12px 24px;background:rgba(0,212,168,.12);border:1px solid rgba(0,212,168,.2);border-radius:10px;font-size:13px;color:#00d4a8;font-weight:600;font-family:var(--fm,Inter,sans-serif);backdrop-filter:blur(10px);animation:fadeIn .5s ease';
+      toast.textContent = 'Welcome to APEXtrade! Your 7-day free trial has started.';
+      document.body.appendChild(toast);
+      setTimeout(function(){ toast.style.transition='opacity .5s'; toast.style.opacity='0'; setTimeout(function(){ toast.remove(); }, 500); }, 5000);
+    }
+  }
+
+  async function verifySubscription() {
+    // If we have a fresh session ID from checkout, verify that
+    if (sessionId) {
+      try {
+        var r = await fetch('/.netlify/functions/check-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId: sessionId }),
+        });
+        var d = await r.json();
+        if (d.active) {
+          grantAccess(d);
+          if (d.email) try { localStorage.setItem('apex_sub_email', d.email); } catch(e){}
+          return;
+        }
+      } catch(e){ console.warn('Session verify failed:', e); }
+    }
+
+    // Check cached status first
+    try {
+      var cached = JSON.parse(localStorage.getItem(GATE_KEY) || 'null');
+      if (cached && cached.active && cached._ts && (Date.now() - cached._ts) < CHECK_INTERVAL) {
+        grantAccess(cached);
+        return;
+      }
+    } catch(e){}
+
+    // Look up by saved email
+    var email;
+    try { email = localStorage.getItem('apex_sub_email'); } catch(e){}
+    if (!email) {
+      showGate('Start a free trial to access the full dashboard. 7 days free, cancel anytime.');
+      return;
+    }
+
+    try {
+      var r = await fetch('/.netlify/functions/check-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email }),
+      });
+      var d = await r.json();
+      if (d.active) {
+        grantAccess(d);
+      } else {
+        showGate('Your subscription has expired. Resubscribe to regain access.');
+      }
+    } catch(e) {
+      // Network error — allow cached access or show gate
+      try {
+        var cached = JSON.parse(localStorage.getItem(GATE_KEY) || 'null');
+        if (cached && cached.active) { grantAccess(cached); return; }
+      } catch(e2){}
+      showGate('Could not verify your subscription. Please check your connection and refresh.');
+    }
+  }
+
+  verifySubscription();
+})();
+
 </script>
 
 </body>

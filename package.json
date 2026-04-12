@@ -1,0 +1,24 @@
+{
+  "name": "apextrade",
+  "version": "1.0.0",
+  "description": "",
+  "main": "smt_pairs_data.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jakeglass131-code/apextrade.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/jakeglass131-code/apextrade/issues"
+  },
+  "homepage": "https://github.com/jakeglass131-code/apextrade#readme",
+  "dependencies": {
+    "stripe": "^22.0.1"
+  }
+}

@@ -14,7 +14,7 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 :root{
   --bg:#050810;--bg2:#0a0e1a;
-  --surface:rgba(14,18,34,.65);
+  --surface:rgba(14,18,34,.65);--surface2:rgba(20,26,48,.55);
   --border:rgba(255,255,255,.05);--border2:rgba(255,255,255,.08);--border3:rgba(255,255,255,.12);
   --text:#eef0f6;--text2:#b8bdd4;--text3:#7d84a0;--text4:#4a5070;
   --cyan:#00e5ff;--purple:#8b5cf6;--green:#00d4a8;--red:#ff4466;--amber:#ffb020;
@@ -26,7 +26,7 @@ a{color:inherit;text-decoration:none}
 button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit}
 ::selection{background:rgba(0,229,255,.18)}
 
-/* ── Background ── */
+/* ── BG ── */
 #bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none}
 .mesh{position:fixed;z-index:0;border-radius:50%;filter:blur(140px);pointer-events:none;will-change:transform}
 .mesh-1{width:700px;height:700px;background:radial-gradient(circle,rgba(0,229,255,.07),transparent 70%);top:-250px;left:-150px;animation:md 22s ease-in-out infinite}
@@ -34,7 +34,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;color:inhe
 @keyframes md{0%,100%{transform:translate(0,0)}33%{transform:translate(60px,-40px)}66%{transform:translate(-40px,50px)}}
 body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.02;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
 
-/* ── Nav ── */
+/* ── NAV ── */
 .nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:center;transition:all .4s}
 .nav-inner{width:100%;max-width:1200px;padding:0 28px;display:flex;align-items:center;justify-content:space-between}
 .nav.scrolled{background:rgba(5,8,16,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
@@ -47,19 +47,21 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .nav-cta{margin-left:6px;padding:8px 20px;font-size:13px;font-weight:700;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#fff;border-radius:9px;transition:all .3s}
 .nav-cta:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(0,229,255,.25)}
 
-/* ── Hero ── */
+/* ── HERO ── */
 .hero{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 24px 60px}
 .hero h1{font-size:clamp(36px,7vw,80px);font-weight:900;line-height:1;letter-spacing:-.045em;margin-bottom:24px;animation:rise .8s ease-out}
 .hero h1 .g{display:block;background:linear-gradient(135deg,var(--cyan),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 .hero-p{font-size:clamp(15px,1.8vw,19px);color:var(--text3);max-width:520px;line-height:1.7;margin-bottom:40px;animation:rise .8s ease-out .1s both}
 .hero-cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;animation:rise .8s ease-out .2s both}
-.btn-go{padding:14px 36px;font-size:15px;font-weight:700;color:#fff;border-radius:12px;background:linear-gradient(135deg,var(--cyan),var(--purple));transition:all .3s;position:relative}
+.btn-go{padding:14px 36px;font-size:15px;font-weight:700;color:#fff;border-radius:12px;background:linear-gradient(135deg,var(--cyan),var(--purple));transition:all .3s;display:inline-flex;align-items:center;gap:8px}
 .btn-go:hover{transform:translateY(-2px);box-shadow:0 10px 36px rgba(0,229,255,.3)}
+.btn-go.loading{opacity:.7;pointer-events:none}
 .btn-ghost{padding:14px 36px;font-size:15px;font-weight:600;color:var(--text2);border:1px solid var(--border3);border-radius:12px;transition:all .3s}
 .btn-ghost:hover{border-color:rgba(0,229,255,.3);color:var(--text)}
+.hero-note{margin-top:16px;font-size:12px;color:var(--text4);animation:rise .8s ease-out .3s both}
 @keyframes rise{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
 
-/* ── Live dashboard embed ── */
+/* ── DASHBOARD EMBED ── */
 .dash-section{position:relative;z-index:1;padding:0 24px 100px}
 .dash-wrap{max-width:1200px;margin:0 auto;perspective:1000px}
 .dash-frame{border:1px solid var(--border2);border-radius:16px;overflow:hidden;background:var(--bg2);box-shadow:0 40px 100px -20px rgba(0,0,0,.6),0 0 60px rgba(0,229,255,.03);transform:rotateX(2deg);transition:transform .5s cubic-bezier(.16,1,.3,1)}
@@ -71,7 +73,7 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .dash-label{text-align:center;margin-top:20px;font-size:13px;color:var(--text4)}
 .dash-label a{color:var(--cyan);font-weight:600}
 
-/* ── What you get — compact grid ── */
+/* ── FEATURES ── */
 .features{position:relative;z-index:1;padding:80px 24px 100px}
 .f-inner{max-width:1000px;margin:0 auto}
 .f-inner h2{font-size:clamp(24px,3.5vw,40px);font-weight:900;letter-spacing:-.03em;text-align:center;margin-bottom:48px}
@@ -82,28 +84,80 @@ body::after{content:'';position:fixed;inset:0;z-index:0;pointer-events:none;opac
 .f-card h3{font-size:15px;font-weight:800;margin-bottom:6px;letter-spacing:-.01em}
 .f-card p{font-size:13px;color:var(--text3);line-height:1.55}
 
-/* ── CTA ── */
-.final{position:relative;z-index:1;text-align:center;padding:40px 24px 100px}
+/* ── PRICING ── */
+.pricing{position:relative;z-index:1;padding:80px 24px 100px}
+.pricing-inner{max-width:1060px;margin:0 auto;text-align:center}
+.pricing-inner>h2{font-size:clamp(24px,3.5vw,40px);font-weight:900;letter-spacing:-.03em;margin-bottom:8px}
+.pricing-inner>p{font-size:15px;color:var(--text3);margin-bottom:36px}
+/* Toggle */
+.billing-toggle{display:inline-flex;align-items:center;gap:12px;padding:4px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;margin-bottom:40px}
+.billing-toggle button{padding:8px 20px;font-size:13px;font-weight:600;border-radius:8px;color:var(--text3);transition:all .25s}
+.billing-toggle button.active{background:linear-gradient(135deg,var(--cyan),var(--purple));color:#fff}
+.billing-toggle .save-badge{font-size:10px;font-weight:800;color:var(--green);background:rgba(0,212,168,.1);padding:2px 8px;border-radius:6px;margin-left:4px}
+/* Cards */
+.p-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;text-align:left}
+.p-card{padding:32px 28px;background:var(--surface);border:1px solid var(--border2);border-radius:18px;backdrop-filter:blur(12px);display:flex;flex-direction:column;transition:all .4s}
+.p-card.pop{border-color:rgba(0,229,255,.2);box-shadow:0 0 60px rgba(0,229,255,.05);position:relative}
+.p-card.pop::before{content:'MOST POPULAR';position:absolute;top:-12px;left:50%;transform:translateX(-50%);padding:5px 16px;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#fff;font-size:10px;font-weight:800;letter-spacing:.1em;border-radius:100px;white-space:nowrap}
+.p-card h3{font-size:18px;font-weight:800;margin-bottom:4px}
+.p-card .p-sub{font-size:12px;color:var(--text4);margin-bottom:20px}
+.p-price{font-size:48px;font-weight:900;letter-spacing:-.03em;line-height:1}
+.p-price span{font-size:14px;font-weight:500;color:var(--text4)}
+.p-was{font-size:12px;color:var(--text4);margin-top:2px;text-decoration:line-through;min-height:16px}
+.p-period{font-size:12px;color:var(--text4);margin-top:2px;margin-bottom:20px}
+.p-trial{font-size:12px;font-weight:700;color:var(--green);margin-bottom:18px;display:flex;align-items:center;gap:5px}
+.p-trial::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green)}
+.p-card ul{list-style:none;margin-bottom:24px;flex:1}
+.p-card li{font-size:13px;color:var(--text2);padding:6px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.p-card li::before{content:'';width:15px;height:15px;flex-shrink:0;border-radius:50%;background:rgba(0,212,168,.08) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%2300d4a8' stroke-width='3' stroke-linecap='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") no-repeat center/8px}
+.p-card li.na{opacity:.35}.p-card li.na::before{background:rgba(255,255,255,.04) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%234a5070' stroke-width='3' stroke-linecap='round'%3E%3Cline x1='5' y1='12' x2='19' y2='12'/%3E%3C/svg%3E") no-repeat center/8px}
+.p-btn{display:block;width:100%;text-align:center;padding:12px;font-size:13px;font-weight:700;border-radius:11px;letter-spacing:.02em;transition:all .3s}
+.p-btn.fill{background:linear-gradient(135deg,var(--cyan),var(--purple));color:#fff}
+.p-btn.fill:hover{box-shadow:0 8px 28px rgba(0,229,255,.25);transform:translateY(-2px)}
+.p-btn.ghost{border:1px solid var(--border3);color:var(--text2)}
+.p-btn.ghost:hover{border-color:rgba(0,229,255,.3);color:var(--text)}
+.p-btn.loading{opacity:.6;pointer-events:none}
+
+/* ── FAQ ── */
+.faq{position:relative;z-index:1;padding:60px 24px 100px}
+.faq-inner{max-width:680px;margin:0 auto}
+.faq-inner h2{font-size:clamp(22px,3vw,34px);font-weight:900;letter-spacing:-.02em;text-align:center;margin-bottom:36px}
+.faq-item{border-bottom:1px solid var(--border2);padding:18px 0}
+.faq-q{font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--text);transition:color .25s}
+.faq-q:hover{color:var(--cyan)}
+.faq-q .arrow{font-size:11px;color:var(--text4);transition:transform .3s}
+.faq-item.open .arrow{transform:rotate(180deg)}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .35s ease,padding .35s;padding-top:0}
+.faq-item.open .faq-a{max-height:200px;padding-top:10px}
+.faq-a p{font-size:13px;color:var(--text3);line-height:1.6}
+
+/* ── FINAL CTA ── */
+.final{position:relative;z-index:1;text-align:center;padding:20px 24px 100px}
 .final-box{max-width:600px;margin:0 auto;padding:48px 40px;border-radius:20px;background:var(--surface);border:1px solid var(--border2)}
 .final-box h2{font-size:clamp(22px,3vw,32px);font-weight:900;letter-spacing:-.02em;margin-bottom:12px}
 .final-box p{font-size:15px;color:var(--text3);margin-bottom:28px;line-height:1.6}
 
-/* ── Footer ── */
-footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:32px 24px;text-align:center}
-footer p{font-size:12px;color:var(--text4)}
+/* ── FOOTER ── */
+footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:32px 24px}
+.foot{max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.foot p{font-size:12px;color:var(--text4)}
+.foot-links{display:flex;gap:18px}
+.foot-links a{font-size:12px;color:var(--text4);transition:color .25s}
+.foot-links a:hover{color:var(--text2)}
 
-/* ── Reveal ── */
+/* ── REVEAL ── */
 .rv{opacity:0;transform:translateY(36px);transition:all .8s cubic-bezier(.16,1,.3,1)}.rv.vis{opacity:1;transform:none}
 
-/* ── Responsive ── */
+/* ── RESPONSIVE ── */
 @media(max-width:768px){
   .nav-links a:not(.nav-cta){display:none}
-  .f-grid{grid-template-columns:1fr}
+  .f-grid,.p-grid{grid-template-columns:1fr}
   .dash-frame iframe{height:500px}
+  .foot{flex-direction:column;gap:16px}
 }
 @media(max-width:500px){
   .hero{padding:80px 16px 40px}
-  .dash-frame iframe{height:400px}
+  .dash-frame iframe{height:380px}
 }
 </style>
 </head>
@@ -113,29 +167,31 @@ footer p{font-size:12px;color:var(--text4)}
 <div class="mesh mesh-1"></div>
 <div class="mesh mesh-2"></div>
 
-<!-- Nav -->
+<!-- NAV -->
 <nav class="nav" id="nav">
   <div class="nav-inner">
     <div class="logo"><div class="logo-mark">📈</div><span>APEX<em>trade</em></span></div>
     <div class="nav-links">
       <a href="#dashboard">Dashboard</a>
       <a href="#features">Features</a>
-      <a href="app.html" class="nav-cta">Open App</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#pricing" class="nav-cta">Start Free Trial</a>
     </div>
   </div>
 </nav>
 
-<!-- Hero -->
+<!-- HERO -->
 <section class="hero">
   <h1>I got sick of opening<span class="g">12 tabs every morning</span></h1>
-  <p class="hero-p">So I built one dashboard. ASX scanner, overnight futures, economic calendar, AI predictions, news — everything I need before the open, on one screen. It's free while I'm building it.</p>
+  <p class="hero-p">So I built one dashboard. ASX scanner, overnight futures, economic calendar, AI predictions, news — everything I need before the open, on one screen.</p>
   <div class="hero-cta">
-    <a href="app.html" class="btn-go">Open the Dashboard</a>
+    <a href="#pricing" class="btn-go">Start 7-Day Free Trial</a>
     <a href="#dashboard" class="btn-ghost">See it first</a>
   </div>
+  <p class="hero-note">No credit card required to start. Cancel anytime.</p>
 </section>
 
-<!-- Live dashboard -->
+<!-- DASHBOARD -->
 <section class="dash-section" id="dashboard">
   <div class="dash-wrap rv">
     <div class="dash-frame" id="dashFrame">
@@ -145,64 +201,188 @@ footer p{font-size:12px;color:var(--text4)}
       </div>
       <iframe src="app.html" loading="lazy" title="APEXtrade Dashboard"></iframe>
     </div>
-    <p class="dash-label">This is the actual dashboard, live. <a href="app.html">Open it full screen &rarr;</a></p>
+    <p class="dash-label">This is the actual dashboard, live. <a href="app.html">Open full screen &rarr;</a></p>
   </div>
 </section>
 
-<!-- Features -->
+<!-- FEATURES -->
 <section class="features" id="features">
   <div class="f-inner">
     <h2>What's in it</h2>
     <div class="f-grid">
       <div class="f-card rv">
-        <div class="f-icon">⚡</div>
+        <div class="f-icon">&#9889;</div>
         <h3>ASX Scanner</h3>
         <p>Scans 200+ stocks for CRT reversals, breakouts, and momentum plays. Spots cross-asset divergences between correlated markets to catch high-probability reversals early. Filter for only A-grade setups.</p>
       </div>
       <div class="f-card rv">
-        <div class="f-icon">🌙</div>
+        <div class="f-icon">&#127769;</div>
         <h3>Overnight Futures</h3>
-        <p>S&P, Nasdaq, Dow, Gold, Oil, Bitcoin, DXY — with sparklines. Updates every 3 minutes. Know if the world went risk-on or risk-off while you were asleep.</p>
+        <p>S&amp;P, Nasdaq, Dow, Gold, Oil, Bitcoin, DXY — with sparklines. Updates every 3 minutes. Know if the world went risk-on or risk-off while you were asleep.</p>
       </div>
       <div class="f-card rv">
-        <div class="f-icon">🧠</div>
+        <div class="f-icon">&#129504;</div>
         <h3>AI Predictions</h3>
         <p>Daily ASX 200 and sector index calls. Combines RSI, MACD, EMA alignment, overnight flow, and macro context. Shows its working so you can agree or disagree.</p>
       </div>
       <div class="f-card rv">
-        <div class="f-icon">📰</div>
+        <div class="f-icon">&#128240;</div>
         <h3>News Feed</h3>
         <p>18 finance-only sources. Every headline classified by impact with a one-liner on how it moves markets. No royal family stories, no celebrity junk.</p>
       </div>
       <div class="f-card rv">
-        <div class="f-icon">📅</div>
+        <div class="f-icon">&#128197;</div>
         <h3>Economic Calendar</h3>
         <p>Filter by impact and currency. USD high-impact only? Done. Shows forecast vs actual with beat/miss colouring. Highlights the next event so you don't get blindsided.</p>
       </div>
       <div class="f-card rv">
-        <div class="f-icon">🏦</div>
-        <h3>Sector & Flow</h3>
+        <div class="f-icon">&#127974;</div>
+        <h3>Sector &amp; Flow</h3>
         <p>Where's the money rotating? Sector performance, fund screener, and institutional flow analysis. See what the big end of town is doing before you size up.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- CTA -->
-<section class="final">
-  <div class="final-box rv">
-    <h2>It's free right now</h2>
-    <p>I'm still building this. Everything works, but I'm adding features every week. Use it for free while it's in beta — I'll figure out pricing later.</p>
-    <a href="app.html" class="btn-go">Open APEXtrade</a>
+<!-- PRICING -->
+<section class="pricing" id="pricing">
+  <div class="pricing-inner">
+    <h2>Simple pricing</h2>
+    <p>7-day free trial on every paid plan. Cancel anytime, no lock-in.</p>
+
+    <div class="billing-toggle">
+      <button class="active" onclick="setBilling('monthly')">Monthly</button>
+      <button onclick="setBilling('yearly')">Yearly <span class="save-badge">Save 30%</span></button>
+    </div>
+
+    <div class="p-grid">
+      <!-- FREE -->
+      <div class="p-card rv">
+        <h3>Free</h3>
+        <div class="p-sub">Get a feel for it</div>
+        <div class="p-price">$0 <span>/mo</span></div>
+        <div class="p-was">&nbsp;</div>
+        <div class="p-period">Free forever</div>
+        <div class="p-trial" style="visibility:hidden">—</div>
+        <ul>
+          <li>Overnight futures dashboard</li>
+          <li>Economic calendar with filters</li>
+          <li>Smart news feed</li>
+          <li>Global timezone picker</li>
+          <li class="na">ASX Scanner</li>
+          <li class="na">AI predictions</li>
+          <li class="na">Sector rotation &amp; flow</li>
+          <li class="na">Trade journal</li>
+        </ul>
+        <a href="app.html" class="p-btn ghost">Open Dashboard</a>
+      </div>
+
+      <!-- PRO -->
+      <div class="p-card pop rv">
+        <h3>Pro</h3>
+        <div class="p-sub">For active traders</div>
+        <div class="p-price" data-mo="$29" data-yr="$19"><span>/mo</span></div>
+        <div class="p-was" data-mo="" data-yr="$29/mo">&nbsp;</div>
+        <div class="p-period" data-mo="Billed monthly" data-yr="$228/yr &middot; billed annually">Billed monthly</div>
+        <div class="p-trial">7-day free trial included</div>
+        <ul>
+          <li>Everything in Free</li>
+          <li>ASX Smart Scanner (200+ stocks)</li>
+          <li>AI market predictions</li>
+          <li>Sector rotation analysis</li>
+          <li>Trade journal &amp; analytics</li>
+          <li>Custom watchlists</li>
+          <li class="na">Institutional flow tracking</li>
+          <li class="na">MarketLens AI deep scans</li>
+        </ul>
+        <button class="p-btn fill" onclick="checkout('pro')">Start Free Trial</button>
+      </div>
+
+      <!-- ELITE -->
+      <div class="p-card rv">
+        <h3>Elite</h3>
+        <div class="p-sub">Full-time traders</div>
+        <div class="p-price" data-mo="$79" data-yr="$55"><span>/mo</span></div>
+        <div class="p-was" data-mo="" data-yr="$79/mo">&nbsp;</div>
+        <div class="p-period" data-mo="Billed monthly" data-yr="$660/yr &middot; billed annually">Billed monthly</div>
+        <div class="p-trial">7-day free trial included</div>
+        <ul>
+          <li>Everything in Pro</li>
+          <li>Institutional flow tracking</li>
+          <li>MarketLens AI deep scans</li>
+          <li>Multi-timeframe analysis</li>
+          <li>Priority support</li>
+          <li>Early access to new features</li>
+          <li>&nbsp;</li>
+          <li>&nbsp;</li>
+        </ul>
+        <button class="p-btn ghost" onclick="checkout('elite')">Start Free Trial</button>
+      </div>
+    </div>
   </div>
 </section>
 
+<!-- FAQ -->
+<section class="faq">
+  <div class="faq-inner">
+    <h2>Questions</h2>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What happens after the 7-day trial? <span class="arrow">&#9660;</span></div>
+      <div class="faq-a"><p>You'll be charged the plan price automatically. You can cancel anytime before the trial ends and you won't be charged a cent. No hoops, no phone calls — just cancel from your billing portal.</p></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Can I switch plans later? <span class="arrow">&#9660;</span></div>
+      <div class="faq-a"><p>Yes. Upgrade or downgrade anytime from the billing portal. If you upgrade mid-cycle, you'll be prorated. If you downgrade, the change takes effect at your next billing date.</p></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">What markets does the scanner cover? <span class="arrow">&#9660;</span></div>
+      <div class="faq-a"><p>The scanner covers 200+ ASX-listed stocks across all sectors. It runs proven mechanical strategies — CRT reversals, breakouts, trend continuations, and momentum plays — and detects cross-asset divergences between correlated markets.</p></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">How do the AI predictions work? <span class="arrow">&#9660;</span></div>
+      <div class="faq-a"><p>They combine technical indicators (RSI, MACD, EMA alignment), overnight futures flow, and macro context to generate a daily verdict for each ASX index. The AI shows its reasoning so you can judge for yourself.</p></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Is my payment info secure? <span class="arrow">&#9660;</span></div>
+      <div class="faq-a"><p>Payments are handled entirely by Stripe — we never see or store your card details. Stripe is PCI Level 1 certified, the highest level of security in the payments industry.</p></div>
+    </div>
+
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">Can I cancel anytime? <span class="arrow">&#9660;</span></div>
+      <div class="faq-a"><p>Yes. Cancel from the billing portal in two clicks. You'll keep access until the end of your current billing period. No cancellation fees, no retention calls.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final">
+  <div class="final-box rv">
+    <h2>Try it for a week. Free.</h2>
+    <p>Full access to every feature. If it doesn't make your mornings easier, cancel before day 7 and you pay nothing.</p>
+    <a href="#pricing" class="btn-go">Start Free Trial</a>
+  </div>
+</section>
+
+<!-- FOOTER -->
 <footer>
-  <p>&copy; 2025 APEXtrade</p>
+  <div class="foot">
+    <p>&copy; 2025 APEXtrade. All rights reserved.</p>
+    <div class="foot-links">
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="app.html">Dashboard</a>
+      <a href="#" onclick="openPortal();return false">Manage Billing</a>
+    </div>
+  </div>
 </footer>
 
 <script>
-/* Particle background */
+/* ── Background particles ── */
 (function(){
   var c=document.getElementById('bg-canvas');if(!c)return;
   var ctx=c.getContext('2d'),w,h,pts=[],N=60,D=130;
@@ -228,14 +408,14 @@ footer p{font-size:12px;color:var(--text4)}
   frame();
 })();
 
-/* Nav scroll */
+/* ── Nav scroll ── */
 addEventListener('scroll',function(){document.getElementById('nav').classList.toggle('scrolled',scrollY>30)});
 
-/* Reveal on scroll */
+/* ── Reveal ── */
 var ro=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');ro.unobserve(e.target)}})},{threshold:.1});
 document.querySelectorAll('.rv').forEach(function(el){ro.observe(el)});
 
-/* Dashboard tilt */
+/* ── Dashboard tilt ── */
 (function(){
   var f=document.getElementById('dashFrame');if(!f)return;
   var w=f.parentElement;
@@ -246,10 +426,92 @@ document.querySelectorAll('.rv').forEach(function(el){ro.observe(el)});
   w.addEventListener('mouseleave',function(){f.style.transform='rotateX(0) rotateY(0)'});
 })();
 
-/* Smooth anchor */
+/* ── Smooth anchor ── */
 document.querySelectorAll('a[href^="#"]').forEach(function(a){
   a.addEventListener('click',function(e){e.preventDefault();var t=document.querySelector(this.getAttribute('href'));if(t)t.scrollIntoView({behavior:'smooth'})});
 });
+
+/* ── FAQ toggle ── */
+function toggleFaq(q){
+  var item = q.closest('.faq-item');
+  item.classList.toggle('open');
+}
+
+/* ── Billing toggle (monthly/yearly) ── */
+var billingCycle = 'monthly';
+function setBilling(cycle){
+  billingCycle = cycle;
+  var btns = document.querySelectorAll('.billing-toggle button');
+  btns.forEach(function(b){ b.classList.toggle('active', b.textContent.toLowerCase().indexOf(cycle) !== -1 || (cycle === 'monthly' && b.textContent === 'Monthly')); });
+  // Fix: first button is monthly, second is yearly
+  btns[0].classList.toggle('active', cycle === 'monthly');
+  btns[1].classList.toggle('active', cycle === 'yearly');
+
+  // Update prices
+  document.querySelectorAll('.p-price[data-mo]').forEach(function(el){
+    var val = cycle === 'yearly' ? el.dataset.yr : el.dataset.mo;
+    el.innerHTML = val + ' <span>/mo</span>';
+  });
+  document.querySelectorAll('.p-was[data-mo]').forEach(function(el){
+    var val = cycle === 'yearly' ? el.dataset.yr : el.dataset.mo;
+    el.textContent = val || '\u00a0';
+  });
+  document.querySelectorAll('.p-period[data-mo]').forEach(function(el){
+    el.textContent = cycle === 'yearly' ? el.dataset.yr : el.dataset.mo;
+  });
+}
+// Init prices on load
+setBilling('monthly');
+
+/* ── Stripe checkout ── */
+async function checkout(tier) {
+  var plan = tier + '_' + billingCycle;
+  var btn = event.target;
+  btn.classList.add('loading');
+  btn.textContent = 'Loading...';
+
+  try {
+    var res = await fetch('/.netlify/functions/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan: plan }),
+    });
+    var data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert('Error: ' + (data.error || 'Could not create checkout session'));
+      btn.classList.remove('loading');
+      btn.textContent = 'Start Free Trial';
+    }
+  } catch (err) {
+    alert('Connection error. Please try again.');
+    btn.classList.remove('loading');
+    btn.textContent = 'Start Free Trial';
+  }
+}
+
+/* ── Billing portal ── */
+async function openPortal() {
+  var email = prompt('Enter the email you subscribed with:');
+  if (!email) return;
+
+  try {
+    var res = await fetch('/.netlify/functions/customer-portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email }),
+    });
+    var data = await res.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert(data.error || 'No subscription found for that email.');
+    }
+  } catch (err) {
+    alert('Connection error. Please try again.');
+  }
+}
 </script>
 </body>
 </html>
