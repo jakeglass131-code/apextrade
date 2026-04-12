@@ -5,3 +5,7 @@
   for = "/*"
   [headers.values]
     Access-Control-Allow-Origin = "*"
+
+# Auto-trade: runs at 23:00 UTC daily (9:00am AEST next day, 30min before ASX open)
+[functions."auto-trade"]
+  schedule = "0 23 * * 0-4"
