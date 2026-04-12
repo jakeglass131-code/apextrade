@@ -871,6 +871,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fd);font-size:13px
 .ovn-spark { width:100%; height:32px; margin-top:8px; display:block; }
 
 /* Prediction panel */
+.pred-tf-btn { opacity:0.5; transition:opacity .15s,background .15s; }
+.pred-tf-btn.active { opacity:1; background:var(--accent)!important; color:#fff!important; }
 #prediction-body h3 { font-size:13px; font-weight:700; color:var(--text); margin:16px 0 6px; }
 #prediction-body h3:first-child { margin-top:0; }
 #prediction-body p { font-size:12px; color:var(--text2); line-height:1.7; margin-bottom:10px; }
@@ -1403,11 +1405,17 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
   
     <span class="kb-hint">6</span>
   </button>
+  <button class="sbb" id="sb-backtest" onclick="nav('backtest')">
+    <svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><polyline points="18 9 13 14 9 10 4 15"/><circle cx="18" cy="9" r="1.5"/></svg>
+    <span>Backtest</span>
+
+    <span class="kb-hint">7</span>
+  </button>
   <button class="sbb" id="sb-settings" onclick="nav('settings')">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     <span>Settings</span>
-  
-    <span class="kb-hint">7</span>
+
+    <span class="kb-hint">8</span>
   </button>
 </div>
 
@@ -1470,10 +1478,15 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
     <!-- ── AI Market Prediction ── -->
     <div class="panel" id="prediction-panel">
       <div class="phead">
-        <div class="ptitle">🧠 Today's market prediction</div>
-        <div style="display:flex;align-items:center;gap:8px">
+        <div class="ptitle">🧠 Market prediction</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div id="pred-tf-btns" style="display:flex;gap:2px;background:var(--bg3);border-radius:8px;padding:2px">
+            <button class="btn pred-tf-btn active" data-tf="daily" onclick="switchPredTimeframe('daily')" style="font-size:10px;padding:3px 10px;border-radius:6px">Daily</button>
+            <button class="btn pred-tf-btn" data-tf="weekly" onclick="switchPredTimeframe('weekly')" style="font-size:10px;padding:3px 10px;border-radius:6px">Weekly</button>
+            <button class="btn pred-tf-btn" data-tf="monthly" onclick="switchPredTimeframe('monthly')" style="font-size:10px;padding:3px 10px;border-radius:6px">Monthly</button>
+          </div>
           <div id="pred-badge" style="font-size:10px;padding:3px 9px;border-radius:99px;border:1px solid var(--border2);color:var(--text3)">Generating...</div>
-          <button class="btn" onclick="runMarketPrediction()" id="pred-refresh-btn" style="font-size:10px;padding:4px 10px">Regenerate</button>
+          <button class="btn" onclick="runMarketPrediction(_currentPredTF,true)" id="pred-refresh-btn" style="font-size:10px;padding:4px 10px">Regenerate</button>
         </div>
       </div>
       <div id="prediction-body" style="padding:20px">
@@ -2363,6 +2376,11 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
       </div>
     </div>
   </div>
+</div>
+
+<!-- ═══════════════ PAGE: BACKTEST RESULTS ═══════════════ -->
+<div class="page" id="page-backtest">
+  <iframe id="backtest-iframe" src="backtest-charts.html" style="width:100%;height:100%;border:none;background:var(--bg)"></iframe>
 </div>
 
 <!-- ═══════════════ PAGE: SETTINGS ═══════════════ -->
@@ -8909,8 +8927,10 @@ async function fetchOvernightData() {
   // Clear refresh sweep state
   overnightPanel.classList.remove('refreshing');
 
-  // Trigger prediction after data is loaded
-  runMarketPrediction();
+  // Trigger prediction after data is loaded (daily first, then pre-cache weekly/monthly)
+  runMarketPrediction('daily');
+  setTimeout(function() { runMarketPrediction('weekly'); }, 2000);
+  setTimeout(function() { runMarketPrediction('monthly'); }, 4000);
 }
 
 function renderOvernightGrid() {
@@ -9086,8 +9106,11 @@ function _renderV2Prediction(v2, body, badge, btn) {
   // ── Hero verdict banner ──────────────────────────────────────────────
   var html = '<div style="padding:16px 20px;background:var(--bg4);border:2px solid ' + dirCol.replace('var(--','rgba(').replace(')',',.35)') + ';border-radius:12px;margin-bottom:16px">';
   html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">';
-  html += '<div><div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em">' + (v2.factorCount || factors.length) + '-Factor Ensemble Quant Model · v' + (v2.version || '2.5') + '</div>';
-  html += '<div style="font-size:32px;font-weight:900;color:' + dirCol + ';line-height:1.1">' + dirLabel + '</div></div>';
+  var tfDisplay = v2.timeframe === 'monthly' ? 'Monthly Outlook' : v2.timeframe === 'weekly' ? 'Weekly Outlook' : 'Daily Forecast';
+  var tfHorizon = v2.timeframe === 'monthly' ? '22 trading days' : v2.timeframe === 'weekly' ? '5 trading days' : 'Next session';
+  html += '<div><div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em">' + (v2.factorCount || factors.length) + '-Factor Ensemble Quant Model · v' + (v2.version || '2.5') + ' · ' + tfDisplay + '</div>';
+  html += '<div style="font-size:32px;font-weight:900;color:' + dirCol + ';line-height:1.1">' + dirLabel + '</div>';
+  html += '<div style="font-size:10px;color:var(--text4);margin-top:2px">Horizon: ' + tfHorizon + (v2.tradingDate ? ' · Locked ' + v2.tradingDate : '') + '</div></div>';
   html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Score</div><div style="font-size:22px;font-weight:800;color:' + dirCol + '">' + (p.score > 0 ? '+' : '') + p.score.toFixed(3) + '</div></div>';
   html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Confidence</div><div style="font-size:22px;font-weight:800;color:' + confCol + '">' + p.confidence.toFixed(0) + '%</div></div>';
   html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Est. Move</div><div style="font-size:22px;font-weight:800;color:' + dirCol + '">' + p.estimatedChange + '</div></div>';
@@ -9792,28 +9815,118 @@ function _renderBriefing(emailHtml, body, badge) {
   }
 }
 
-async function runMarketPrediction() {
+// ── Timeframe state + localStorage cache ──────────────────────────────────
+var _currentPredTF = 'daily';
+var _predCache = {}; // in-memory cache keyed by timeframe
+
+function _getPredCacheKey(tf) {
+  // Cache key = AEST trading date + timeframe
+  var now = new Date();
+  var aest = new Date(now.toLocaleString('en-US', { timeZone: 'Australia/Sydney' }));
+  var h = aest.getHours();
+  // Before 9am AEST, use previous trading date
+  if (h < 9) aest.setDate(aest.getDate() - 1);
+  // Skip weekends
+  var dow = aest.getDay();
+  if (dow === 0) aest.setDate(aest.getDate() - 2);
+  if (dow === 6) aest.setDate(aest.getDate() - 1);
+  var dateStr = aest.toISOString().slice(0, 10);
+  return 'apex_pred_' + tf + '_' + dateStr;
+}
+
+function _loadCachedPrediction(tf) {
+  try {
+    var key = _getPredCacheKey(tf);
+    var raw = localStorage.getItem(key);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return null;
+}
+
+function _savePredictionCache(tf, data) {
+  try {
+    var key = _getPredCacheKey(tf);
+    localStorage.setItem(key, JSON.stringify(data));
+    // Clean old cache entries (keep last 5 days × 3 timeframes)
+    var toKeep = [];
+    for (var d = 0; d < 7; d++) {
+      var dt = new Date(); dt.setDate(dt.getDate() - d);
+      var ds = dt.toISOString().slice(0, 10);
+      ['daily','weekly','monthly'].forEach(function(t) { toKeep.push('apex_pred_' + t + '_' + ds); });
+    }
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k && k.startsWith('apex_pred_') && toKeep.indexOf(k) === -1) localStorage.removeItem(k);
+    }
+  } catch(e) {}
+}
+
+function switchPredTimeframe(tf) {
+  _currentPredTF = tf;
+  document.querySelectorAll('.pred-tf-btn').forEach(function(b) {
+    b.classList.toggle('active', b.getAttribute('data-tf') === tf);
+  });
+  // Check in-memory cache first, then localStorage
+  if (_predCache[tf]) {
+    var body = document.getElementById('prediction-body');
+    var badge = document.getElementById('pred-badge');
+    var btn = document.getElementById('pred-refresh-btn');
+    _renderV2Prediction(_predCache[tf], body, badge, btn);
+    return;
+  }
+  var cached = _loadCachedPrediction(tf);
+  if (cached) {
+    _predCache[tf] = cached;
+    var body = document.getElementById('prediction-body');
+    var badge = document.getElementById('pred-badge');
+    var btn = document.getElementById('pred-refresh-btn');
+    _renderV2Prediction(cached, body, badge, btn);
+    return;
+  }
+  runMarketPrediction(tf);
+}
+
+async function runMarketPrediction(tf, forceRefresh) {
+  tf = tf || _currentPredTF || 'daily';
   const body = document.getElementById('prediction-body');
   const badge = document.getElementById('pred-badge');
   const btn = document.getElementById('pred-refresh-btn');
   if (!body) return;
 
-  if (badge) { badge.textContent = 'Analysing...'; badge.style.color='var(--amber)'; badge.style.borderColor='rgba(255,170,0,.3)'; }
-  if (btn) btn.disabled = true;
-  body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px"><div class="lpulse" style="background:var(--accent);margin:0 auto 12px"></div>Running 55+ factor quant engine: fetching 24 assets, 2yr history, Monte Carlo sims, correlation matrix, sector analysis &amp; walk-forward backtest...</div>';
+  // Check localStorage cache (unless force refresh via Regenerate button)
+  var cached = _loadCachedPrediction(tf);
+  if (cached && !forceRefresh) {
+    _predCache[tf] = cached;
+    if (tf === _currentPredTF) _renderV2Prediction(cached, body, badge, btn);
+    return;
+  }
+
+  var tfLabel = tf === 'weekly' ? 'Weekly' : tf === 'monthly' ? 'Monthly' : 'Daily';
+  // Only show loading UI if this is the active tab
+  if (tf === _currentPredTF) {
+    if (badge) { badge.textContent = 'Analysing ' + tfLabel + '...'; badge.style.color='var(--amber)'; badge.style.borderColor='rgba(255,170,0,.3)'; }
+    if (btn) btn.disabled = true;
+    body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px"><div class="lpulse" style="background:var(--accent);margin:0 auto 12px"></div>Running ' + tfLabel.toLowerCase() + ' quant engine: fetching 24 assets, 2yr history, Monte Carlo sims, correlation matrix, sector analysis &amp; walk-forward backtest...</div>';
+  }
 
   // ═══ V2 QUANT ENGINE — primary prediction source ═══
   try {
-    const v2Resp = await fetch('/.netlify/functions/predict-v2', { signal: AbortSignal.timeout(20000) });
+    var url = '/.netlify/functions/predict-v2' + (tf !== 'daily' ? '?timeframe=' + tf : '');
+    const v2Resp = await fetch(url, { signal: AbortSignal.timeout(25000) });
     if (v2Resp.ok) {
       const v2 = await v2Resp.json();
       if (v2.prediction && v2.factors) {
-        _renderV2Prediction(v2, body, badge, btn);
+        _predCache[tf] = v2;
+        _savePredictionCache(tf, v2);
+        // Only render if this timeframe is still the active tab
+        if (tf === _currentPredTF) {
+          _renderV2Prediction(v2, body, badge, btn);
+        }
         return;
       }
     }
   } catch(e) {
-    console.warn('[predict] V2 engine failed, falling back:', e.message);
+    console.warn('[predict] V2 engine failed for ' + tf + ', falling back:', e.message);
   }
 
   body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px"><div class="lpulse" style="background:var(--accent);margin:0 auto 12px"></div>V2 unavailable — running legacy prediction...</div>';
@@ -10142,9 +10255,9 @@ RULES:
     if (isProxyErr) {
       footer = '<div style="margin-top:10px;padding:10px 12px;background:rgba(6,182,212,.06);border:1px solid rgba(6,182,212,.2);border-radius:8px;font-size:11px;color:var(--text3);text-align:center"><span style="color:var(--accent);font-weight:700">ℹ AI narrative disabled</span> · Add <code style="background:var(--bg3);padding:1px 6px;border-radius:3px">ANTHROPIC_API_KEY</code> in Netlify env vars to enable the LLM-generated forecast text.</div>';
     } else if (isNetworkErr) {
-      footer = `<div style="margin-top:10px;padding:10px 12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:11px;color:var(--text3);text-align:center"><span style="color:var(--amber);font-weight:700">⚠ AI backend unreachable</span> · Serving rule-based prediction. <button class="btn" onclick="runMarketPrediction()" style="font-size:10px;padding:3px 10px;margin-left:6px">Retry</button></div>`;
+      footer = `<div style="margin-top:10px;padding:10px 12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);border-radius:8px;font-size:11px;color:var(--text3);text-align:center"><span style="color:var(--amber);font-weight:700">⚠ AI backend unreachable</span> · Serving rule-based prediction. <button class="btn" onclick="runMarketPrediction(_currentPredTF,true)" style="font-size:10px;padding:3px 10px;margin-left:6px">Retry</button></div>`;
     } else {
-      footer = `<div style="margin-top:10px;font-size:11px;color:var(--text4);text-align:center">AI prediction error: ${_escHtml(e.message || 'unknown')} · <button class="btn" onclick="runMarketPrediction()" style="font-size:10px;padding:3px 10px">Retry</button></div>`;
+      footer = `<div style="margin-top:10px;font-size:11px;color:var(--text4);text-align:center">AI prediction error: ${_escHtml(e.message || 'unknown')} · <button class="btn" onclick="runMarketPrediction(_currentPredTF,true)" style="font-size:10px;padding:3px 10px">Retry</button></div>`;
     }
 
     body.innerHTML = verdictHTML + techDashHTML + newsContext + ruleHTML + footer;
@@ -10286,7 +10399,7 @@ document.addEventListener('keydown', function(e) {
   const key = e.key.toLowerCase();
   const ctrl = e.ctrlKey || e.metaKey;
 
-  // Navigation: 1-6 for pages
+  // Navigation: 1-8 for pages
   if (!ctrl && !e.altKey) {
     switch(key) {
       case '1': nav('dash'); break;
@@ -10294,7 +10407,9 @@ document.addEventListener('keydown', function(e) {
       case '3': nav('futures'); break;
       case '4': nav('sectors'); break;
       case '5': nav('smt'); break;
-      case '6': nav('settings'); break;
+      case '6': nav('log'); break;
+      case '7': nav('backtest'); break;
+      case '8': nav('settings'); break;
       case 'n': if (!e.shiftKey) { nav('dash'); setTimeout(()=> showAddTrade && showAddTrade(), 100); } break;
       case 'escape':
         const mw = document.getElementById('modal-wrap');
