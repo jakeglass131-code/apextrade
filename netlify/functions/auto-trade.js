@@ -927,7 +927,24 @@ exports.handler = async (event) => {
 
     // ── Step 3: Connect to IG Markets ─────────────────────────────────────
     addLog(`🔗 Connecting to IG Markets (${isDemo ? 'DEMO' : 'LIVE'})...`);
-    addLog(`  API URL: ${isDemo ? IG_DEMO_URL : IG_API_URL}`);
+    const apiUrl = isDemo ? IG_DEMO_URL : IG_API_URL;
+    addLog(`  API URL: ${apiUrl}`);
+
+    // Test connectivity first
+    try {
+      const testRes = await fetch(apiUrl, { method: 'GET', signal: AbortSignal.timeout(10000) });
+      addLog(`  Connectivity test: ${testRes.status} ${testRes.statusText}`);
+    } catch (connErr) {
+      addLog(`  Connectivity test failed: ${connErr.message} (${connErr.cause?.code || connErr.code || 'unknown'})`);
+      // Try demo URL as fallback test
+      try {
+        const demoTest = await fetch(IG_DEMO_URL, { method: 'GET', signal: AbortSignal.timeout(10000) });
+        addLog(`  Demo connectivity: ${demoTest.status} — demo works, live may be geo-blocked`);
+      } catch (e2) {
+        addLog(`  Demo also failed: ${e2.message} — IG may block cloud IPs`);
+      }
+    }
+
     const ig = new IGClient(igApiKey, igUsername, igPassword, isDemo);
     const session = await ig.login();
     addLog(`  Logged in as: ${session.currentAccountId || session.accountId} (API v${ig.apiVersion})`);
@@ -1061,6 +1078,8 @@ exports.handler = async (event) => {
 
   } catch (error) {
     addLog(`❌ ERROR: ${error.message}`);
+    addLog(`  Stack: ${error.stack?.split('\n').slice(0, 3).join(' | ')}`);
+    if (error.cause) addLog(`  Cause: ${JSON.stringify(error.cause)}`);
     console.error(error);
     return {
       statusCode: 500,
