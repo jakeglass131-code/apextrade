@@ -9155,7 +9155,7 @@ function _renderV2Prediction(v2, body, badge, btn) {
     html += '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text3)">' + (f.detail || '') + '</div>';
     html += '</div>';
     html += '<div style="text-align:right;font-weight:800;color:' + fCol + '">' + arrow + ' ' + (f.score > 0 ? '+' : '') + f.score.toFixed(2) + '</div>';
-    html += '<div style="text-align:right;font-size:9px;color:var(--text4)">w:' + f.weight.toFixed(1) + '</div>';
+    html += '<div style="text-align:right;font-size:9px;color:var(--text4)">w:' + f.weight.toFixed(1) + (f.optimized ? ' <span style="color:var(--accent)" title="IC: ' + (f.ic||0).toFixed(3) + '">⚡</span>' : '') + '</div>';
     html += '</div>';
   }
   html += '</div>';
@@ -9187,6 +9187,140 @@ function _renderV2Prediction(v2, body, badge, btn) {
   html += _techCell('Z-Score', tech.zScore, function(v) { return Math.abs(v)>2?'var(--red)':Math.abs(v)>1.5?'var(--amber)':'var(--text2)'; });
   html += _techCell('Consec', tech.consecutiveDays, function(v) { return v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--text3)'; });
   html += '</div></div>';
+
+  // ── Monte Carlo Distribution ──────────────────────────────────────────
+  var mcData = v2.monteCarlo;
+  if (mcData) {
+    var mcBullCol = mcData.bullProb > 55 ? 'var(--green)' : mcData.bullProb < 45 ? 'var(--red)' : 'var(--amber)';
+    html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🎲 Monte Carlo Simulation (' + mcData.simulations.toLocaleString() + ' paths, Cornish-Fisher skew)</div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    html += '<div style="text-align:center;flex:1"><div style="font-size:9px;color:var(--text4)">Bull Prob</div><div style="font-size:20px;font-weight:900;color:' + mcBullCol + '">' + mcData.bullProb + '%</div></div>';
+    html += '<div style="text-align:center;flex:1"><div style="font-size:9px;color:var(--text4)">Bear Prob</div><div style="font-size:20px;font-weight:900;color:' + (mcData.bearProb > 55 ? 'var(--red)' : 'var(--text2)') + '">' + mcData.bearProb + '%</div></div>';
+    html += '<div style="text-align:center;flex:1"><div style="font-size:9px;color:var(--text4)">Expected</div><div style="font-size:20px;font-weight:900;color:' + (mcData.expectedValue >= p.lastPrice ? 'var(--green)' : 'var(--red)') + '">' + mcData.expectedValue.toFixed(0) + '</div></div>';
+    html += '</div>';
+    // Percentile distribution bar
+    html += '<div style="position:relative;height:32px;background:rgba(255,255,255,.03);border-radius:6px;overflow:hidden;margin-bottom:6px">';
+    var mcRange = mcData.p95 - mcData.p5;
+    if (mcRange > 0) {
+      var pcts = [{v:mcData.p5,l:'P5'},{v:mcData.p10,l:'P10'},{v:mcData.p25,l:'P25'},{v:mcData.p50,l:'P50'},{v:mcData.p75,l:'P75'},{v:mcData.p90,l:'P90'},{v:mcData.p95,l:'P95'}];
+      // Gradient bar from bear to bull
+      html += '<div style="position:absolute;left:0;top:0;height:100%;width:100%;background:linear-gradient(90deg,rgba(239,68,68,.25),rgba(255,255,255,.05) 50%,rgba(16,185,129,.25))"></div>';
+      for (var pi=0;pi<pcts.length;pi++) {
+        var pPos = ((pcts[pi].v - mcData.p5) / mcRange * 100).toFixed(1);
+        html += '<div style="position:absolute;left:' + pPos + '%;top:0;height:100%;width:1px;background:rgba(255,255,255,.15)"></div>';
+        html += '<div style="position:absolute;left:' + pPos + '%;bottom:0;font-size:7px;color:var(--text4);transform:translateX(-50%)">' + pcts[pi].l + '<br>' + pcts[pi].v.toFixed(0) + '</div>';
+      }
+      // Mark current price
+      var curPos = ((p.lastPrice - mcData.p5) / mcRange * 100);
+      if (curPos >= 0 && curPos <= 100) {
+        html += '<div style="position:absolute;left:' + curPos.toFixed(1) + '%;top:0;height:100%;width:2px;background:var(--accent);z-index:1"></div>';
+        html += '<div style="position:absolute;left:' + curPos.toFixed(1) + '%;top:-2px;font-size:7px;color:var(--accent);font-weight:800;transform:translateX(-50%)">NOW</div>';
+      }
+    }
+    html += '</div>';
+    html += '<div style="font-size:9px;color:var(--text4);text-align:center">Distribution of ' + mcData.simulations.toLocaleString() + ' simulated next-day prices</div>';
+    html += '</div>';
+  }
+
+  // ── ASX Sector Analysis ──────────────────────────────────────────────
+  var secData = v2.sectorAnalysis;
+  if (secData && secData.sectors && secData.sectors.length) {
+    html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">🏭 ASX Sector Breakdown</div>';
+    var breadthCol = secData.breadth >= 70 ? 'var(--green)' : secData.breadth <= 30 ? 'var(--red)' : 'var(--amber)';
+    html += '<div style="font-size:10px;color:' + breadthCol + ';font-weight:700">Breadth: ' + secData.breadth + '%</div>';
+    html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(' + Math.min(4, secData.sectors.length) + ',1fr);gap:8px">';
+    for (var si = 0; si < secData.sectors.length; si++) {
+      var sec = secData.sectors[si];
+      var secCol = (sec.chg1d||0) > 0 ? 'var(--green)' : (sec.chg1d||0) < 0 ? 'var(--red)' : 'var(--text3)';
+      var momCol2 = (sec.momentum||0) > 0 ? 'var(--green)' : (sec.momentum||0) < 0 ? 'var(--red)' : 'var(--text4)';
+      html += '<div style="text-align:center;padding:8px;background:rgba(255,255,255,.02);border-radius:6px;border:1px solid rgba(255,255,255,.05)">';
+      html += '<div style="font-size:9px;color:var(--text4);font-weight:700;text-transform:uppercase">' + sec.name + '</div>';
+      html += '<div style="font-size:16px;font-weight:900;color:' + secCol + '">' + (sec.chg1d != null ? (sec.chg1d > 0 ? '+' : '') + sec.chg1d.toFixed(2) + '%' : 'N/A') + '</div>';
+      html += '<div style="font-size:9px;color:var(--text4)">5d: ' + (sec.chg5d != null ? (sec.chg5d > 0 ? '+' : '') + sec.chg5d.toFixed(1) + '%' : 'N/A') + '</div>';
+      html += '<div style="font-size:9px;color:var(--text4)">RSI: ' + (sec.rsi != null ? sec.rsi.toFixed(0) : 'N/A') + '</div>';
+      html += '<div style="font-size:9px;color:' + momCol2 + ';font-weight:700">Mom: ' + (sec.momentum > 0 ? '+' : '') + sec.momentum.toFixed(1) + '</div>';
+      html += '</div>';
+    }
+    html += '</div></div>';
+  }
+
+  // ── Correlation Matrix ───────────────────────────────────────────────
+  var corrData = v2.correlationMatrix;
+  if (corrData && corrData.pairs) {
+    html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em">🔗 Rolling Correlation Matrix (30d)</div>';
+    if (corrData.breakdownAlert) {
+      html += '<div style="font-size:9px;font-weight:800;color:var(--red);padding:2px 6px;background:rgba(239,68,68,.1);border-radius:4px">⚠ REGIME SHIFT</div>';
+    }
+    html += '</div>';
+    var corrPairs = Object.keys(corrData.pairs);
+    html += '<div style="display:grid;grid-template-columns:repeat(' + Math.min(4, corrPairs.length) + ',1fr);gap:8px">';
+    for (var ci = 0; ci < corrPairs.length; ci++) {
+      var cpair = corrData.pairs[corrPairs[ci]];
+      if (!cpair) continue;
+      var corrCol = cpair.current > 0.5 ? 'var(--green)' : cpair.current < -0.3 ? 'var(--red)' : 'var(--text2)';
+      var chgCol = cpair.change != null ? (Math.abs(cpair.change) > 0.2 ? 'var(--red)' : 'var(--text4)') : 'var(--text4)';
+      html += '<div style="text-align:center;padding:6px;background:rgba(255,255,255,.02);border-radius:6px">';
+      html += '<div style="font-size:9px;color:var(--text4);font-weight:700">' + corrPairs[ci] + '</div>';
+      html += '<div style="font-size:16px;font-weight:900;color:' + corrCol + '">' + (cpair.current > 0 ? '+' : '') + cpair.current.toFixed(2) + '</div>';
+      if (cpair.change != null) {
+        html += '<div style="font-size:8px;color:' + chgCol + '">Δ ' + (cpair.change > 0 ? '+' : '') + cpair.change.toFixed(2) + '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+    if (corrData.breakdownDetail) {
+      html += '<div style="margin-top:6px;font-size:9px;color:var(--red)">' + corrData.breakdownDetail + '</div>';
+    }
+    html += '</div>';
+  }
+
+  // ── Rolling Accuracy + Confidence Analysis ───────────────────────────
+  var rollAcc = v2.rollingAccuracy;
+  var confNotes = v2.confidenceAnalysis;
+  if (rollAcc || (confNotes && confNotes.notes && confNotes.notes.length)) {
+    html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🎯 Model Health & Signal Confidence</div>';
+    if (rollAcc) {
+      html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px">';
+      var accWindows = [{k:'last5',l:'Last 5'},{k:'last10',l:'Last 10'},{k:'last20',l:'Last 20'},{k:'last50',l:'Last 50'}];
+      for (var ai=0;ai<accWindows.length;ai++) {
+        var aw = rollAcc[accWindows[ai].k];
+        if (!aw) { html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">' + accWindows[ai].l + '</div><div style="font-size:14px;color:var(--text4)">—</div></div>'; continue; }
+        var accCol2 = aw.accuracy >= 60 ? 'var(--green)' : aw.accuracy >= 50 ? 'var(--amber)' : 'var(--red)';
+        html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">' + accWindows[ai].l + '</div>';
+        html += '<div style="font-size:18px;font-weight:900;color:' + accCol2 + '">' + aw.accuracy.toFixed(0) + '%</div>';
+        html += '<div style="font-size:8px;color:var(--text4)">' + aw.wins + '/' + aw.total + '</div></div>';
+      }
+      html += '</div>';
+    }
+    if (confNotes && confNotes.notes && confNotes.notes.length) {
+      html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+      for (var cni = 0; cni < confNotes.notes.length; cni++) {
+        var note = confNotes.notes[cni];
+        var noteCol = note.toLowerCase().includes('strong') || note.toLowerCase().includes('agree') || note.toLowerCase().includes('hot') ? 'rgba(16,185,129,.15)' : note.toLowerCase().includes('cold') || note.toLowerCase().includes('split') || note.toLowerCase().includes('volatile') || note.toLowerCase().includes('disagree') ? 'rgba(239,68,68,.15)' : 'rgba(6,182,212,.15)';
+        var noteTxt = note.toLowerCase().includes('strong') || note.toLowerCase().includes('agree') || note.toLowerCase().includes('hot') ? 'var(--green)' : note.toLowerCase().includes('cold') || note.toLowerCase().includes('split') || note.toLowerCase().includes('volatile') || note.toLowerCase().includes('disagree') ? 'var(--red)' : 'var(--accent)';
+        html += '<div style="font-size:9px;padding:3px 8px;border-radius:4px;background:' + noteCol + ';color:' + noteTxt + ';font-weight:600">' + note + '</div>';
+      }
+      html += '</div>';
+    }
+    // Weight optimization indicator
+    var wOpt = v2.weightOptimization;
+    if (wOpt && wOpt.applied) {
+      html += '<div style="margin-top:8px;font-size:9px;color:var(--accent)">⚡ Walk-forward weight optimization active — ' + wOpt.factorsOptimized + '/' + wOpt.totalFactors + ' factors IC-adjusted</div>';
+    }
+    // Thresholds info
+    var thr = v2.thresholds;
+    if (thr) {
+      html += '<div style="font-size:9px;color:var(--text4);margin-top:4px">Adaptive thresholds: Bull >' + thr.bullThreshold.toFixed(2) + ' · Bear <' + thr.bearThreshold.toFixed(2) + '</div>';
+    }
+    html += '</div>';
+  }
 
   // ── News sentiment (from client-side) ────────────────────────────────
   var BEARISH_RX = /\b(war|invasion|missile|attack|bomb|strike|retaliat|escalat|nuclear|crash|crisis|recession|depression|contagion|bank run|selloff|sell-off|capitulation|sanctions|embargo|blockade|tariff hike|trade war|rate hike|hawkish|shutdown|default|debt ceiling|coup|collaps|fail|broke down|tensions? (rise|rising|escalat)|plunge|plummet|tumble|slump)\b/i;
@@ -9309,7 +9443,7 @@ function _renderV2Prediction(v2, body, badge, btn) {
 
   // ── Footer ───────────────────────────────────────────────────────────
   html += '<div style="text-align:center;font-size:10px;color:var(--text4);margin-top:10px">';
-  html += (v2.factorCount || factors.length) + '-factor ensemble model · 18 assets · 3 sub-models · regime-adaptive weights · 2yr walk-forward backtest · ' + new Date(v2.generated).toLocaleTimeString() + ' · <em>Not financial advice</em>';
+  html += (v2.factorCount || factors.length) + '-factor ensemble · 24 assets · 3 sub-models · Monte Carlo · regime-adaptive · IC-optimized weights · correlation matrix · 2yr walk-forward backtest · v' + (v2.version || '2.6') + ' · ' + new Date(v2.generated).toLocaleTimeString() + ' · <em>Not financial advice</em>';
   html += '</div>';
 
   body.innerHTML = html;
@@ -9331,7 +9465,7 @@ async function runMarketPrediction() {
 
   if (badge) { badge.textContent = 'Analysing...'; badge.style.color='var(--amber)'; badge.style.borderColor='rgba(255,170,0,.3)'; }
   if (btn) btn.disabled = true;
-  body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px"><div class="lpulse" style="background:var(--accent);margin:0 auto 12px"></div>Running 16-factor quant model: fetching ASX, VIX, gold, oil, bonds, DXY, AUD, BTC, 2yr history &amp; backtesting...</div>';
+  body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px"><div class="lpulse" style="background:var(--accent);margin:0 auto 12px"></div>Running 55+ factor quant engine: fetching 24 assets, 2yr history, Monte Carlo sims, correlation matrix, sector analysis &amp; walk-forward backtest...</div>';
 
   // ═══ V2 QUANT ENGINE — primary prediction source ═══
   try {

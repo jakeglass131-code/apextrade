@@ -1260,18 +1260,479 @@ function latestChange(candles) {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
+// WALK-FORWARD WEIGHT OPTIMIZATION — auto-tunes factor weights from history
+// ═════════════════════════════════════════════════════════════════════════════
+// For each factor, measure its correlation with next-day returns over the last
+// N days. Factors that have been more predictive recently get higher weights.
+// This replaces hand-tuned weights with statistically validated ones.
+
+function optimizeWeights(asxCandles, factorScoreFns, lookback = 120) {
+  if (!asxCandles || asxCandles.length < lookback + 30) return null;
+
+  const optimized = {};
+  const closes = asxCandles.map(c => c.c);
+
+  // For each factor, compute its score at each historical point and correlate
+  // with next-day return
+  for (const [name, scoreFn] of Object.entries(factorScoreFns)) {
+    const scores = [];
+    const nextDayRets = [];
+
+    for (let i = Math.max(30, asxCandles.length - lookback); i < asxCandles.length - 1; i++) {
+      try {
+        const slice = asxCandles.slice(0, i + 1);
+        const sliceCloses = slice.map(c => c.c);
+        const result = scoreFn(slice, sliceCloses);
+        if (result != null && !isNaN(result)) {
+          scores.push(result);
+          nextDayRets.push((asxCandles[i + 1].c - asxCandles[i].c) / asxCandles[i].c);
+        }
+      } catch (e) { /* skip */ }
+    }
+
+    if (scores.length < 20) { optimized[name] = 1.0; continue; }
+
+    // Pearson correlation
+    const n = scores.length;
+    const meanS = scores.reduce((a, b) => a + b, 0) / n;
+    const meanR = nextDayRets.reduce((a, b) => a + b, 0) / n;
+    let num = 0, denS = 0, denR = 0;
+    for (let i = 0; i < n; i++) {
+      const ds = scores[i] - meanS, dr = nextDayRets[i] - meanR;
+      num += ds * dr; denS += ds * ds; denR += dr * dr;
+    }
+    const corr = (denS > 0 && denR > 0) ? num / Math.sqrt(denS * denR) : 0;
+
+    // Information Coefficient → weight multiplier
+    // IC > 0.05 is useful, > 0.1 is strong, > 0.15 is exceptional
+    const absCorr = Math.abs(corr);
+    let multiplier = 1.0;
+    if (absCorr > 0.15) multiplier = 2.5;
+    else if (absCorr > 0.1) multiplier = 2.0;
+    else if (absCorr > 0.07) multiplier = 1.5;
+    else if (absCorr > 0.04) multiplier = 1.2;
+    else if (absCorr < 0.02) multiplier = 0.5; // Noise — downweight
+    else if (absCorr < 0.01) multiplier = 0.2;
+
+    // If correlation is negative (factor is inverse predictor), flip it
+    if (corr < -0.04) multiplier *= -1;
+
+    optimized[name] = { multiplier, ic: corr, samples: n };
+  }
+
+  return optimized;
+}
+
+// Quick factor scoring functions for optimization (simplified versions)
+function _optRSI(slice, closes) { const r = rsi(closes); return r != null ? (r > 70 ? -1 : r < 30 ? 1 : r > 55 ? 0.2 : r < 45 ? -0.2 : 0) : null; }
+function _optMACD(slice, closes) { const m = macd(closes); return m ? (m.hist > 0 ? 0.5 : -0.5) + (m.hist > m.prevHist ? 0.3 : -0.3) : null; }
+function _optBB(slice, closes) { const bb = bollingerBands(closes); if (!bb) return null; const p = (closes[closes.length-1]-bb.lower)/(bb.upper-bb.lower); return p > 0.9 ? -1 : p < 0.1 ? 1 : 0; }
+function _optMeanRev(slice, closes) { const s = sma(closes, 20); if (!s) return null; const d = ((closes[closes.length-1]-s)/s)*100; return d > 3 ? -1 : d < -3 ? 1 : 0; }
+function _optConsec(slice) {
+  let c = 0;
+  for (let i = slice.length-1; i > Math.max(0,slice.length-8) && i > 0; i--) {
+    const d = slice[i].c > slice[i-1].c ? 1 : -1;
+    if (c === 0) c = d; else if ((c>0&&d>0)||(c<0&&d<0)) c += d; else break;
+  }
+  return Math.abs(c) >= 3 ? -Math.sign(c) : 0;
+}
+function _optADX(slice) { const a = adx(slice); return a ? (a.pDI > a.nDI ? 1 : -1) * (a.adx > 25 ? 0.5 : 0.2) : null; }
+function _optStoch(slice) { const s = stochastic(slice); return s ? (s.k > 80 ? -0.8 : s.k < 20 ? 0.8 : 0) : null; }
+function _optCCI(slice) { const c = cci(slice); return c != null ? (c > 100 ? -0.5 : c < -100 ? 0.5 : 0) : null; }
+function _optMFI(slice) { const m = mfi(slice); return m != null ? (m > 80 ? -0.6 : m < 20 ? 0.6 : 0) : null; }
+function _optVolume(slice) {
+  if (slice.length < 22) return null;
+  const avg = slice.slice(-21,-1).reduce((a,c)=>a+c.v,0)/20;
+  const last = slice[slice.length-1].v;
+  if (avg === 0) return null;
+  const ratio = last / avg;
+  const dir = slice[slice.length-1].c >= slice[slice.length-2]?.c ? 1 : -1;
+  return ratio > 1.5 ? dir * 0.4 : ratio < 0.5 ? -dir * 0.3 : 0;
+}
+
+const OPT_FACTORS = {
+  RSI: _optRSI, MACD: _optMACD, Bollinger: _optBB, MeanReversion: _optMeanRev,
+  Consecutive: _optConsec, ADX: _optADX, Stochastic: _optStoch, CCI: _optCCI,
+  MFI: _optMFI, Volume: _optVolume
+};
+
+// ═════════════════════════════════════════════════════════════════════════════
+// FEATURE INTERACTIONS — compound signals that capture non-linear relationships
+// ═════════════════════════════════════════════════════════════════════════════
+
+function computeFeatureInteractions(tech, regime, im) {
+  const interactions = [];
+
+  // 1. RSI × VIX: Oversold RSI during VIX panic = strongest buy signal
+  if (tech.rsi != null && im.vix != null) {
+    let s = 0;
+    if (tech.rsi < 30 && im.vix > 30) s = 2.0;       // Oversold + panic = BUY
+    else if (tech.rsi < 35 && im.vix > 25) s = 1.2;
+    else if (tech.rsi > 75 && im.vix < 14) s = -1.5;  // Overbought + complacent = SELL
+    else if (tech.rsi > 70 && im.vix < 16) s = -0.8;
+    if (s !== 0) interactions.push({ name: 'RSI × VIX', score: s, weight: 2.0, detail: `RSI ${tech.rsi.toFixed(0)} + VIX ${im.vix.toFixed(1)}`, cat: 'interaction' });
+  }
+
+  // 2. MACD × ADX: MACD crossover in strong trend = high conviction
+  if (tech.macd && tech.adx) {
+    let s = 0;
+    if (tech.macd.hist > 0 && tech.adx.adx > 30 && tech.adx.pDI > tech.adx.nDI) s = 1.0;
+    if (tech.macd.hist < 0 && tech.adx.adx > 30 && tech.adx.nDI > tech.adx.pDI) s = -1.0;
+    if (tech.adx.adx < 20 && Math.abs(tech.macd.hist) > 0) s *= 0.3; // Weak trend = ignore MACD
+    if (s !== 0) interactions.push({ name: 'MACD × ADX', score: s, weight: 1.5, detail: `MACD ${tech.macd.hist > 0 ? '+' : ''}${tech.macd.hist.toFixed(1)} in ADX ${tech.adx.adx.toFixed(0)}`, cat: 'interaction' });
+  }
+
+  // 3. Bollinger Squeeze × Volume: Squeeze + rising volume = breakout imminent
+  if (tech.bollingerWidth != null && tech.atrPctile != null) {
+    let s = 0;
+    if (tech.bollingerWidth < 2 && tech.atrPctile < 20) {
+      // Squeeze detected — direction from other signals
+      s = 0; // Neutral but flag it — breakout direction unknown
+      interactions.push({ name: 'BB Squeeze', score: 0, weight: 0.5, detail: `Squeeze! BW=${tech.bollingerWidth}%, ATR P${tech.atrPctile}`, cat: 'interaction' });
+    }
+  }
+
+  // 4. Mean Reversion × Hurst: Mean reversion signal when Hurst confirms MR regime
+  if (tech.zScore != null && tech.hurst != null) {
+    let s = 0;
+    if (tech.hurst < 0.45 && Math.abs(tech.zScore) > 1.5) {
+      // Mean-reverting regime + extreme z-score = strong contrarian
+      s = tech.zScore > 0 ? -1.5 : 1.5;
+      interactions.push({ name: 'Z × Hurst MR', score: s, weight: 2.0, detail: `Z=${tech.zScore.toFixed(1)} in H=${tech.hurst.toFixed(2)} regime`, cat: 'interaction' });
+    }
+    if (tech.hurst > 0.55 && tech.macd && tech.macd.accel) {
+      // Trending regime + MACD accelerating = ride the trend
+      s = tech.macd.hist > 0 ? 1.0 : -1.0;
+      interactions.push({ name: 'Trend × MACD Accel', score: s, weight: 1.8, detail: `H=${tech.hurst.toFixed(2)} trending + MACD accel`, cat: 'interaction' });
+    }
+  }
+
+  // 5. Futures × AUD: When futures and AUD align, signal is stronger for ASX
+  if (im.nq != null && im.aud != null) {
+    const futDir = ((im.nq || 0) * 0.5 + (im.es || 0) * 0.5) > 0 ? 1 : -1;
+    const audDir = im.aud > 0 ? 1 : -1;
+    if (futDir === audDir && Math.abs(im.nq || 0) > 0.5) {
+      const s = futDir * 0.8;
+      interactions.push({ name: 'Futures × AUD', score: s, weight: 1.5, detail: `Futures & AUD aligned ${futDir > 0 ? 'bullish' : 'bearish'}`, cat: 'interaction' });
+    }
+  }
+
+  // 6. Gold × DXY: Gold up + DXY up = unusual (flight to safety from all risk)
+  if (im.gold != null && im.dxy != null) {
+    if (im.gold > 0.5 && im.dxy > 0.3) {
+      interactions.push({ name: 'Gold × DXY Panic', score: -1.2, weight: 1.5, detail: `Gold AND USD both up — extreme risk-off`, cat: 'interaction' });
+    }
+  }
+
+  // 7. Ichimoku × EMA: Full trend confluence
+  if (tech.ichimoku && tech.emaAlignment) {
+    const ichBull = tech.ichimoku.aboveCloud && tech.ichimoku.tkCross === 'bullish';
+    const ichBear = !tech.ichimoku.aboveCloud && tech.ichimoku.tkCross === 'bearish';
+    const emaBull = (tech.emaAlignment || '').includes('BULL');
+    const emaBear = (tech.emaAlignment || '').includes('BEAR');
+    if (ichBull && emaBull) interactions.push({ name: 'Ichi × EMA Bull', score: 1.0, weight: 1.3, detail: 'Full trend alignment bullish', cat: 'interaction' });
+    if (ichBear && emaBear) interactions.push({ name: 'Ichi × EMA Bear', score: -1.0, weight: 1.3, detail: 'Full trend alignment bearish', cat: 'interaction' });
+  }
+
+  // 8. Stochastic × RSI divergence: Both oversold/overbought = stronger signal
+  if (tech.rsi != null && tech.stochastic) {
+    if (tech.rsi < 30 && tech.stochastic.k < 20) {
+      interactions.push({ name: 'RSI × Stoch OS', score: 1.5, weight: 1.5, detail: `Both deeply oversold: RSI ${tech.rsi.toFixed(0)}, Stoch ${tech.stochastic.k.toFixed(0)}`, cat: 'interaction' });
+    }
+    if (tech.rsi > 70 && tech.stochastic.k > 80) {
+      interactions.push({ name: 'RSI × Stoch OB', score: -1.5, weight: 1.5, detail: `Both deeply overbought: RSI ${tech.rsi.toFixed(0)}, Stoch ${tech.stochastic.k.toFixed(0)}`, cat: 'interaction' });
+    }
+  }
+
+  // 9. Yield curve × VIX: Inverted curve + VIX spike = recession panic
+  if (tech.yieldCurveSpread != null && im.vix != null) {
+    if (tech.yieldCurveSpread < 0 && im.vix > 25) {
+      interactions.push({ name: 'Curve × VIX Crisis', score: -1.5, weight: 2.0, detail: `Inverted curve + VIX ${im.vix.toFixed(0)} = recession risk`, cat: 'interaction' });
+    }
+  }
+
+  // 10. Consecutive × Volume: Many consecutive days + declining volume = exhaustion
+  if (tech.consecutiveDays != null) {
+    const abs = Math.abs(tech.consecutiveDays);
+    if (abs >= 4) {
+      interactions.push({ name: 'Consec Exhaustion', score: -Math.sign(tech.consecutiveDays) * 1.2, weight: 1.5, detail: `${abs} ${tech.consecutiveDays > 0 ? 'up' : 'down'} days — exhaustion likely`, cat: 'interaction' });
+    }
+  }
+
+  return interactions;
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// MONTE CARLO SIMULATION — probabilistic range estimation
+// ═════════════════════════════════════════════════════════════════════════════
+
+function monteCarloRange(closes, atrVal, nSim = 2000) {
+  if (closes.length < 30) return null;
+  const rets = [];
+  for (let i = closes.length - 60; i < closes.length; i++) {
+    if (i > 0) rets.push((closes[i] - closes[i - 1]) / closes[i - 1]);
+  }
+  if (rets.length < 20) return null;
+
+  const mean = rets.reduce((a, b) => a + b, 0) / rets.length;
+  const std = Math.sqrt(rets.reduce((a, b) => a + (b - mean) ** 2, 0) / rets.length);
+  const sk = rets.reduce((a, b) => a + ((b - mean) / std) ** 3, 0) / rets.length;
+  const lastPrice = closes[closes.length - 1];
+
+  // Simulate next-day returns with skew-adjusted normal distribution
+  const simReturns = [];
+  for (let i = 0; i < nSim; i++) {
+    // Box-Muller for normal random
+    const u1 = Math.random(), u2 = Math.random();
+    let z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+    // Apply skewness correction (Cornish-Fisher)
+    z = z + (z * z - 1) * sk / 6;
+    const simRet = mean + std * z;
+    simReturns.push(lastPrice * (1 + simRet));
+  }
+
+  simReturns.sort((a, b) => a - b);
+
+  return {
+    p5: +simReturns[Math.floor(nSim * 0.05)].toFixed(1),
+    p10: +simReturns[Math.floor(nSim * 0.10)].toFixed(1),
+    p25: +simReturns[Math.floor(nSim * 0.25)].toFixed(1),
+    p50: +simReturns[Math.floor(nSim * 0.50)].toFixed(1),
+    p75: +simReturns[Math.floor(nSim * 0.75)].toFixed(1),
+    p90: +simReturns[Math.floor(nSim * 0.90)].toFixed(1),
+    p95: +simReturns[Math.floor(nSim * 0.95)].toFixed(1),
+    bullProb: +(simReturns.filter(p => p > lastPrice).length / nSim * 100).toFixed(1),
+    bearProb: +(simReturns.filter(p => p < lastPrice).length / nSim * 100).toFixed(1),
+    expectedValue: +(simReturns.reduce((a, b) => a + b, 0) / nSim).toFixed(1),
+    simulations: nSim,
+  };
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ROLLING CORRELATION MATRIX — detect regime shifts via correlation breakdown
+// ═════════════════════════════════════════════════════════════════════════════
+
+function rollingCorrelation(series1, series2, window = 30) {
+  if (!series1 || !series2) return null;
+  const minLen = Math.min(series1.length, series2.length);
+  if (minLen < window + 1) return null;
+
+  const r1 = [], r2 = [];
+  for (let i = 1; i < minLen; i++) {
+    r1.push((series1[series1.length - minLen + i].c - series1[series1.length - minLen + i - 1].c) / series1[series1.length - minLen + i - 1].c);
+    r2.push((series2[series2.length - minLen + i].c - series2[series2.length - minLen + i - 1].c) / series2[series2.length - minLen + i - 1].c);
+  }
+
+  // Last 30-day correlation
+  const s1 = r1.slice(-window), s2 = r2.slice(-window);
+  const m1 = s1.reduce((a, b) => a + b, 0) / window;
+  const m2 = s2.reduce((a, b) => a + b, 0) / window;
+  let num = 0, d1 = 0, d2 = 0;
+  for (let i = 0; i < window; i++) {
+    num += (s1[i] - m1) * (s2[i] - m2);
+    d1 += (s1[i] - m1) ** 2;
+    d2 += (s2[i] - m2) ** 2;
+  }
+  const corr = (d1 > 0 && d2 > 0) ? num / Math.sqrt(d1 * d2) : 0;
+
+  // Previous 30-day correlation (for change detection)
+  if (r1.length < window * 2) return { current: +corr.toFixed(3), previous: null, change: null };
+  const p1 = r1.slice(-window * 2, -window), p2 = r2.slice(-window * 2, -window);
+  const pm1 = p1.reduce((a, b) => a + b, 0) / window;
+  const pm2 = p2.reduce((a, b) => a + b, 0) / window;
+  let pnum = 0, pd1 = 0, pd2 = 0;
+  for (let i = 0; i < window; i++) {
+    pnum += (p1[i] - pm1) * (p2[i] - pm2);
+    pd1 += (p1[i] - pm1) ** 2;
+    pd2 += (p2[i] - pm2) ** 2;
+  }
+  const prevCorr = (pd1 > 0 && pd2 > 0) ? pnum / Math.sqrt(pd1 * pd2) : 0;
+
+  return { current: +corr.toFixed(3), previous: +prevCorr.toFixed(3), change: +(corr - prevCorr).toFixed(3) };
+}
+
+function buildCorrelationMatrix(asxHist, spxData, goldData, vixData, audData) {
+  const pairs = {};
+  if (spxData) pairs['ASX-SPX'] = rollingCorrelation(asxHist, spxData);
+  if (goldData) pairs['ASX-Gold'] = rollingCorrelation(asxHist, goldData);
+  if (vixData) pairs['ASX-VIX'] = rollingCorrelation(asxHist, vixData);
+  if (audData) pairs['ASX-AUD'] = rollingCorrelation(asxHist, audData);
+
+  // Detect correlation breakdown (regime shift signal)
+  let breakdownAlert = false;
+  let breakdownDetail = '';
+  for (const [pair, data] of Object.entries(pairs)) {
+    if (data && data.change != null && Math.abs(data.change) > 0.3) {
+      breakdownAlert = true;
+      breakdownDetail += `${pair} shifted ${data.change > 0 ? '+' : ''}${data.change} `;
+    }
+  }
+
+  return { pairs, breakdownAlert, breakdownDetail: breakdownDetail.trim() };
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ASX SECTOR ANALYSIS — individual sector scoring
+// ═════════════════════════════════════════════════════════════════════════════
+
+function scoreSectors(sectorData) {
+  const sectors = [];
+  for (const [name, candles] of Object.entries(sectorData)) {
+    if (!candles || candles.length < 20) continue;
+    const closes = candles.map(c => c.c);
+    const r = rsi(closes);
+    const chg1d = latestChange(candles);
+    const chg5d = closes.length >= 6 ? ((closes[closes.length-1] - closes[closes.length-6]) / closes[closes.length-6]) * 100 : null;
+
+    let momentum = 0;
+    if (chg1d != null) momentum += chg1d > 0 ? 0.3 : -0.3;
+    if (chg5d != null) momentum += chg5d > 1 ? 0.3 : chg5d < -1 ? -0.3 : 0;
+    if (r != null) momentum += r > 60 ? 0.2 : r < 40 ? -0.2 : 0;
+
+    sectors.push({
+      name,
+      chg1d: chg1d != null ? +chg1d.toFixed(2) : null,
+      chg5d: chg5d != null ? +chg5d.toFixed(2) : null,
+      rsi: r != null ? +r.toFixed(1) : null,
+      momentum: +momentum.toFixed(2),
+    });
+  }
+
+  // Overall sector breadth: how many sectors are positive
+  const positive = sectors.filter(s => s.chg1d > 0).length;
+  const total = sectors.filter(s => s.chg1d != null).length;
+  const breadth = total > 0 ? positive / total : 0.5;
+
+  // Sector rotation signal: defensive sectors outperforming = risk-off
+  const miners = sectors.find(s => s.name === 'Miners');
+  const banks = sectors.find(s => s.name === 'Banks');
+  const energy = sectors.find(s => s.name === 'Energy');
+
+  let rotationScore = 0;
+  // ASX is heavily weighted to miners + banks
+  if (miners && miners.momentum > 0.3) rotationScore += 0.4;
+  if (miners && miners.momentum < -0.3) rotationScore -= 0.4;
+  if (banks && banks.momentum > 0.3) rotationScore += 0.3;
+  if (banks && banks.momentum < -0.3) rotationScore -= 0.3;
+
+  return {
+    sectors,
+    breadth: +(breadth * 100).toFixed(0),
+    rotationScore: +rotationScore.toFixed(2),
+    detail: `Breadth ${(breadth * 100).toFixed(0)}% (${positive}/${total} sectors +ive)`,
+  };
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ADAPTIVE THRESHOLDS — regime-aware decision boundaries
+// ═════════════════════════════════════════════════════════════════════════════
+
+function adaptiveThresholds(regime, atrPctile) {
+  // In volatile regimes, require stronger signal to call BULL/BEAR
+  // In quiet regimes, smaller signals are meaningful
+  let bullThreshold = 0.12;
+  let bearThreshold = -0.12;
+
+  if (regime === 'VOLATILE') { bullThreshold = 0.20; bearThreshold = -0.20; }
+  else if (regime === 'QUIET') { bullThreshold = 0.08; bearThreshold = -0.08; }
+  else if (regime === 'TRENDING') { bullThreshold = 0.10; bearThreshold = -0.10; }
+  else if (regime === 'MEAN_REVERTING') { bullThreshold = 0.15; bearThreshold = -0.15; }
+
+  // Further adjust by ATR percentile
+  if (atrPctile > 90) { bullThreshold += 0.05; bearThreshold -= 0.05; }
+  if (atrPctile < 10) { bullThreshold -= 0.03; bearThreshold += 0.03; }
+
+  return { bullThreshold, bearThreshold };
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// ROLLING ACCURACY — how the model performed in recent windows
+// ═════════════════════════════════════════════════════════════════════════════
+
+function rollingAccuracyWindows(backtestResults) {
+  if (!backtestResults || !backtestResults.length) return null;
+
+  function windowAcc(results, n) {
+    const window = results.slice(-n);
+    if (window.length < n) return null;
+    const wins = window.filter(r => r.won).length;
+    return { accuracy: +((wins / window.length) * 100).toFixed(1), total: window.length, wins };
+  }
+
+  return {
+    last5: windowAcc(backtestResults, 5),
+    last10: windowAcc(backtestResults, 10),
+    last20: windowAcc(backtestResults, 20),
+    last50: windowAcc(backtestResults, 50),
+  };
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// SIGNAL CONFIDENCE — meta-analysis of signal quality
+// ═════════════════════════════════════════════════════════════════════════════
+
+function signalConfidenceAnalysis(factors, ensemble, regime, rollingAcc, monteCarlo) {
+  let confidence = 40;
+  const notes = [];
+
+  // Factor agreement
+  const bullF = factors.filter(f => f.score > 0.1).length;
+  const bearF = factors.filter(f => f.score < -0.1).length;
+  const totalScoredF = bullF + bearF;
+  const agreement = totalScoredF > 0 ? Math.abs(bullF - bearF) / totalScoredF : 0;
+  confidence += agreement * 25;
+  if (agreement > 0.6) notes.push('Strong factor consensus');
+  if (agreement < 0.2) notes.push('Factors disagree — low conviction');
+
+  // Ensemble sub-model agreement
+  if (ensemble) {
+    const momDir = ensemble.momentum?.score > 0 ? 1 : -1;
+    const mrDir = ensemble.meanReversion?.score > 0 ? 1 : -1;
+    const imDir = ensemble.intermarket?.score > 0 ? 1 : -1;
+    const subAgreement = (momDir === mrDir ? 1 : 0) + (momDir === imDir ? 1 : 0) + (mrDir === imDir ? 1 : 0);
+    if (subAgreement === 3) { confidence += 10; notes.push('All 3 sub-models agree'); }
+    else if (subAgreement === 0) { confidence -= 10; notes.push('Sub-models completely split'); }
+  }
+
+  // Regime confidence
+  if (regime) {
+    confidence += (regime.confidence || 0.5) * 8;
+    if (regime.type === 'VOLATILE') { confidence -= 8; notes.push('Volatile regime — lower conviction'); }
+  }
+
+  // Rolling accuracy trend
+  if (rollingAcc) {
+    if (rollingAcc.last10 && rollingAcc.last10.accuracy >= 70) { confidence += 8; notes.push('Model hot — 70%+ recent accuracy'); }
+    if (rollingAcc.last10 && rollingAcc.last10.accuracy < 40) { confidence -= 10; notes.push('Model cold — below 40% recent'); }
+  }
+
+  // Monte Carlo alignment
+  if (monteCarlo) {
+    const bullProb = monteCarlo.bullProb;
+    if (bullProb > 60 || bullProb < 40) confidence += 5;
+    notes.push(`MC: ${bullProb}% bull probability`);
+  }
+
+  return { confidence: Math.min(95, Math.max(25, confidence)), notes };
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
 // MAIN HANDLER
 // ═════════════════════════════════════════════════════════════════════════════
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: CORS, body: '' };
 
   try {
-    // ── Fetch everything in parallel (18 assets) ──────────────────────
+    // ── Fetch everything in parallel (24 assets) ──────────────────────
     const [
       asxHist, xsoHist, xecHist,
       nqData, esData, ymData,
       vixData, goldData, oilData, dxyData, bondData, audData, btcData, copperData,
       us2yData, spxData, xlkData, xluData,
+      // ASX sector ETFs
+      asxMiners, asxBanks, asxEnergy, asxTech,
+      // Credit spread proxies
+      hygData, lqdData,
     ] = await Promise.all([
       safeYahoo('^AXJO', '2y', '1d'),
       safeYahoo('^AXSO', '2y', '1d'),
@@ -1287,10 +1748,18 @@ exports.handler = async (event) => {
       safeYahoo('AUDUSD=X', '5d', '1d'),
       safeYahoo('BTC-USD', '5d', '1d'),
       safeYahoo('HG=F', '5d', '1d'),
-      safeYahoo('^IRX', '5d', '1d'), // 3-month T-bill (proxy 2Y)
-      safeYahoo('^GSPC', '3mo', '1d'), // S&P 500 for relative strength
-      safeYahoo('XLK', '5d', '1d'), // Tech sector
-      safeYahoo('XLU', '5d', '1d'), // Utilities sector
+      safeYahoo('^IRX', '5d', '1d'),
+      safeYahoo('^GSPC', '3mo', '1d'),
+      safeYahoo('XLK', '5d', '1d'),
+      safeYahoo('XLU', '5d', '1d'),
+      // ASX sectors
+      safeYahoo('^AXMJ', '1mo', '1d'),  // ASX Materials/Miners
+      safeYahoo('^AXFJ', '1mo', '1d'),  // ASX Financials/Banks
+      safeYahoo('^AXEJ', '1mo', '1d'),  // ASX Energy
+      safeYahoo('^AXIJ', '1mo', '1d'),  // ASX Info Tech
+      // Credit
+      safeYahoo('HYG', '5d', '1d'),     // High Yield Corp
+      safeYahoo('LQD', '5d', '1d'),     // Investment Grade Corp
     ]);
 
     if (!asxHist || asxHist.length < 100) {
@@ -1305,7 +1774,7 @@ exports.handler = async (event) => {
     const goldChg = latestChange(goldData), oilChg = latestChange(oilData), dxyChg = latestChange(dxyData);
     const bondChg = latestChange(bondData), audChg = latestChange(audData), btcChg = latestChange(btcData);
     const copperChg = latestChange(copperData), xlkChg = latestChange(xlkData), xluChg = latestChange(xluData);
-    const hygChg = null, lqdChg = null; // Would need HYG/LQD data
+    const hygChg = latestChange(hygData), lqdChg = latestChange(lqdData);
 
     // Calculate all technicals
     const rsiVal = rsi(closes);
@@ -1408,6 +1877,44 @@ exports.handler = async (event) => {
     factors.push({ name: 'Historical Match', cat: 'pattern', weight: 1.2 * rw.pattern, ...scoreHistoricalMatch(asxHist, rsiVal, consecData.value) });
     factors.push({ name: 'Gap Analysis', cat: 'pattern', weight: 0.5 * rw.pattern, ...scoreGapAnalysis(asxHist) });
 
+    // ── ASX Sector Analysis ────────────────────────────────────────────
+    const sectorAnalysis = scoreSectors({
+      Miners: asxMiners, Banks: asxBanks, Energy: asxEnergy, Tech: asxTech
+    });
+    if (sectorAnalysis.rotationScore !== 0) {
+      factors.push({ name: 'ASX Sector Rotation', cat: 'inter', weight: 0.8 * rw.inter,
+        score: sectorAnalysis.rotationScore, detail: sectorAnalysis.detail });
+    }
+    factors.push({ name: 'Sector Breadth', cat: 'inter', weight: 0.6 * rw.inter,
+      score: sectorAnalysis.breadth > 70 ? 0.5 : sectorAnalysis.breadth < 30 ? -0.5 : 0,
+      detail: sectorAnalysis.detail });
+
+    // ── Feature Interactions (compound signals) ──────────────────────
+    const yieldCurveSpreadVal = (us2yData && bondData && us2yData.length >= 2 && bondData.length >= 2)
+      ? bondData[bondData.length-1].c - us2yData[us2yData.length-1].c : null;
+    const techForInteractions = { ...tech, yieldCurveSpread: yieldCurveSpreadVal, emaAlignment: factors.find(f=>f.name==='EMA Alignment')?.detail };
+    const interactions = computeFeatureInteractions(techForInteractions, regime, { ...im, vix: vixData?.[vixData.length-1]?.c });
+    for (const ix of interactions) {
+      factors.push(ix);
+    }
+
+    // ── Walk-Forward Weight Optimization ─────────────────────────────
+    const optimizedWeights = optimizeWeights(asxHist, OPT_FACTORS, 120);
+    if (optimizedWeights) {
+      // Apply IC-based multipliers to matching factors
+      for (const f of factors) {
+        const optName = f.name.replace(/[^a-zA-Z]/g, '');
+        for (const [oKey, oVal] of Object.entries(optimizedWeights)) {
+          if (optName.toLowerCase().includes(oKey.toLowerCase()) && oVal.multiplier != null) {
+            f.weight *= Math.abs(oVal.multiplier);
+            f.optimized = true;
+            f.ic = oVal.ic;
+            break;
+          }
+        }
+      }
+    }
+
     // ── Ensemble model ────────────────────────────────────────────────
     const ensemble = buildEnsemble(factors, regime);
 
@@ -1421,32 +1928,46 @@ exports.handler = async (event) => {
     const rawScore = totalW > 0 ? totalWS / totalW : 0;
 
     // Blend raw factor score with ensemble (ensemble gets 40% vote)
-    const finalScore = rawScore * 0.6 + ensemble.ensemble * 0.4;
+    const blendedScore = rawScore * 0.6 + ensemble.ensemble * 0.4;
 
-    // Direction
-    const direction = finalScore > 0.12 ? 'BULL' : finalScore < -0.12 ? 'BEAR' : 'NEUTRAL';
+    // ── Adaptive thresholds ──────────────────────────────────────────
+    const thresholds = adaptiveThresholds(regime.regime, regime.atrPctile);
+    const direction = blendedScore > thresholds.bullThreshold ? 'BULL'
+      : blendedScore < thresholds.bearThreshold ? 'BEAR' : 'NEUTRAL';
 
-    // Confidence
-    const bullF = factors.filter(f => f.score > 0.1).length;
-    const bearF = factors.filter(f => f.score < -0.1).length;
-    const agreement = Math.abs(bullF - bearF) / factors.length;
-    const rawConf = 35 + agreement * 40 + Math.abs(finalScore) * 15 + regime.confidence * 8;
-    // Reduce confidence in volatile regime
-    const confPenalty = regime.regime === 'VOLATILE' ? -8 : regime.regime === 'QUIET' ? 3 : 0;
-    const confidence = Math.min(92, Math.max(30, rawConf + confPenalty));
+    // ── Monte Carlo range ────────────────────────────────────────────
+    const mc = monteCarloRange(closes, atrVal, 2000);
 
-    // Range
-    const atrV = atrVal || lastPrice * 0.01;
-    const expectedMove = atrV * (0.25 + Math.abs(finalScore) * 0.5);
-    let rangeLow, rangeHigh;
-    if (direction === 'BULL') { rangeLow = lastPrice - atrV * 0.25; rangeHigh = lastPrice + expectedMove; }
-    else if (direction === 'BEAR') { rangeLow = lastPrice - expectedMove; rangeHigh = lastPrice + atrV * 0.25; }
-    else { rangeLow = lastPrice - atrV * 0.4; rangeHigh = lastPrice + atrV * 0.4; }
-
-    const estChange = finalScore * 0.35;
-
-    // ── Backtest ──────────────────────────────────────────────────────
+    // ── Backtest ─────────────────────────────────────────────────────
     const backtest = advancedBacktest(asxHist);
+    const rollingAcc = backtest ? rollingAccuracyWindows(backtest.recentResults) : null;
+
+    // ── Correlation matrix ───────────────────────────────────────────
+    const corrMatrix = buildCorrelationMatrix(asxHist, spxData, goldData, vixData, audData);
+    // Correlation breakdown adds uncertainty
+    if (corrMatrix.breakdownAlert) {
+      factors.push({ name: 'Corr Breakdown', cat: 'stat', weight: 1.0,
+        score: -0.3 * Math.sign(blendedScore), // Reduces conviction in current direction
+        detail: corrMatrix.breakdownDetail });
+    }
+
+    // ── Final confidence (meta-analysis) ─────────────────────────────
+    const confAnalysis = signalConfidenceAnalysis(factors, ensemble, regime, rollingAcc, mc);
+    const confidence = confAnalysis.confidence;
+    const finalScore = blendedScore;
+
+    // ── Range (Monte Carlo + ATR hybrid) ─────────────────────────────
+    const atrV = atrVal || lastPrice * 0.01;
+    let rangeLow, rangeHigh;
+    if (mc) {
+      rangeLow = mc.p10; rangeHigh = mc.p90;
+    } else {
+      const expectedMove = atrV * (0.25 + Math.abs(finalScore) * 0.5);
+      if (direction === 'BULL') { rangeLow = lastPrice - atrV * 0.25; rangeHigh = lastPrice + expectedMove; }
+      else if (direction === 'BEAR') { rangeLow = lastPrice - expectedMove; rangeHigh = lastPrice + atrV * 0.25; }
+      else { rangeLow = lastPrice - atrV * 0.4; rangeHigh = lastPrice + atrV * 0.4; }
+    }
+    const estChange = finalScore * 0.35;
 
     // ── XSO & XEC predictions (propagated from ASX200 with beta adjustments) ──
     const xsoCloses = xsoHist?.map(c => c.c) || [];
@@ -1489,7 +2010,11 @@ exports.handler = async (event) => {
         meanReversion: { score: +ensemble.meanReversion.score.toFixed(3), weight: +ensemble.meanReversion.weight.toFixed(1) },
         intermarket: { score: +ensemble.intermarket.score.toFixed(3), weight: +ensemble.intermarket.weight.toFixed(1) },
       },
-      factors: factors.map(f => ({ name: f.name, cat: f.cat, score: +f.score.toFixed(3), weight: +f.weight.toFixed(2), weightedScore: +f.weightedScore, detail: f.detail })),
+      factors: factors.map(f => ({
+        name: f.name, cat: f.cat, score: +f.score.toFixed(3), weight: +f.weight.toFixed(2),
+        weightedScore: +f.weightedScore, detail: f.detail,
+        optimized: f.optimized || false, ic: f.ic != null ? +f.ic.toFixed(4) : null,
+      })),
       intermarket: {
         nq: nqChg != null ? +nqChg.toFixed(2) : null, es: esChg != null ? +esChg.toFixed(2) : null, ym: ymChg != null ? +ymChg.toFixed(2) : null,
         vix: vixData?.[vixData.length - 1]?.c || null, vixRegime: factors.find(f => f.name === 'VIX')?.regime || 'unknown',
@@ -1519,12 +2044,32 @@ exports.handler = async (event) => {
         bollingerWidth: bbVal ? +(bbVal.width * 100).toFixed(2) : null,
         vwapDev: vwapVal ? +((lastPrice - vwapVal) / vwapVal * 100).toFixed(2) : null,
       },
+      monteCarlo: mc || null,
+      correlationMatrix: corrMatrix ? {
+        pairs: Object.fromEntries(Object.entries(corrMatrix.pairs).map(([k, v]) => [k, v ? { current: +v.current.toFixed(3), previous: +v.previous.toFixed(3), change: +v.change.toFixed(3) } : null])),
+        breakdownAlert: corrMatrix.breakdownAlert,
+        breakdownDetail: corrMatrix.breakdownDetail || null,
+      } : null,
+      sectorAnalysis: sectorAnalysis ? {
+        sectors: sectorAnalysis.sectors,
+        breadth: sectorAnalysis.breadth,
+        rotationScore: sectorAnalysis.rotationScore,
+        detail: sectorAnalysis.detail,
+      } : null,
+      thresholds: { bullThreshold: +thresholds.bullThreshold.toFixed(3), bearThreshold: +thresholds.bearThreshold.toFixed(3) },
+      rollingAccuracy: rollingAcc || null,
+      confidenceAnalysis: { confidence: +confidence.toFixed(1), notes: confAnalysis.notes || [] },
+      weightOptimization: optimizedWeights ? {
+        applied: true,
+        factorsOptimized: factors.filter(f => f.optimized).length,
+        totalFactors: factors.length,
+      } : { applied: false },
       backtest,
       historicalMatches: factors.find(f => f.name === 'Historical Match')?.matches?.slice(-8) || [],
       seasonal: factors.find(f => f.name === 'Seasonal')?.detail || '',
       generated: new Date().toISOString(),
       factorCount: factors.length,
-      version: '2.5',
+      version: '2.6',
     };
 
     return { statusCode: 200, headers: CORS, body: JSON.stringify(response) };
