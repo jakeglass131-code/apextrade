@@ -1431,6 +1431,23 @@ tr:hover td { transition: background .18s var(--ease-out-quint); }
       </div>
       <div style="font-size:10px;color:var(--text4);margin-top:4px;text-align:right" id="dash-scan-time"></div>
     </div>
+    <!-- ── Daily / Cyclical Macro Briefing ── -->
+    <div class="panel" id="briefing-panel">
+      <div class="phead">
+        <div class="ptitle">📋 Daily Macro Briefing</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div id="briefing-badge" style="font-size:10px;padding:3px 9px;border-radius:99px;border:1px solid var(--border2);color:var(--text3)">Loading...</div>
+          <button class="btn" onclick="fetchDailyBriefing()" id="briefing-refresh-btn" style="font-size:10px;padding:4px 10px">Refresh</button>
+        </div>
+      </div>
+      <div id="briefing-body" style="padding:20px">
+        <div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 20px">
+          <div class="lpulse"></div>
+          <div style="color:var(--text3);font-size:12px;text-align:center">Generating AI macro briefing...</div>
+        </div>
+      </div>
+    </div>
+
     <!-- ── Overnight Indices (lead with market context) ── -->
     <div class="panel" id="overnight-panel">
       <div class="phead">
@@ -9503,6 +9520,278 @@ function _renderV2Prediction(v2, body, badge, btn) {
   if (btn) btn.disabled = false;
 }
 
+// ═══════════════════════════════════════════════════════
+// DAILY MACRO BRIEFING — AI-powered research report
+// ═══════════════════════════════════════════════════════
+var _briefingCache = null;
+var _briefingCacheTime = 0;
+var BRIEFING_CACHE_TTL = 15 * 60 * 1000; // 15 min cache
+
+async function fetchDailyBriefing() {
+  var body = document.getElementById('briefing-body');
+  var badge = document.getElementById('briefing-badge');
+  var btn = document.getElementById('briefing-refresh-btn');
+  if (!body) return;
+
+  // Check cache first
+  if (_briefingCache && Date.now() - _briefingCacheTime < BRIEFING_CACHE_TTL) {
+    _renderBriefing(_briefingCache, body, badge);
+    return;
+  }
+
+  if (badge) { badge.textContent = 'Generating...'; badge.style.color = 'var(--amber)'; badge.style.borderColor = 'rgba(255,170,0,.3)'; }
+  if (btn) btn.disabled = true;
+  body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;padding:28px 20px"><div class="lpulse"></div><div style="color:var(--text3);font-size:12px;text-align:center">Generating AI macro briefing — analysing 55+ factors, news, intermarket data...</div></div>';
+
+  try {
+    var resp = await fetch('/.netlify/functions/daily-briefing?mode=preview', { signal: AbortSignal.timeout(90000) });
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+    var html = await resp.text();
+
+    // Parse the HTML email into displayable content for the dashboard
+    // We'll extract key sections from the email and render them in dashboard style
+    _briefingCache = html;
+    _briefingCacheTime = Date.now();
+    _renderBriefing(html, body, badge);
+  } catch (e) {
+    console.warn('[briefing] Failed:', e.message);
+    // Fallback: show a summary from the prediction data instead
+    body.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">' +
+      '<div style="font-size:11px;color:var(--text4);margin-bottom:8px">AI briefing unavailable — ' + _escHtml(e.message) + '</div>' +
+      '<div style="color:var(--text4);font-size:10px">Set ANTHROPIC_API_KEY in Netlify env vars to enable AI-powered daily macro briefings</div></div>';
+    if (badge) { badge.textContent = 'Offline'; badge.style.color = 'var(--text4)'; badge.style.borderColor = 'var(--border2)'; }
+  }
+  if (btn) btn.disabled = false;
+}
+
+function _renderBriefing(emailHtml, body, badge) {
+  // The endpoint returns a full HTML email. We extract key content and render in dashboard style.
+  // Parse the email HTML to extract sections
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(emailHtml, 'text/html');
+
+  // Try to extract structured data from the email
+  var html = '';
+
+  // Get all table cells with content
+  var allTds = doc.querySelectorAll('td');
+
+  // Extract headline
+  var headline = '', subtitle = '', verdict = '', verdictExplanation = '';
+  var analysisTitle = '', analysisText = '', tradeImpl = '';
+  var dataPointCells = [];
+  var sectorRows = [], riskRows = [], watchRows = [], newsRows = [];
+  var closingNote = '';
+
+  for (var i = 0; i < allTds.length; i++) {
+    var td = allTds[i];
+    var innerText = (td.textContent || '').trim();
+    var innerHtml = td.innerHTML || '';
+
+    // Headline (28px font)
+    if (innerHtml.includes('font-size:28px')) {
+      var h = td.querySelector('div[style*="font-size:28px"]');
+      if (h) headline = h.textContent.trim();
+      var s = td.querySelector('div[style*="font-size:14px"]');
+      if (s) subtitle = s.textContent.trim();
+    }
+    // Verdict
+    if (innerHtml.includes('font-size:32px') && innerHtml.includes('Market Verdict')) {
+      var v = td.querySelector('div[style*="font-size:32px"]');
+      if (v) verdict = v.textContent.trim();
+      var ve = td.querySelector('div[style*="font-size:13px"]');
+      if (ve) verdictExplanation = ve.textContent.trim();
+    }
+    // Data points (22px values in the bar)
+    if (innerHtml.includes('font-size:22px') && innerHtml.includes('font-size:9px') && innerHtml.includes('text-transform:uppercase')) {
+      var dpVal = td.querySelector('div[style*="font-size:22px"]');
+      var dpLabel = td.querySelector('div[style*="font-size:9px"]');
+      if (dpVal && dpLabel) {
+        var color = 'var(--text2)';
+        var style = dpVal.getAttribute('style') || '';
+        if (style.includes('#10b981')) color = 'var(--green)';
+        else if (style.includes('#ef4444')) color = 'var(--red)';
+        else if (style.includes('#f59e0b')) color = 'var(--amber)';
+        dataPointCells.push({ value: dpVal.textContent.trim(), label: dpLabel.textContent.trim(), color: color });
+      }
+    }
+    // Deep Analysis
+    if (innerHtml.includes('Deep Analysis')) {
+      var at = td.querySelector('div[style*="font-size:18px"]');
+      if (at) analysisTitle = at.textContent.trim();
+    }
+    if (td.parentElement && td.parentElement.previousElementSibling) {
+      var prevTd = td.parentElement.previousElementSibling.querySelector('td');
+      if (prevTd && (prevTd.innerHTML || '').includes('Deep Analysis')) {
+        // This td contains the analysis text
+        var divs = td.querySelectorAll('div[style*="font-size:13px"]');
+        var texts = [];
+        divs.forEach(function(d) { if (d.textContent.trim() && !d.closest('div[style*="background:#064e3b"]')) texts.push(d.textContent.trim()); });
+        analysisText = texts.join('\n\n');
+        var impl = td.querySelector('div[style*="background:#064e3b"]');
+        if (impl) {
+          var implText = impl.querySelector('div[style*="font-size:12px"]');
+          if (implText) tradeImpl = implText.textContent.trim();
+        }
+      }
+    }
+    // Closing note
+    if (innerHtml.includes('font-style:italic') && innerText.startsWith('"')) {
+      closingNote = innerText;
+    }
+  }
+
+  // Extract sector calls, risks, watchlist from table rows
+  var allRows = doc.querySelectorAll('tr');
+  var currentSection = '';
+  for (var ri = 0; ri < allRows.length; ri++) {
+    var row = allRows[ri];
+    var rowHtml = row.innerHTML || '';
+    var rowText = (row.textContent || '').trim();
+    if (rowHtml.includes('Sector Positioning')) { currentSection = 'sectors'; continue; }
+    if (rowHtml.includes("Today's Watchlist") || rowHtml.includes('Today&#39;s Watchlist')) { currentSection = 'watchlist'; continue; }
+    if (rowHtml.includes('Key Risks')) { currentSection = 'risks'; continue; }
+    if (rowHtml.includes('Market Headlines')) { currentSection = 'news'; continue; }
+    if (rowHtml.includes('SuperTrend')) { currentSection = ''; continue; }
+    if (rowHtml.includes('Deep Analysis')) { currentSection = ''; continue; }
+
+    if (currentSection === 'sectors' && row.querySelectorAll('td').length >= 3) {
+      var cells = row.querySelectorAll('td');
+      sectorRows.push({ sector: cells[0].textContent.trim(), call: cells[1].textContent.trim(), reason: cells[2].textContent.trim() });
+    }
+    if (currentSection === 'watchlist' && rowText.includes('📌')) {
+      watchRows.push(rowText.replace('📌', '').trim());
+    }
+    if (currentSection === 'risks' && rowText.includes('⚠')) {
+      riskRows.push(rowText.replace('⚠', '').trim());
+    }
+    if (currentSection === 'news' && rowText.includes('—')) {
+      newsRows.push(rowText);
+    }
+  }
+
+  // ── Build dashboard-styled output ──────────────────────────────
+
+  // Verdict colors
+  var vCol = verdict === 'BULLISH' ? 'var(--green)' : verdict === 'BEARISH' ? 'var(--red)' : verdict === 'VOLATILE' ? '#a855f7' : 'var(--amber)';
+
+  // Hero header
+  html += '<div style="padding:16px 20px;background:var(--bg4);border:2px solid ' + vCol.replace('var(--green)','rgba(16,185,129,.35)').replace('var(--red)','rgba(239,68,68,.35)').replace('var(--amber)','rgba(245,158,11,.35)').replace('#a855f7','rgba(168,85,247,.35)') + ';border-radius:12px;margin-bottom:16px">';
+  if (headline) {
+    html += '<div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">AI Macro Analysis · ' + new Date().toLocaleDateString('en-AU', {weekday:'short',day:'numeric',month:'short'}) + '</div>';
+    html += '<div style="font-size:22px;font-weight:900;color:var(--text);line-height:1.15;margin-bottom:4px">' + _escHtml(headline) + '</div>';
+    if (subtitle) html += '<div style="font-size:12px;color:var(--text3);margin-bottom:10px">' + _escHtml(subtitle) + '</div>';
+  }
+  // Verdict banner
+  if (verdict) {
+    html += '<div style="display:inline-block;padding:6px 16px;border-radius:6px;font-size:18px;font-weight:900;color:' + vCol + ';background:' + vCol.replace('var(--green)','rgba(16,185,129,.1)').replace('var(--red)','rgba(239,68,68,.1)').replace('var(--amber)','rgba(245,158,11,.1)').replace('#a855f7','rgba(168,85,247,.1)') + ';border:1px solid ' + vCol.replace('var(--green)','rgba(16,185,129,.25)').replace('var(--red)','rgba(239,68,68,.25)').replace('var(--amber)','rgba(245,158,11,.25)').replace('#a855f7','rgba(168,85,247,.25)') + '">' + verdict + '</div>';
+    if (verdictExplanation) html += '<div style="font-size:12px;color:var(--text2);margin-top:8px;line-height:1.5">' + _escHtml(verdictExplanation) + '</div>';
+  }
+  html += '</div>';
+
+  // Data points bar
+  if (dataPointCells.length) {
+    html += '<div style="display:grid;grid-template-columns:repeat(' + Math.min(6, dataPointCells.length) + ',1fr);gap:1px;background:var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px">';
+    for (var di = 0; di < dataPointCells.length; di++) {
+      var dp = dataPointCells[di];
+      html += '<div style="text-align:center;padding:10px 6px;background:var(--bg4)">';
+      html += '<div style="font-size:18px;font-weight:900;color:' + dp.color + '">' + dp.value + '</div>';
+      html += '<div style="font-size:8px;color:var(--text4);text-transform:uppercase;letter-spacing:.06em;margin-top:2px">' + dp.label + '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Deep Analysis
+  if (analysisTitle || analysisText) {
+    html += '<div style="margin-bottom:16px;padding:14px 16px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px">Deep Analysis</div>';
+    if (analysisTitle) html += '<div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px">' + _escHtml(analysisTitle) + '</div>';
+    if (analysisText) {
+      var paragraphs = analysisText.split('\n\n');
+      for (var pi = 0; pi < paragraphs.length; pi++) {
+        html += '<div style="font-size:12px;color:var(--text2);line-height:1.6;margin-bottom:8px">' + _escHtml(paragraphs[pi]) + '</div>';
+      }
+    }
+    if (tradeImpl) {
+      html += '<div style="margin-top:10px;padding:10px 12px;background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.15);border-radius:6px">';
+      html += '<div style="font-size:9px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.06em;margin-bottom:3px">Trade Implications</div>';
+      html += '<div style="font-size:11px;color:var(--text2);line-height:1.5">' + _escHtml(tradeImpl) + '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Sector + Watchlist + Risks in columns
+  var hasLeftCol = sectorRows.length > 0;
+  var hasRightCol = watchRows.length > 0 || riskRows.length > 0;
+  if (hasLeftCol || hasRightCol) {
+    html += '<div style="display:grid;grid-template-columns:' + (hasLeftCol && hasRightCol ? '1fr 1fr' : '1fr') + ';gap:12px;margin-bottom:16px">';
+
+    // Sector calls
+    if (sectorRows.length) {
+      html += '<div style="padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
+      html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Sector Positioning</div>';
+      for (var si = 0; si < sectorRows.length; si++) {
+        var sr = sectorRows[si];
+        var scCol = sr.call === 'OVERWEIGHT' ? 'var(--green)' : sr.call === 'UNDERWEIGHT' ? 'var(--red)' : 'var(--amber)';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:11px">';
+        html += '<span style="font-weight:700;color:var(--text2)">' + _escHtml(sr.sector) + '</span>';
+        html += '<span style="font-weight:800;color:' + scCol + ';font-size:10px">' + sr.call + '</span>';
+        html += '</div>';
+        if (sr.reason) html += '<div style="font-size:10px;color:var(--text4);padding-bottom:4px">' + _escHtml(sr.reason) + '</div>';
+      }
+      html += '</div>';
+    }
+
+    // Watchlist + Risks
+    if (hasRightCol) {
+      html += '<div>';
+      if (watchRows.length) {
+        html += '<div style="padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px;margin-bottom:12px">';
+        html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📌 Watchlist</div>';
+        for (var wi = 0; wi < watchRows.length; wi++) {
+          html += '<div style="font-size:11px;color:var(--text2);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03)">' + _escHtml(watchRows[wi]) + '</div>';
+        }
+        html += '</div>';
+      }
+      if (riskRows.length) {
+        html += '<div style="padding:12px;background:rgba(239,68,68,.03);border:1px solid rgba(239,68,68,.12);border-radius:10px">';
+        html += '<div style="font-size:10px;font-weight:700;color:var(--red);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">⚠ Key Risks</div>';
+        for (var rki = 0; rki < riskRows.length; rki++) {
+          html += '<div style="font-size:11px;color:var(--text2);padding:3px 0;border-bottom:1px solid rgba(255,255,255,.03)">' + _escHtml(riskRows[rki]) + '</div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // Closing note
+  if (closingNote) {
+    html += '<div style="padding:10px 14px;background:rgba(6,182,212,.04);border:1px solid rgba(6,182,212,.12);border-radius:8px;font-size:11px;color:var(--text2);font-style:italic;margin-bottom:8px">' + _escHtml(closingNote) + '</div>';
+  }
+
+  // Footer
+  html += '<div style="text-align:center;font-size:9px;color:var(--text4);margin-top:6px">AI-generated macro analysis · Claude + 55-factor quant model · Not financial advice</div>';
+
+  body.innerHTML = html;
+
+  // Update badge
+  if (badge) {
+    if (verdict) {
+      badge.textContent = verdict;
+      badge.style.color = vCol;
+      badge.style.borderColor = vCol.replace('var(--green)','rgba(16,185,129,.35)').replace('var(--red)','rgba(239,68,68,.35)').replace('var(--amber)','rgba(245,158,11,.35)').replace('#a855f7','rgba(168,85,247,.35)');
+    } else {
+      badge.textContent = 'Ready';
+      badge.style.color = 'var(--text3)';
+      badge.style.borderColor = 'var(--border2)';
+    }
+  }
+}
+
 async function runMarketPrediction() {
   const body = document.getElementById('prediction-body');
   const badge = document.getElementById('pred-badge');
@@ -9867,6 +10156,7 @@ RULES:
 
 // Run on page load and when navigating to dash
 document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(fetchDailyBriefing, 500);
   setTimeout(fetchOvernightData, 800);
   if (typeof renderPresetChips === 'function') renderPresetChips();
 
