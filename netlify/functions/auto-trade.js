@@ -926,132 +926,9 @@ exports.handler = async (event) => {
     addLog(`  Factors: ${JSON.stringify(signal.rawFactors)}`);
 
     // ── Step 3: Connect to IG Markets ─────────────────────────────────────
-    addLog(`🔗 Connecting to IG Markets (${isDemo ? 'DEMO' : 'LIVE'})...`);
-    const apiUrl = isDemo ? IG_DEMO_URL : IG_API_URL;
-    addLog(`  API URL: ${apiUrl}`);
-
-    // Test connectivity first
-    try {
-      const testRes = await fetch(apiUrl, { method: 'GET', signal: AbortSignal.timeout(10000) });
-      addLog(`  Connectivity test: ${testRes.status} ${testRes.statusText}`);
-    } catch (connErr) {
-      addLog(`  Connectivity test failed: ${connErr.message} (${connErr.cause?.code || connErr.code || 'unknown'})`);
-      // Try demo URL as fallback test
-      try {
-        const demoTest = await fetch(IG_DEMO_URL, { method: 'GET', signal: AbortSignal.timeout(10000) });
-        addLog(`  Demo connectivity: ${demoTest.status} — demo works, live may be geo-blocked`);
-      } catch (e2) {
-        addLog(`  Demo also failed: ${e2.message} — IG may block cloud IPs`);
-      }
-    }
-
-    const ig = new IGClient(igApiKey, igUsername, igPassword, isDemo);
-    const session = await ig.login();
-    addLog(`  Logged in as: ${session.currentAccountId || session.accountId} (API v${ig.apiVersion})`);
-
-    // Get account balance
-    const accounts = await ig.getAccounts();
-    const account = accounts.accounts?.find(a => a.accountId === session.currentAccountId);
-    const balance = account?.balance?.balance || 0;
-    const available = account?.balance?.available || 0;
-    addLog(`  Balance: $${balance.toFixed(2)} | Available: $${available.toFixed(2)}`);
-
-    // ── Safety check: max daily loss ──────────────────────────────────────
-    const maxDailyLoss = balance * 0.05; // 5% max daily loss
-    const todayPnl = account?.balance?.profitLoss || 0;
-    if (todayPnl < -maxDailyLoss) {
-      addLog(`⛔ Daily loss limit hit: $${todayPnl.toFixed(2)} (limit: -$${maxDailyLoss.toFixed(2)})`);
-      return { statusCode: 200, headers: CORS, body: JSON.stringify({ status: 'daily_loss_limit', todayPnl, log }) };
-    }
-
-    // ── Step 4: Check current positions ───────────────────────────────────
-    addLog('📊 Checking current positions...');
-    const positions = await ig.getPositions();
-    const asxPositions = positions.positions?.filter(p =>
-      p.market?.epic === ASX_EPIC || p.market?.instrumentName?.includes('Australia 200')
-    ) || [];
-
-    addLog(`  Current ASX positions: ${asxPositions.length}`);
-    for (const pos of asxPositions) {
-      addLog(`    ${pos.position.direction} ${pos.position.size} @ ${pos.position.openLevel} (P&L: ${pos.position.currency} ${pos.position?.profitLoss || 'N/A'})`);
-    }
-
-    // ── Step 5: Execute trade ─────────────────────────────────────────────
-    const igDirection = direction === 'BULL' ? 'BUY' : direction === 'BEAR' ? 'SELL' : null;
-
-    // Get market info for position sizing
-    const marketInfo = await ig.getMarketInfo();
-    const minSize = marketInfo.dealingRules?.minDealSize?.value || 1;
-    const asxPrice = marketInfo.snapshot?.bid || 8000;
-    addLog(`  ASX 200 Price: ${asxPrice} | Min size: ${minSize}`);
-
-    // Calculate position size: full equity / price per point, scaled by leverage
-    // For ASX 200 CFD on IG, size is in "contracts" where 1 contract = $1/point
-    // So $5000 balance at 1x leverage = $5000 / 1 = 5000 * contractValueFactor
-    // IG ASX200: 1 contract = AUD $1 per point movement
-    // We want to risk full balance with leverage applied
-    const targetExposure = available * leverage;
-    // Size in contracts: how many $1/point contracts
-    // Risk per point = size * $1. We want total exposure ≈ targetExposure
-    // A rough sizing: balance / (price * valuePerPoint) but for CFDs, it's simpler
-    // IG uses "size" as number of contracts, value per point = $1 per contract
-    // Margin required = size * marginFactor * price
-    const marginFactor = marketInfo.instrument?.marginFactor || 5; // typically 5% for ASX200
-    const marginPercent = parseFloat(marginFactor) / 100;
-    // Max size we can afford: available / (marginPercent * price)
-    let size = Math.floor(available / (marginPercent * asxPrice));
-    // Apply leverage multiplier (within margin constraints)
-    size = Math.max(minSize, Math.min(size, Math.floor(targetExposure / (marginPercent * asxPrice))));
-    addLog(`  Calculated size: ${size} contracts (leverage: ${leverage}x)`);
-
-    if (direction === 'NEUTRAL') {
-      // Close any existing positions
-      if (asxPositions.length > 0) {
-        addLog('⚪ NEUTRAL signal — closing existing positions');
-        for (const pos of asxPositions) {
-          const closeResult = await ig.closePosition(pos.position.dealId, pos.position.direction, pos.position.size);
-          const confirm = await ig.confirmDeal(closeResult.dealReference);
-          addLog(`  Closed: ${confirm.dealStatus} (${confirm.reason || 'OK'})`);
-        }
-      } else {
-        addLog('⚪ NEUTRAL signal — no positions to close, sitting out');
-      }
-    } else {
-      // Check if we need to flip direction
-      const currentDir = asxPositions.length > 0 ? asxPositions[0].position.direction : null;
-      const needsFlip = currentDir && currentDir !== igDirection;
-      const needsOpen = !currentDir;
-
-      if (needsFlip) {
-        // Close existing position first
-        addLog(`🔄 Flipping from ${currentDir} to ${igDirection}`);
-        for (const pos of asxPositions) {
-          const closeResult = await ig.closePosition(pos.position.dealId, pos.position.direction, pos.position.size);
-          const confirm = await ig.confirmDeal(closeResult.dealReference);
-          addLog(`  Closed old: ${confirm.dealStatus}`);
-        }
-      }
-
-      if (needsFlip || needsOpen) {
-        // Open new position
-        addLog(`📈 Opening ${igDirection} position: ${size} contracts`);
-        const openResult = await ig.openPosition(igDirection, size);
-        const confirm = await ig.confirmDeal(openResult.dealReference);
-        addLog(`  Opened: ${confirm.dealStatus} at ${confirm.level} (${confirm.reason || 'OK'})`);
-
-        if (confirm.dealStatus !== 'ACCEPTED') {
-          addLog(`  ⚠️ Deal rejected: ${confirm.reason}`);
-        }
-      } else {
-        // Already in the right direction — check if size needs adjusting
-        const currentSize = asxPositions.reduce((a, p) => a + p.position.size, 0);
-        addLog(`  Already ${igDirection} with ${currentSize} contracts — holding`);
-      }
-    }
-
-    // ── Build response ────────────────────────────────────────────────────
+    // ── Build response (signal only — trade execution happens locally) ───
     const result = {
-      status: 'executed',
+      status: 'signal_ready',
       timestamp: now.toISOString(),
       signal: {
         score: +weightedScore.toFixed(4),
@@ -1061,14 +938,11 @@ exports.handler = async (event) => {
         leverage,
         rawFactors: signal.rawFactors,
       },
-      account: {
-        balance: +balance.toFixed(2),
-        available: +available.toFixed(2),
-      },
+      action: direction === 'BULL' ? 'BUY' : direction === 'BEAR' ? 'SELL' : 'CLOSE',
       log,
     };
 
-    addLog('═══ Auto-Execution Complete ═══');
+    addLog('═══ Signal Generated — Execute via local trader ═══');
 
     return {
       statusCode: 200,
