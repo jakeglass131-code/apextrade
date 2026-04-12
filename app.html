@@ -12648,6 +12648,9 @@ setTimeout(() => {
 // SUBSCRIPTION GATE — checks Stripe status on load
 // ═══════════════════════════════════════════════════════
 (function(){
+  // Skip gate until Stripe is configured
+  // TODO: Remove this line once STRIPE_SECRET_KEY is set in Netlify env vars
+  return;
   // Skip gate entirely in dev/localhost
   if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') return;
 
