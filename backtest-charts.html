@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ApexTrade Backtest Results — Walk-Forward, Fully Realistic</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --surface: #13161e;
+      --surface2: #1a1d28;
+      --border: #252836;
+      --text: #e8eaf0;
+      --text-muted: #8891a8;
+      --teal: #00d4aa;
+      --green: #26c281;
+      --red: #e74c5e;
+      --orange: #f0a500;
+      --blue: #4a9eff;
+      --purple: #9b59b6;
+      --gold: #f39c12;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    /* ── Header ── */
+    .header {
+      background: linear-gradient(135deg, #0d0f14 0%, #131828 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 2.5rem 2rem 2rem;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: clamp(1.4rem, 3vw, 2.2rem);
+      font-weight: 700;
+      color: var(--teal);
+      letter-spacing: 0.02em;
+      margin-bottom: 0.5rem;
+    }
+    .header .subtitle {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      max-width: 800px;
+      margin: 0 auto 0.5rem;
+    }
+    .header .data-note {
+      font-size: 0.75rem;
+      color: #4a5568;
+      margin-top: 0.25rem;
+    }
+
+    /* ── Hero Stats ── */
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .stat-card {
+      background: var(--surface);
+      padding: 1.4rem 1rem;
+      text-align: center;
+      transition: background 0.2s;
+    }
+    .stat-card:hover { background: var(--surface2); }
+    .stat-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+    .stat-value {
+      font-size: clamp(1.2rem, 2.5vw, 1.8rem);
+      font-weight: 700;
+      color: var(--teal);
+    }
+    .stat-value.positive { color: var(--green); }
+    .stat-value.negative { color: var(--red); }
+    .stat-value.neutral  { color: var(--text); }
+    .stat-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+    }
+
+    /* ── Main content ── */
+    .content {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    .section-title {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin: 2rem 0 1.2rem;
+    }
+
+    /* ── Charts grid ── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+    }
+
+    .chart-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.4rem 1.4rem 1.2rem;
+      position: relative;
+    }
+    .chart-card.full-width { grid-column: 1 / -1; }
+    .chart-card.wide      { grid-column: span 2; }
+
+    .chart-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.3rem;
+    }
+    .chart-subtitle {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+    .chart-container {
+      position: relative;
+    }
+
+    /* ── Monthly heatmap ── */
+    .heatmap-wrap {
+      overflow-x: auto;
+    }
+    .heatmap {
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 0.72rem;
+    }
+    .heatmap th {
+      color: var(--text-muted);
+      padding: 4px 6px;
+      text-align: center;
+      font-weight: 400;
+      font-size: 0.65rem;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+    }
+    .heatmap th:first-child { text-align: left; padding-left: 0; }
+    .heatmap td {
+      padding: 5px 4px;
+      text-align: center;
+      border-radius: 3px;
+      min-width: 60px;
+      font-size: 0.68rem;
+      transition: opacity 0.15s;
+    }
+    .heatmap td:first-child {
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-align: left;
+      padding-right: 8px;
+      min-width: 40px;
+    }
+    .heatmap tr:hover td { opacity: 0.85; }
+
+    /* ── Drawdown styling ── */
+    .dd-stat {
+      display: inline-block;
+      margin-right: 1.5rem;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .dd-stat span { color: var(--text); font-weight: 600; }
+
+    /* ── Loading / error ── */
+    .loading {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+    .error {
+      text-align: center;
+      padding: 3rem 2rem;
+      color: var(--red);
+      font-size: 0.85rem;
+    }
+    .error code {
+      display: block;
+      margin-top: 1rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: var(--surface2);
+      padding: 1rem;
+      border-radius: 4px;
+      text-align: left;
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    @media (max-width: 900px) {
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-card.wide { grid-column: span 1; }
+      .content { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <h1>ApexTrade Backtest Results &mdash; Walk-Forward, Fully Realistic</h1>
+  <p class="subtitle">21 walk-forward windows &middot; Signal weights + thresholds optimized per window &middot; Brokerage + Slippage + Overnight funding deducted &middot; Zero lookahead bias</p>
+  <p class="data-note">Data loaded from backtest-data.json &mdash; run <code>node backtest-10yr.js</code> to regenerate</p>
+</header>
+
+<!-- Hero stats -->
+<div class="hero-stats" id="heroStats">
+  <div class="loading" style="grid-column:1/-1;padding:1.5rem;">Loading backtest data&hellip;</div>
+</div>
+
+<!-- Charts -->
+<div class="content" id="mainContent" style="display:none;">
+
+  <div class="section-title">Equity &amp; Drawdown</div>
+  <div class="charts-grid">
+    <div class="chart-card full-width">
+      <div class="chart-title">Equity Curve</div>
+      <div class="chart-subtitle">Logarithmic scale &middot; Walk-forward, out-of-sample &middot; $10,000 starting equity</div>
+      <div class="chart-container" style="height:320px;">
+        <canvas id="equityChart"></canvas>
+      </div>
+    </div>
+    <div class="chart-card full-width">
+      <div class="chart-title">Drawdown Chart</div>
+      <div class="chart-subtitle">Drawdown from equity peak over time</div>
+      <div id="ddStats" style="margin-bottom:0.8rem;"></div>
+      <div class="chart-container" style="height:220px;">
+        <canvas id="drawdownChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Annual &amp; Monthly Performance</div>
+  <div class="charts-grid">
+    <div class="chart-card full-width">
+      <div class="chart-title">Annual Returns (PnL $)</div>
+      <div class="chart-subtitle">Green = profitable year &middot; Red = losing year &middot; Net of all costs</div>
+      <div class="chart-container" style="height:260px;">
+        <canvas id="annualChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card full-width">
+      <div class="chart-title">Monthly PnL Heatmap</div>
+      <div class="chart-subtitle">All available years &middot; Color intensity proportional to PnL magnitude</div>
+      <div class="heatmap-wrap">
+        <table class="heatmap" id="heatmapTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Signal Analysis</div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Accuracy by Direction</div>
+      <div class="chart-subtitle">BULL / BEAR / NEUTRAL signal accuracy</div>
+      <div class="chart-container" style="height:220px;">
+        <canvas id="directionChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Accuracy by Market Regime</div>
+      <div class="chart-subtitle">TRENDING / VOLATILE / QUIET / NORMAL</div>
+      <div class="chart-container" style="height:220px;">
+        <canvas id="regimeChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Score Distribution &amp; Accuracy</div>
+      <div class="chart-subtitle">Model score buckets vs accuracy % &middot; Bar height = accuracy, label = count</div>
+      <div class="chart-container" style="height:240px;">
+        <canvas id="scoreChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Leverage Tier Performance</div>
+      <div class="chart-subtitle">Accuracy % and trade count per conviction tier</div>
+      <div class="chart-container" style="height:240px;">
+        <canvas id="leverageChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">Cost &amp; Benchmark Comparison</div>
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Cost Breakdown</div>
+      <div class="chart-subtitle">Total trading costs by category</div>
+      <div class="chart-container" style="height:280px;">
+        <canvas id="costChart"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">Cumulative Return vs ASX 200 Buy &amp; Hold</div>
+      <div class="chart-subtitle">ApexTrade (log scale) vs estimated 7% annual buy &amp; hold baseline</div>
+      <div class="chart-container" style="height:280px;">
+        <canvas id="compareChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ── Chart.js global defaults ──────────────────────────────────────────────
+Chart.defaults.color = '#8891a8';
+Chart.defaults.borderColor = '#252836';
+Chart.defaults.font.family = "'SF Mono', 'Fira Code', monospace";
+Chart.defaults.font.size = 11;
+
+const TEAL    = '#00d4aa';
+const GREEN   = '#26c281';
+const RED     = '#e74c5e';
+const ORANGE  = '#f0a500';
+const BLUE    = '#4a9eff';
+const PURPLE  = '#9b59b6';
+const GOLD    = '#f39c12';
+const MUTED   = '#8891a8';
+const SURFACE2 = '#1a1d28';
+
+function fmtMoney(v, short = false) {
+  if (short) {
+    if (Math.abs(v) >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
+    if (Math.abs(v) >= 1e3) return '$' + (v / 1e3).toFixed(0) + 'K';
+    return '$' + v.toFixed(0);
+  }
+  return '$' + v.toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+function fmtPct(v, decimals = 1) { return (v >= 0 ? '+' : '') + v.toFixed(decimals) + '%'; }
+
+// ── Load data ─────────────────────────────────────────────────────────────
+async function loadData() {
+  const r = await fetch('backtest-data.json');
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${r.statusText}`);
+  return r.json();
+}
+
+// ── Hero stats ────────────────────────────────────────────────────────────
+function buildHeroStats(s) {
+  const stats = [
+    { label: 'Final Equity',   value: fmtMoney(s.finalEquity, true),               sub: `from ${fmtMoney(s.startEquity)}`,          cls: 'positive' },
+    { label: 'CAGR',           value: s.cagr.toFixed(1) + '%',                     sub: `${s.years.toFixed(1)} year period`,          cls: 'positive' },
+    { label: 'Accuracy',       value: s.accuracy.toFixed(1) + '%',                 sub: `${s.wins}W / ${s.losses}L of ${s.totalSignals}`, cls: 'neutral' },
+    { label: 'Sharpe Ratio',   value: s.sharpe.toFixed(2),                         sub: 'annualised',                                 cls: s.sharpe >= 1 ? 'positive' : 'neutral' },
+    { label: 'Max Drawdown',   value: s.maxDD.toFixed(1) + '%',                    sub: `peak on ${s.maxDDdate}`,                     cls: 'negative' },
+    { label: 'Profit Factor',  value: s.profitFactor.toFixed(2),                   sub: 'gross win / gross loss',                    cls: s.profitFactor >= 1 ? 'positive' : 'negative' },
+    { label: 'Total Return',   value: fmtPct(s.totalReturn, 0),                    sub: `${fmtMoney(s.finalEquity - s.startEquity, true)} net`,  cls: 'positive' },
+    { label: 'Total Costs',    value: fmtMoney(s.totalCosts, true),                sub: 'brok + slip + funding',                     cls: 'negative' },
+  ];
+  const container = document.getElementById('heroStats');
+  container.innerHTML = stats.map(st => `
+    <div class="stat-card">
+      <div class="stat-label">${st.label}</div>
+      <div class="stat-value ${st.cls}">${st.value}</div>
+      <div class="stat-sub">${st.sub}</div>
+    </div>
+  `).join('');
+}
+
+// ── Equity curve chart ────────────────────────────────────────────────────
+function buildEquityChart(equityCurve) {
+  const data = equityCurve.map(d => ({ x: d.date, y: d.equity }));
+  const ctx = document.getElementById('equityChart').getContext('2d');
+
+  // Gradient fill
+  const grad = ctx.createLinearGradient(0, 0, 0, 320);
+  grad.addColorStop(0, 'rgba(0,212,170,0.25)');
+  grad.addColorStop(1, 'rgba(0,212,170,0.0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [
+        {
+          label: 'ApexTrade Equity',
+          data,
+          borderColor: TEAL,
+          borderWidth: 1.5,
+          backgroundColor: grad,
+          fill: true,
+          pointRadius: 0,
+          tension: 0.1,
+        },
+        {
+          label: '$10,000 Starting Capital',
+          data: [{ x: data[0].x, y: 10000 }, { x: data[data.length-1].x, y: 10000 }],
+          borderColor: 'rgba(255,255,255,0.25)',
+          borderWidth: 1,
+          borderDash: [4, 4],
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: {
+          type: 'time',
+          time: { unit: 'year' },
+          grid: { color: '#1e2130' },
+          ticks: { color: MUTED, maxTicksLimit: 10 },
+        },
+        y: {
+          type: 'logarithmic',
+          grid: { color: '#1e2130' },
+          ticks: {
+            color: MUTED,
+            callback: v => fmtMoney(v, true),
+          },
+        }
+      },
+      plugins: {
+        legend: { labels: { color: MUTED, boxWidth: 12, padding: 16 } },
+        tooltip: {
+          backgroundColor: '#1a1d28',
+          borderColor: '#252836',
+          borderWidth: 1,
+          titleColor: TEAL,
+          bodyColor: '#c8cedd',
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmtMoney(ctx.raw.y)}`,
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Drawdown chart ────────────────────────────────────────────────────────
+function buildDrawdownChart(equityCurve, summary) {
+  let maxEq = 0;
+  const ddData = equityCurve.map(d => {
+    maxEq = Math.max(maxEq, d.equity);
+    const dd = maxEq > 0 ? -((maxEq - d.equity) / maxEq * 100) : 0;
+    return { x: d.date, y: +dd.toFixed(3) };
+  });
+
+  // Inject DD stats
+  const ddEl = document.getElementById('ddStats');
+  ddEl.innerHTML = `
+    <span class="dd-stat">Max DD: <span style="color:${RED}">${summary.maxDD.toFixed(1)}%</span></span>
+    <span class="dd-stat">On date: <span>${summary.maxDDdate}</span></span>
+    <span class="dd-stat">Peak: <span>${fmtMoney(summary.maxDDpeak, true)}</span></span>
+    <span class="dd-stat">Trough: <span>${fmtMoney(summary.maxDDtrough, true)}</span></span>
+  `;
+
+  const ctx = document.getElementById('drawdownChart').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 220);
+  grad.addColorStop(0, 'rgba(231,76,94,0.0)');
+  grad.addColorStop(1, 'rgba(231,76,94,0.35)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [{
+        label: 'Drawdown %',
+        data: ddData,
+        borderColor: RED,
+        borderWidth: 1,
+        backgroundColor: grad,
+        fill: { target: 'origin', above: grad },
+        pointRadius: 0,
+        tension: 0.1,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: {
+          type: 'time',
+          time: { unit: 'year' },
+          grid: { color: '#1e2130' },
+          ticks: { color: MUTED, maxTicksLimit: 10 },
+        },
+        y: {
+          grid: { color: '#1e2130' },
+          ticks: { color: MUTED, callback: v => v.toFixed(0) + '%' },
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d28',
+          borderColor: '#252836',
+          borderWidth: 1,
+          titleColor: RED,
+          bodyColor: '#c8cedd',
+          callbacks: { label: ctx => ` Drawdown: ${ctx.raw.y.toFixed(2)}%` }
+        }
+      }
+    }
+  });
+}
+
+// ── Annual returns bar chart ──────────────────────────────────────────────
+function buildAnnualChart(yearlyResults) {
+  const sorted = [...yearlyResults].sort((a, b) => a.year - b.year);
+  const labels = sorted.map(d => String(d.year));
+  const values = sorted.map(d => d.pnl);
+  const colors = values.map(v => v >= 0 ? GREEN : RED);
+  const borderColors = values.map(v => v >= 0 ? '#1fa86e' : '#c73347');
+
+  const ctx = document.getElementById('annualChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Annual PnL ($)',
+        data: values,
+        backgroundColor: colors,
+        borderColor: borderColors,
+        borderWidth: 1,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { grid: { color: '#1e2130' }, ticks: { color: MUTED } },
+        y: {
+          grid: { color: '#1e2130' },
+          ticks: { color: MUTED, callback: v => fmtMoney(v, true) },
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d28',
+          borderColor: '#252836',
+          borderWidth: 1,
+          callbacks: {
+            title: ctx => `Year ${ctx[0].label}`,
+            label: ctx => {
+              const d = sorted[ctx.dataIndex];
+              return [
+                ` PnL: ${fmtMoney(ctx.raw)}`,
+                ` Accuracy: ${d.accuracy.toFixed(1)}%`,
+                ` Sharpe: ${d.sharpe.toFixed(2)}`,
+              ];
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Monthly heatmap ───────────────────────────────────────────────────────
+function buildHeatmap(monthlyResults) {
+  // Group by year
+  const byYear = {};
+  for (const d of monthlyResults) {
+    const [y, m] = d.month.split('-');
+    if (!byYear[y]) byYear[y] = {};
+    byYear[y][parseInt(m)] = d.pnl;
+  }
+  const years = Object.keys(byYear).sort();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // Find max abs pnl for color scaling
+  const allVals = monthlyResults.map(d => Math.abs(d.pnl));
+  const maxAbs = Math.max(...allVals) || 1;
+
+  function pnlColor(v) {
+    const intensity = Math.min(1, Math.abs(v) / (maxAbs * 0.6));
+    if (v > 0) {
+      const r = Math.round(26 + (0 - 26) * intensity);
+      const g = Math.round(194 + (200 - 194) * intensity);
+      const b = Math.round(129 + (100 - 129) * intensity);
+      return `rgba(${r},${g},${b},${0.15 + intensity * 0.7})`;
+    } else if (v < 0) {
+      const r = Math.round(231 + (255 - 231) * intensity * 0.3);
+      const g = Math.round(76 * (1 - intensity * 0.5));
+      const b = Math.round(94 * (1 - intensity * 0.3));
+      return `rgba(${r},${g},${b},${0.15 + intensity * 0.7})`;
+    }
+    return 'rgba(255,255,255,0.04)';
+  }
+
+  const table = document.getElementById('heatmapTable');
+  let html = '<thead><tr><th></th>';
+  months.forEach(m => html += `<th>${m}</th>`);
+  html += '</tr></thead><tbody>';
+
+  for (const year of years) {
+    html += `<tr><td>${year}</td>`;
+    for (let m = 1; m <= 12; m++) {
+      const v = byYear[year][m];
+      if (v !== undefined) {
+        const bg = pnlColor(v);
+        const textColor = Math.abs(v) > maxAbs * 0.3 ? '#e8eaf0' : MUTED;
+        html += `<td style="background:${bg};color:${textColor}" title="${year}-${String(m).padStart(2,'0')}: ${fmtMoney(v)}">${fmtMoney(v, true)}</td>`;
+      } else {
+        html += `<td style="color:#2a2d38">—</td>`;
+      }
+    }
+    html += '</tr>';
+  }
+  html += '</tbody>';
+  table.innerHTML = html;
+}
+
+// ── Direction accuracy chart ──────────────────────────────────────────────
+function buildDirectionChart(directionResults) {
+  const filtered = directionResults.filter(d => d.total > 0);
+  const labels = filtered.map(d => d.direction);
+  const values = filtered.map(d => d.accuracy);
+  const counts = filtered.map(d => d.total);
+  const colors = labels.map(l => l === 'BULL' ? GREEN : l === 'BEAR' ? RED : ORANGE);
+
+  const ctx = document.getElementById('directionChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Accuracy %',
+        data: values,
+        backgroundColor: colors.map(c => c + '99'),
+        borderColor: colors,
+        borderWidth: 1.5,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          min: 0, max: 100,
+          grid: { color: '#1e2130' },
+          ticks: { color: MUTED, callback: v => v + '%' },
+        },
+        y: { grid: { display: false }, ticks: { color: MUTED } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d28',
+          borderColor: '#252836',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => {
+              const d = filtered[ctx.dataIndex];
+              return [` Accuracy: ${ctx.raw.toFixed(1)}%`, ` Trades: ${d.wins}/${d.total}`];
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Regime accuracy chart ─────────────────────────────────────────────────
+function buildRegimeChart(regimeResults) {
+  const filtered = regimeResults.filter(d => d.total > 0).sort((a, b) => b.accuracy - a.accuracy);
+  const labels = filtered.map(d => d.regime.replace('_', ' '));
+  const values = filtered.map(d => d.accuracy);
+  const palette = [TEAL, BLUE, PURPLE, GOLD, GREEN, ORANGE];
+  const colors = labels.map((_, i) => palette[i % palette.length]);
+
+  const ctx = document.getElementById('regimeChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Accuracy %',
+        data: values,
+        backgroundColor: colors.map(c => c + '99'),
+        borderColor: colors,
+        borderWidth: 1.5,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          min: 0, max: 100,
+          grid: { color: '#1e2130' },
+          ticks: { color: MUTED, callback: v => v + '%' },
+        },
+        y: { grid: { display: false }, ticks: { color: MUTED, font: { size: 10 } } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d28',
+          borderColor: '#252836',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => {
+              const d = filtered[ctx.dataIndex];
+              return [` Accuracy: ${ctx.raw.toFixed(1)}%`, ` Trades: ${d.wins}/${d.total}`];
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Score distribution chart ──────────────────────────────────────────────
+function buildScoreChart(scoreBuckets) {
+  const sorted = [...scoreBuckets].sort((a, b) => a.bucket - b.bucket);
+  const labels = sorted.map(d => d.bucket.toFixed(1));
+  const accVals = sorted.map(d => d.accuracy);
+  const counts = sorted.map(d => d.total);
+  const barColors = accVals.map(a => a >= 55 ? GREEN + 'bb' : a >= 50 ? ORANGE + 'bb' : RED + 'bb');
+
+  const ctx = document.getElementById('scoreChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Accuracy %',
+        data: accVals,
+        backgroundColor: barColors,
+        borderColor: barColors.map(c => c.slice(0, 7)),
+        borderWidth: 1,
+        borderRadius: 3,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: {
+          grid: { color: '#1e2130' },
+          ticks: { color: MUTED },
+          title: { display: true, text: 'Score bucket', color: MUTED, font: { size: 10 } }
+        },
+        y: {
+          min: 30, max: 80,
+          grid: { color: '#1e2130' },
+          ticks: { color: MUTED, callback: v => v + '%' },
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1a1d28',
+          borderColor: '#252836',
+          borderWidth: 1,
+          callbacks: {
+            title: ctx => `Score: ${ctx[0].label}`,
+            label: ctx => {
+              const d = sorted[ctx.dataIndex];
+              return [
+                ` Accuracy: ${ctx.raw.toFixed(1)}%`,
+                ` Count: ${d.total}`,
+                ` Avg return: ${fmtPct(d.avgReturn, 3)}`,
+              ];
+            }
+          }
+        },
+        // Custom plugin to draw count labels on bars
+        datalabels: null,
+      },
+      // Draw count text on bars
+      animation: { onComplete: function() {
+        const { ctx: c, data, chartArea: area } = this;
+        const ds = this.getDatasetMeta(0);
+        c.save();
+        c.font = '9px SF Mono, monospace';
+        c.textAlign = 'center';
+        c.fillStyle = MUTED;
+        ds.data.forEach((bar, i) => {
+          c.fillText(counts[i], bar.x, bar.y - 5);
+        });
+        c.restore();
+      }}
+    }
+  });
+}
+
+// ── Leverage tier chart ───────────────────────────────────────────────────
+function buildLeverageChart(leverageTiers) {
+  const labels = leverageTiers.map(d => d.tier);
+  const accVals = leverageTiers.map(d => d.accuracy);
+  const counts = leverageTiers.map(d => d.total);
+  const palette = [TEAL, BLUE, PURPLE, GOLD];
+
+  const ctx = document.getElementById('leverageChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Accuracy %',
+          data: accVals,
+          backgroundColor: palette.map(c => c + '99'),
+          borderColor: palette,
+          borderWidth: 1.5,
+          borderRadius: 4,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Trade Count',
+          data: counts,
+          type: 'line',
+          borderColor: ORANGE,
+          borderWidth: 2,
+          pointBackgroundColor: ORANGE,
+          pointRadius: 5,
+          tension: 0.3,
+          yAxisID: 'y2',
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        x: { grid: { color: '#1e2130' }, ticks: { color: MUTED } },
+        y: {
+          position: 'left',
+          min: 0, max: 100,
+          grid: { color: '#1e2130' },
+          ticks: { color: MUTED, callback: v => v + '%' },
+        },
+        y2: {
+          position: 'right',
+          grid: { display: false },
+          ticks: { color: ORANGE },
+        }
+      },
+      plugins: {
+        legend: { labels: { color: MUTED, boxWidth: 10, padding: 12 } },
+        tooltip: {
+          backgroundColor: '#1a1d28',
+          borderColor: '#252836',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => {
+              if (ctx.dataset.label === 'Accuracy %') return ` Accuracy: ${ctx.raw.toFixed(1)}%`;
+              return ` Count: ${ctx.raw}`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Cost breakdown donut ──────────────────────────────────────────────────
+function buildCostChart(summary) {
+  const ctx = document.getElementById('costChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Brokerage', 'Slippage', 'Overnight Funding'],
+      datasets: [{
+        data: [summary.totalBrokerage, summary.totalSlippage, summary.totalFunding],
+        backgroundColor: [TEAL + 'cc', BLUE + 'cc', PURPLE + 'cc'],
+        borderColor: [TEAL, BLUE, PURPLE],
+        borderWidth: 1.5,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: MUTED, boxWidth: 12, padding: 14 }
+        },
+        tooltip: {
+          backgroundColor: '#1a1d28',
+          borderColor: '#252836',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => {
+              const pct = (ctx.raw / summary.totalCosts * 100).toFixed(1);
+              return ` ${ctx.label}: ${fmtMoney(ctx.raw)} (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Compare chart — equity vs buy & hold ─────────────────────────────────
+function buildCompareChart(equityCurve) {
+  if (!equityCurve.length) return;
+  const startDate = new Date(equityCurve[0].date);
+  const totalDays = equityCurve.length;
+  const ASX_ANNUAL = 0.07; // ASX 200 ~7% pa historical
+  const DAILY_BH = Math.pow(1 + ASX_ANNUAL, 1/252) - 1;
+
+  const stratData = equityCurve.map(d => ({ x: d.date, y: d.equity }));
+  const bhData = equityCurve.map((d, i) => ({
+    x: d.date,
+    y: +(10000 * Math.pow(1 + DAILY_BH, i)).toFixed(2)
+  }));
+
+  const ctx = document.getElementById('compareChart').getContext('2d');
+  const gradTeal = ctx.createLinearGradient(0, 0, 0, 280);
+  gradTeal.addColorStop(0, 'rgba(0,212,170,0.2)');
+  gradTeal.addColorStop(1, 'rgba(0,212,170,0.0)');
+
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      datasets: [
+        {
+          label: 'ApexTrade',
+          data: stratData,
+          borderColor: TEAL,
+          borderWidth: 1.5,
+          backgroundColor: gradTeal,
+          fill: true,
+          pointRadius: 0,
+          tension: 0.1,
+        },
+        {
+          label: 'ASX 200 Buy & Hold (~7% pa)',
+          data: bhData,
+          borderColor: MUTED,
+          borderWidth: 1.5,
+          borderDash: [6, 4],
+          backgroundColor: 'transparent',
+          fill: false,
+          pointRadius: 0,
+          tension: 0.1,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: {
+          type: 'time',
+          time: { unit: 'year' },
+          grid: { color: '#1e2130' },
+          ticks: { color: MUTED, maxTicksLimit: 8 },
+        },
+        y: {
+          type: 'logarithmic',
+          grid: { color: '#1e2130' },
+          ticks: { color: MUTED, callback: v => fmtMoney(v, true) },
+        }
+      },
+      plugins: {
+        legend: { labels: { color: MUTED, boxWidth: 12, padding: 14 } },
+        tooltip: {
+          backgroundColor: '#1a1d28',
+          borderColor: '#252836',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmtMoney(ctx.raw.y)}`,
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const data = await loadData();
+    const { summary, equityCurve, yearlyResults, monthlyResults,
+            directionResults, regimeResults, scoreBuckets, leverageTiers } = data;
+
+    buildHeroStats(summary);
+    document.getElementById('mainContent').style.display = '';
+
+    buildEquityChart(equityCurve);
+    buildDrawdownChart(equityCurve, summary);
+    buildAnnualChart(yearlyResults);
+    buildHeatmap(monthlyResults);
+    buildDirectionChart(directionResults);
+    buildRegimeChart(regimeResults);
+    buildScoreChart(scoreBuckets);
+    buildLeverageChart(leverageTiers);
+    buildCostChart(summary);
+    buildCompareChart(equityCurve);
+
+  } catch (err) {
+    document.getElementById('heroStats').innerHTML = `
+      <div class="error" style="grid-column:1/-1;">
+        <strong>Failed to load backtest data</strong><br/>
+        Run <code>node backtest-10yr.js</code> first to generate <code>backtest-data.json</code>.
+        <code>${err.message}\n\nIf running from file://, start a local server:\n  npx serve .\nor open via VS Code Live Server.</code>
+      </div>
+    `;
+    document.getElementById('mainContent').style.display = 'none';
+  }
+}
+
+init();
+</script>
+</body>
+</html>
