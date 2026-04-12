@@ -1,0 +1,42 @@
+name: Daily Market Briefing
+
+# Runs at 6:00 AM AEST (20:00 UTC previous day) on weekdays — before ASX opens
+# Also runs at 4:30 PM AEST (06:30 UTC) on weekdays — after ASX close for recap
+on:
+  schedule:
+    - cron: '0 20 * * 0-4'   # Pre-market: 6am AEST Mon-Fri (Sun-Thu UTC)
+    - cron: '30 6 * * 1-5'   # Post-close: 4:30pm AEST Mon-Fri
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  send-briefing:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate and send daily briefing
+        run: |
+          echo "Triggering ApexTrade daily briefing..."
+          RESPONSE=$(curl -s --max-time 90 \
+            -H "x-briefing-key: ${{ secrets.BRIEFING_AUTH_KEY }}" \
+            "https://apextrade-proxy.netlify.app/.netlify/functions/daily-briefing?mode=send")
+          echo "$RESPONSE"
+
+          # Check for success
+          SUCCESS=$(echo "$RESPONSE" | jq -r '.success // false')
+          if [ "$SUCCESS" != "true" ]; then
+            echo "Briefing generation may have failed"
+            echo "$RESPONSE" | jq .
+            exit 1
+          fi
+
+          HEADLINE=$(echo "$RESPONSE" | jq -r '.headline // "N/A"')
+          VERDICT=$(echo "$RESPONSE" | jq -r '.verdict // "N/A"')
+          SENT=$(echo "$RESPONSE" | jq -r '.sent // 0')
+          TIME=$(echo "$RESPONSE" | jq -r '.generationTime // 0')
+
+          echo "========================================="
+          echo "Briefing sent successfully!"
+          echo "Headline: $HEADLINE"
+          echo "Verdict: $VERDICT"
+          echo "Recipients: $SENT"
+          echo "Generation time: ${TIME}ms"
+          echo "========================================="
