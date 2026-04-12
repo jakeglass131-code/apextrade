@@ -708,55 +708,84 @@ class IGClient {
   }
 
   async login() {
-    const res = await fetch(`${this.baseUrl}/session`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-IG-API-KEY': this.apiKey,
-        'VERSION': '2',
-      },
-      body: JSON.stringify({
-        identifier: this.username,
-        password: this.password,
-      }),
-    });
+    // Try v3 first (returns OAuth tokens), fall back to v2
+    for (const version of ['3', '2', '1']) {
+      try {
+        const body = { identifier: this.username, password: this.password };
+        const res = await fetch(`${this.baseUrl}/session`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json; charset=UTF-8',
+            'X-IG-API-KEY': this.apiKey,
+            'VERSION': version,
+          },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(15000),
+        });
 
-    if (!res.ok) {
-      const err = await res.text();
-      throw new Error(`IG login failed (${res.status}): ${err}`);
+        if (!res.ok) {
+          const err = await res.text();
+          console.log(`IG login v${version} failed (${res.status}): ${err}`);
+          continue;
+        }
+
+        const data = await res.json();
+
+        // v3 returns OAuth tokens
+        if (version === '3' && data.oauthToken) {
+          this.oauthToken = data.oauthToken;
+          this.cst = null;
+          this.securityToken = null;
+        } else {
+          // v1/v2 return CST + security token in headers
+          this.cst = res.headers.get('CST') || res.headers.get('cst');
+          this.securityToken = res.headers.get('X-SECURITY-TOKEN') || res.headers.get('x-security-token');
+        }
+
+        this.accountId = data.currentAccountId || data.accountId;
+        this.apiVersion = version;
+        return data;
+      } catch (e) {
+        console.log(`IG login v${version} error: ${e.message}`);
+        if (version === '1') throw new Error(`IG login failed all versions: ${e.message}`);
+      }
     }
-
-    this.cst = res.headers.get('CST');
-    this.securityToken = res.headers.get('X-SECURITY-TOKEN');
-
-    const data = await res.json();
-    this.accountId = data.currentAccountId;
-    return data;
+    throw new Error('IG login failed on all API versions');
   }
 
   getHeaders(version = '2') {
-    return {
+    const headers = {
       'Content-Type': 'application/json',
+      'Accept': 'application/json; charset=UTF-8',
       'X-IG-API-KEY': this.apiKey,
-      'CST': this.cst,
-      'X-SECURITY-TOKEN': this.securityToken,
       'VERSION': version,
     };
+    if (this.oauthToken) {
+      headers['Authorization'] = `Bearer ${this.oauthToken.access_token}`;
+      headers['IG-ACCOUNT-ID'] = this.accountId;
+    } else {
+      if (this.cst) headers['CST'] = this.cst;
+      if (this.securityToken) headers['X-SECURITY-TOKEN'] = this.securityToken;
+    }
+    return headers;
   }
 
   async getAccounts() {
     const res = await fetch(`${this.baseUrl}/accounts`, {
       headers: this.getHeaders('1'),
+      signal: AbortSignal.timeout(10000),
     });
-    if (!res.ok) throw new Error(`IG accounts failed: ${res.status}`);
+    if (!res.ok) throw new Error(`IG accounts failed: ${res.status} ${await res.text()}`);
     return res.json();
   }
 
   async getPositions() {
     const res = await fetch(`${this.baseUrl}/positions`, {
       headers: this.getHeaders('2'),
+      signal: AbortSignal.timeout(10000),
     });
-    if (!res.ok) throw new Error(`IG positions failed: ${res.status}`);
+    if (!res.ok) throw new Error(`IG positions failed: ${res.status} ${await res.text()}`);
     return res.json();
   }
 
@@ -897,10 +926,11 @@ exports.handler = async (event) => {
     addLog(`  Factors: ${JSON.stringify(signal.rawFactors)}`);
 
     // ── Step 3: Connect to IG Markets ─────────────────────────────────────
-    addLog('🔗 Connecting to IG Markets...');
+    addLog(`🔗 Connecting to IG Markets (${isDemo ? 'DEMO' : 'LIVE'})...`);
+    addLog(`  API URL: ${isDemo ? IG_DEMO_URL : IG_API_URL}`);
     const ig = new IGClient(igApiKey, igUsername, igPassword, isDemo);
     const session = await ig.login();
-    addLog(`  Logged in as: ${session.currentAccountId}`);
+    addLog(`  Logged in as: ${session.currentAccountId || session.accountId} (API v${ig.apiVersion})`);
 
     // Get account balance
     const accounts = await ig.getAccounts();
