@@ -9199,7 +9199,7 @@ RULES:
     const text = data.content?.find(b => b.type === 'text')?.text || '';
     if (!text) throw new Error('No response');
 
-    // Determine overall bias from technicals + overnight
+    // Determine overall bias from technicals + overnight + macro news
     const asxTech = techData['ASX200']?.tech;
     const nq = overnightData['NQ=F']?.chgPct || 0;
     const es = overnightData['ES=F']?.chgPct || 0;
@@ -9207,15 +9207,36 @@ RULES:
     const avgEquity = (nq + es) / 2;
     const techBias = asxTech ? (asxTech.rsi > 55 && asxTech.emaAlign==='BULLISH' ? 1 : asxTech.rsi < 45 && asxTech.emaAlign==='BEARISH' ? -1 : 0) : 0;
     const overnightBias = avgEquity > 0.3 ? 1 : avgEquity < -0.3 ? -1 : 0;
-    const combinedBias = techBias + overnightBias;
+    // News sentiment bias — scan headlines for directional macro impact
+    var _aiBearRx = /\b(war|invasion|missile|attack|bomb|strike|retaliat|escalat|nuclear|crash|crisis|recession|depression|contagion|bank run|selloff|sell-off|capitulation|sanctions|embargo|blockade|tariff hike|trade war|rate hike|hawkish|hot (cpi|inflation)|shutdown|default|debt ceiling|coup|collaps|fail|broke down|tensions? (rise|rising|escalat)|plunge|plummet|tumble|slump)\b/i;
+    var _aiBullRx = /\b(ceasefire|cease-fire|peace deal|truce|de-escalat|rate cut|dovish|stimulus|bailout|recovery|rally|surge|soar|beat expectation|strong (gdp|growth|jobs)|cool.*(cpi|inflation)|easing|soft landing|breakout|record high)\b/i;
+    var _aiNegMod = /\b(collaps|fail|broke|end|reject|violat|dead|doubt|unlikely|risk|threat|stall|not working|fell apart|breaks? down|abandon|cancel)\b/i;
+    var _aiNewsBias = 0;
+    try {
+      var _aiTopNews = (typeof _lastNewsItems !== 'undefined' && Array.isArray(_lastNewsItems)) ? _lastNewsItems.slice(0, 12) : [];
+      for (var _ni = 0; _ni < _aiTopNews.length; _ni++) {
+        var _nb = ((_aiTopNews[_ni].title || '') + ' ' + (_aiTopNews[_ni].description || '')).toLowerCase();
+        var _nc = typeof classifyNewsImpact === 'function' ? classifyNewsImpact(_aiTopNews[_ni].title, _aiTopNews[_ni].description) : { level: 'low' };
+        var _nw = _nc.level === 'high' ? 1.0 : _nc.level === 'med' ? 0.4 : 0;
+        if (_nw === 0) continue;
+        var _isBear = _aiBearRx.test(_nb), _isBull = _aiBullRx.test(_nb);
+        if (_isBull && _aiNegMod.test(_nb)) { _isBull = false; _isBear = true; }
+        if (_isBear && !_isBull) _aiNewsBias -= _nw;
+        else if (_isBull && !_isBear) _aiNewsBias += _nw;
+      }
+      _aiNewsBias = Math.max(-2, Math.min(2, _aiNewsBias));
+    } catch(_e) {}
+    const combinedBias = techBias + overnightBias + _aiNewsBias;
     const bias = combinedBias > 0 ? 'BULLISH' : combinedBias < 0 ? 'BEARISH' : 'NEUTRAL';
     const biasCol = bias === 'BULLISH' ? 'var(--green)' : bias === 'BEARISH' ? 'var(--red)' : 'var(--amber)';
 
-    const verdictHTML = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;padding:12px 16px;background:var(--bg4);border:1px solid ${biasCol.replace('var(--','rgba(').replace(')',',.25)')};border-radius:10px">
+    const _aiNewsCol = _aiNewsBias > 0.3 ? 'var(--green)' : _aiNewsBias < -0.3 ? 'var(--red)' : 'var(--amber)';
+    const verdictHTML = `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;padding:12px 16px;background:var(--bg4);border:1px solid ${biasCol.replace('var(--','rgba(').replace(')',',.25)')};border-radius:10px">
       <div style="text-align:center"><div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.05em">Overall Bias</div><div style="font-size:18px;font-weight:900;color:${biasCol}">${bias}</div></div>
       <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">NQ Overnight</div><div style="font-size:15px;font-weight:800;color:${nq>=0?'var(--green)':'var(--red)'}">${nq>=0?'+':''}${nq.toFixed(2)}%</div></div>
       <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">ES Overnight</div><div style="font-size:15px;font-weight:800;color:${es>=0?'var(--green)':'var(--red)'}">${es>=0?'+':''}${es.toFixed(2)}%</div></div>
       <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">BTC Risk Proxy</div><div style="font-size:15px;font-weight:800;color:${btc>=0?'var(--green)':'var(--red)'}">${btc>=0?'+':''}${btc.toFixed(2)}%</div></div>
+      <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">News Sentiment</div><div style="font-size:15px;font-weight:800;color:${_aiNewsCol}">${_aiNewsBias>=0?'+':''}${_aiNewsBias.toFixed(1)}</div></div>
     </div>`;
 
     body.innerHTML = verdictHTML + techDashHTML + text;
@@ -9240,7 +9261,7 @@ RULES:
         return `<div class="pred-idx-card neutral"><div class="pred-call">NO DATA</div><div class="pred-range">${idxLabel} (${name})</div><div class="pred-conf">Candle fetch failed</div></div>`;
       }
       const techBias = (t.rsi > 55 && t.emaAlign === 'BULLISH' ? 1 : 0) + (t.rsi < 45 && t.emaAlign === 'BEARISH' ? -1 : 0) + (t.macdHist > 0 ? 0.5 : -0.5) + (t.trend === 'UPTREND' ? 0.5 : t.trend === 'DOWNTREND' ? -0.5 : 0);
-      const combined = techBias + overnightBias;
+      const combined = techBias + overnightBias + newsBias;
       const call = combined > 0.5 ? 'BULL' : combined < -0.5 ? 'BEAR' : 'NEUTRAL';
       const klass = call === 'BULL' ? 'bull' : call === 'BEAR' ? 'bear' : 'neutral';
       // ATR-based range
@@ -9253,7 +9274,8 @@ RULES:
         t.emaAlign === 'BULLISH' ? 1 : t.emaAlign === 'BEARISH' ? -1 : 0,
         t.macdHist > 0 ? 1 : -1,
         t.trend === 'UPTREND' ? 1 : t.trend === 'DOWNTREND' ? -1 : 0,
-        overnightBias
+        overnightBias,
+        newsBias > 0.3 ? 1 : newsBias < -0.3 ? -1 : 0
       ];
       const aligned = Math.abs(signals.reduce((a,b)=>a+b, 0));
       const conf = Math.round(40 + aligned * 12);
@@ -9265,47 +9287,93 @@ RULES:
       </div>`;
     }
 
-    // Pull top news headlines into the prediction for macro context
+    // ── Compute news sentiment bias that ACTUALLY shifts the prediction ──
+    // Bearish keywords: events that typically cause risk-off / selling
+    var BEARISH_RX = /\b(war|invasion|missile|attack|bomb|strike|retaliat|escalat|nuclear|crash|crisis|recession|depression|contagion|bank run|credit crunch|selloff|sell-off|capitulation|liquidation|bear market|sanctions|embargo|blockade|tariff hike|trade war|rate hike|hawkish|hot (cpi|inflation|ppi)|above expectation.*(cpi|inflation)|higher.than.expected.*(cpi|inflation)|shutdown|default|debt ceiling|coup|protest|collaps|fail|broke down|breaks down|not working|fell apart|tensions? (rise|rising|escalat|mount)|worst|plunge|plummet|tumble|slump|tank)\b/i;
+    // Bullish keywords: events that typically cause risk-on / buying
+    var BULLISH_RX = /\b(ceasefire|cease-fire|peace deal|peace agreement|truce|de-escalat|rate cut|dovish|stimulus|bailout|recovery|rally|surge|soar|jump|boom|beat expectation|better.than.expected|strong (gdp|growth|jobs|employment|earnings)|cool.*(cpi|inflation)|below expectation.*(cpi|inflation)|easing|accommodation|soft landing|bull market|breakout|record high|all-time high)\b/i;
+    // Negative modifiers flip bullish items (e.g. "ceasefire collapses" → bearish)
+    var NEG_MODIFIER_RX = /\b(collaps|fail|broke|end|reject|violat|dead|doubt|unlikely|risk|threat|stall|not working|fell apart|breaks? down|abandon|withdraw|scrap|cancel)\b/i;
+
+    var newsBias = 0;
     var newsContext = '';
+    var _scoredHeadlines = [];
     try {
-      var topNews = (typeof _lastNewsItems !== 'undefined' && Array.isArray(_lastNewsItems)) ? _lastNewsItems.slice(0, 8) : [];
+      var topNews = (typeof _lastNewsItems !== 'undefined' && Array.isArray(_lastNewsItems)) ? _lastNewsItems.slice(0, 12) : [];
       if (topNews.length) {
-        var highItems = topNews.filter(function(n) {
+        for (var ni = 0; ni < topNews.length; ni++) {
+          var n = topNews[ni];
           var blob = ((n.title || '') + ' ' + (n.description || '')).toLowerCase();
-          return /ceasefire|war|fed|fomc|rate cut|rate hike|cpi|inflation|tariff|sanctions|crisis|crash|recession|opec|nfp|gdp|rba|ecb|nuclear|missile|attack|strait|embargo/.test(blob);
-        });
+          var cls = typeof classifyNewsImpact === 'function' ? classifyNewsImpact(n.title, n.description) : { level: 'low', reason: '' };
+          // Weight: high-impact headlines count more
+          var weight = cls.level === 'high' ? 1.0 : cls.level === 'med' ? 0.4 : 0;
+          if (weight === 0) continue;
+
+          var isBearish = BEARISH_RX.test(blob);
+          var isBullish = BULLISH_RX.test(blob);
+          // Check for negative modifiers that flip bullish → bearish
+          // e.g. "ceasefire collapses", "rate cut unlikely", "peace deal fails"
+          if (isBullish && NEG_MODIFIER_RX.test(blob)) { isBullish = false; isBearish = true; }
+
+          var dir = 0;
+          if (isBearish && !isBullish) dir = -1;
+          else if (isBullish && !isBearish) dir = 1;
+          // If both match or neither, skip scoring (ambiguous)
+
+          if (dir !== 0) {
+            newsBias += dir * weight;
+            _scoredHeadlines.push({ title: n.title, dir: dir, weight: weight, level: cls.level, reason: cls.reason });
+          } else if (cls.level === 'high') {
+            // Still show in context even if direction ambiguous
+            _scoredHeadlines.push({ title: n.title, dir: 0, weight: 0, level: cls.level, reason: cls.reason });
+          }
+        }
+
+        // Clamp newsBias to [-2, 2] — strong but not overwhelming
+        newsBias = Math.max(-2, Math.min(2, newsBias));
+
+        // Build macro context display
+        var highItems = _scoredHeadlines.slice(0, 5);
         if (highItems.length) {
+          var biasLabel = newsBias > 0.3 ? '🟢 Bullish' : newsBias < -0.3 ? '🔴 Bearish' : '🟡 Mixed';
           newsContext = '<div style="margin:14px 0;padding:12px 14px;background:rgba(255,176,32,.05);border:1px solid rgba(255,176,32,.12);border-radius:10px">' +
-            '<div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📰 Macro Context (from news feed)</div>' +
-            highItems.slice(0, 4).map(function(n) {
-              var cls = typeof classifyNewsImpact === 'function' ? classifyNewsImpact(n.title, n.description) : { level: 'med', reason: '' };
-              var col = cls.level === 'high' ? 'var(--red)' : cls.level === 'med' ? 'var(--amber)' : 'var(--text4)';
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+              '<div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em">📰 Macro Context (actively shifts prediction)</div>' +
+              '<div style="font-size:10px;font-weight:700;color:' + (newsBias > 0.3 ? 'var(--green)' : newsBias < -0.3 ? 'var(--red)' : 'var(--amber)') + '">' + biasLabel + ' (score: ' + (newsBias >= 0 ? '+' : '') + newsBias.toFixed(1) + ')</div>' +
+            '</div>' +
+            highItems.map(function(h) {
+              var col = h.level === 'high' ? 'var(--red)' : 'var(--amber)';
+              var arrow = h.dir > 0 ? '↑' : h.dir < 0 ? '↓' : '↔';
+              var dirCol = h.dir > 0 ? 'var(--green)' : h.dir < 0 ? 'var(--red)' : 'var(--text4)';
               return '<div style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:11px;line-height:1.4">' +
-                '<span style="flex-shrink:0;font-size:8px;font-weight:800;padding:1px 5px;border-radius:3px;background:' + col.replace('var(--','rgba(').replace(')',',0.1)') + ';color:' + col + '">' + (cls.level || 'med').toUpperCase() + '</span>' +
-                '<span style="color:var(--text2)">' + _escHtml(n.title || '') + '</span></div>';
+                '<span style="flex-shrink:0;font-size:8px;font-weight:800;padding:1px 5px;border-radius:3px;background:' + col.replace('var(--','rgba(').replace(')',',0.1)') + ';color:' + col + '">' + (h.level || 'med').toUpperCase() + '</span>' +
+                '<span style="flex-shrink:0;color:' + dirCol + ';font-weight:800">' + arrow + '</span>' +
+                '<span style="color:var(--text2)">' + _escHtml(h.title || '') + '</span></div>';
             }).join('') +
-            '<div style="font-size:10px;color:var(--text4);margin-top:6px;font-style:italic">These headlines may shift sentiment beyond what technicals show. Factor them into your bias.</div>' +
+            '<div style="font-size:10px;color:var(--text4);margin-top:6px;font-style:italic">News bias (' + (newsBias >= 0 ? '+' : '') + newsBias.toFixed(1) + ') is added to technicals + overnight flow in the final verdict.</div>' +
           '</div>';
         }
       }
     } catch(e) { console.warn('News context failed:', e); }
 
-    const ruleHTML = '<h3 style="margin-top:0">📊 Rule-based prediction <span style="font-size:10px;color:var(--text4);font-weight:500">(technicals + overnight flow)</span></h3>' +
+    const ruleHTML = '<h3 style="margin-top:0">📊 Rule-based prediction <span style="font-size:10px;color:var(--text4);font-weight:500">(technicals + overnight flow + macro news)</span></h3>' +
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">' +
       PRED_INDICES.map(idx => _ruleCard(idx.label, idx.name, techData[idx.label]?.tech)).join('') +
       '</div>';
 
-    // Bias summary same as the AI success path
+    // Bias summary — technicals + overnight + macro news
     const asxTech = techData['ASX200']?.tech;
     const techBias = asxTech ? (asxTech.rsi > 55 && asxTech.emaAlign === 'BULLISH' ? 1 : asxTech.rsi < 45 && asxTech.emaAlign === 'BEARISH' ? -1 : 0) : 0;
-    const combinedBias = techBias + overnightBias;
+    const combinedBias = techBias + overnightBias + newsBias;
     const bias = combinedBias > 0 ? 'BULLISH' : combinedBias < 0 ? 'BEARISH' : 'NEUTRAL';
     const biasCol = bias === 'BULLISH' ? 'var(--green)' : bias === 'BEARISH' ? 'var(--red)' : 'var(--amber)';
-    const verdictHTML = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;padding:12px 16px;background:var(--bg4);border:1px solid ${biasCol.replace('var(--','rgba(').replace(')',',.25)')};border-radius:10px">
+    const _fbNewsCol = newsBias > 0.3 ? 'var(--green)' : newsBias < -0.3 ? 'var(--red)' : 'var(--amber)';
+    const verdictHTML = `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px;padding:12px 16px;background:var(--bg4);border:1px solid ${biasCol.replace('var(--','rgba(').replace(')',',.25)')};border-radius:10px">
       <div style="text-align:center"><div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.05em">Overall Bias</div><div style="font-size:18px;font-weight:900;color:${biasCol}">${bias}</div></div>
       <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">NQ Overnight</div><div style="font-size:15px;font-weight:800;color:${nq>=0?'var(--green)':'var(--red)'}">${nq>=0?'+':''}${nq.toFixed(2)}%</div></div>
       <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">ES Overnight</div><div style="font-size:15px;font-weight:800;color:${es>=0?'var(--green)':'var(--red)'}">${es>=0?'+':''}${es.toFixed(2)}%</div></div>
       <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">BTC Risk Proxy</div><div style="font-size:15px;font-weight:800;color:${btc>=0?'var(--green)':'var(--red)'}">${btc>=0?'+':''}${btc.toFixed(2)}%</div></div>
+      <div style="text-align:center"><div style="font-size:9px;color:var(--text4)">News Sentiment</div><div style="font-size:15px;font-weight:800;color:${_fbNewsCol}">${newsBias>=0?'+':''}${newsBias.toFixed(1)}</div></div>
     </div>`;
 
     const isProxyErr = /ANTHROPIC_API_KEY|not configured|503/.test(e.message || '');
