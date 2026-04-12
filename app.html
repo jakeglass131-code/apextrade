@@ -9048,6 +9048,221 @@ function _techSummary(label, t) {
   20d range: ${t.recentL} — ${t.recentH} | 5d range: ${t.prev5L} — ${t.prev5H}\n`;
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// V2 QUANT ENGINE RENDERER — 16-factor model with backtest + intermarket
+// ═══════════════════════════════════════════════════════════════════════════
+function _renderV2Prediction(v2, body, badge, btn) {
+  const p = v2.prediction;
+  const factors = v2.factors || [];
+  const im = v2.intermarket || {};
+  const tech = v2.technicals || {};
+  const bt = v2.backtest;
+
+  const dirCol = p.direction === 'BULL' ? 'var(--green)' : p.direction === 'BEAR' ? 'var(--red)' : 'var(--amber)';
+  const dirLabel = p.direction === 'BULL' ? 'BULLISH' : p.direction === 'BEAR' ? 'BEARISH' : 'NEUTRAL';
+  const dirClass = p.direction === 'BULL' ? 'bull' : p.direction === 'BEAR' ? 'bear' : 'neutral';
+  const confCol = p.confidence >= 65 ? 'var(--green)' : p.confidence >= 50 ? 'var(--amber)' : 'var(--red)';
+
+  // ── Hero verdict banner ──────────────────────────────────────────────
+  var html = '<div style="padding:16px 20px;background:var(--bg4);border:1px solid ' + dirCol.replace('var(--','rgba(').replace(')',',.3)') + ';border-radius:12px;margin-bottom:16px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">';
+  html += '<div><div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em">16-Factor Quant Model</div>';
+  html += '<div style="font-size:28px;font-weight:900;color:' + dirCol + ';line-height:1.1">' + dirLabel + '</div></div>';
+  html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Score</div><div style="font-size:22px;font-weight:800;color:' + dirCol + '">' + (p.score > 0 ? '+' : '') + p.score.toFixed(2) + '</div></div>';
+  html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Confidence</div><div style="font-size:22px;font-weight:800;color:' + confCol + '">' + p.confidence.toFixed(0) + '%</div></div>';
+  html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Est. Move</div><div style="font-size:22px;font-weight:800;color:' + dirCol + '">' + p.estimatedChange + '</div></div>';
+  html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Range</div><div style="font-size:15px;font-weight:700;font-family:var(--fm);color:var(--text2)">' + p.range.low.toFixed(0) + ' — ' + p.range.high.toFixed(0) + '</div></div>';
+  html += '</div></div>';
+
+  // ── Intermarket dashboard ────────────────────────────────────────────
+  function _imCell(label, val, suffix) {
+    if (val == null) return '';
+    var col = val > 0 ? 'var(--green)' : val < 0 ? 'var(--red)' : 'var(--text3)';
+    return '<div style="text-align:center;padding:6px"><div style="font-size:8px;color:var(--text4);text-transform:uppercase;letter-spacing:.04em">' + label + '</div><div style="font-size:14px;font-weight:800;color:' + col + '">' + (val > 0 ? '+' : '') + val.toFixed(2) + (suffix || '%') + '</div></div>';
+  }
+
+  html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📡 Intermarket Dashboard</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:2px">';
+  html += _imCell('NQ Futures', im.nq);
+  html += _imCell('ES Futures', im.es);
+  html += _imCell('YM Futures', im.ym);
+  html += _imCell('Gold', im.gold);
+  html += _imCell('Crude Oil', im.oil);
+  html += _imCell('DXY', im.dxy);
+  html += _imCell('US 10Y', im.bond10y);
+  html += _imCell('AUD/USD', im.aud);
+  html += _imCell('BTC', im.btc);
+  html += _imCell('Copper', im.copper);
+  var vixVal = im.vix;
+  if (vixVal != null) {
+    var vixCol = vixVal > 25 ? 'var(--red)' : vixVal > 18 ? 'var(--amber)' : 'var(--green)';
+    html += '<div style="text-align:center;padding:6px"><div style="font-size:8px;color:var(--text4);text-transform:uppercase;letter-spacing:.04em">VIX</div><div style="font-size:14px;font-weight:800;color:' + vixCol + '">' + vixVal.toFixed(1) + '</div><div style="font-size:8px;color:var(--text4)">' + (im.vixRegime || '') + '</div></div>';
+  }
+  html += '<div style="text-align:center;padding:6px"><div style="font-size:8px;color:var(--text4);text-transform:uppercase;letter-spacing:.04em">Regime</div><div style="font-size:11px;font-weight:700;color:' + dirCol + '">' + (im.vixRegime || 'N/A') + '</div></div>';
+  html += '</div></div>';
+
+  // ── Factor breakdown (the 16 factors) ────────────────────────────────
+  html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">🧮 Factor Breakdown (16 signals)</div>';
+
+  // Sort factors by absolute weighted score descending (biggest drivers first)
+  var sortedFactors = factors.slice().sort(function(a, b) { return Math.abs(b.weightedScore) - Math.abs(a.weightedScore); });
+
+  for (var fi = 0; fi < sortedFactors.length; fi++) {
+    var f = sortedFactors[fi];
+    var fCol = f.score > 0.1 ? 'var(--green)' : f.score < -0.1 ? 'var(--red)' : 'var(--text4)';
+    var arrow = f.score > 0.1 ? '▲' : f.score < -0.1 ? '▼' : '—';
+    var barWidth = Math.min(100, Math.abs(f.weightedScore) * 20);
+    var barCol = f.score > 0 ? 'rgba(16,185,129,.4)' : 'rgba(239,68,68,.4)';
+
+    html += '<div style="display:grid;grid-template-columns:140px 1fr 60px 50px;gap:8px;align-items:center;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.03);font-size:11px">';
+    html += '<div style="font-weight:700;color:var(--text2)">' + f.name + '</div>';
+    html += '<div style="position:relative;height:16px;background:rgba(255,255,255,.03);border-radius:3px;overflow:hidden">';
+    html += '<div style="position:absolute;' + (f.score >= 0 ? 'left:50%' : 'right:50%') + ';top:0;height:100%;width:' + barWidth + '%;background:' + barCol + ';border-radius:3px"></div>';
+    html += '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--text3)">' + (f.detail || '') + '</div>';
+    html += '</div>';
+    html += '<div style="text-align:right;font-weight:800;color:' + fCol + '">' + arrow + ' ' + (f.score > 0 ? '+' : '') + f.score.toFixed(2) + '</div>';
+    html += '<div style="text-align:right;font-size:9px;color:var(--text4)">w:' + f.weight.toFixed(1) + '</div>';
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // ── Technicals summary ───────────────────────────────────────────────
+  html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📊 ASX 200 Technical Snapshot</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px">';
+
+  function _techCell(label, val, colFn) {
+    var col = colFn ? colFn(val) : 'var(--text2)';
+    return '<div><div style="font-size:8px;color:var(--text4)">' + label + '</div><div style="font-weight:700;color:' + col + '">' + (val != null ? val : 'N/A') + '</div></div>';
+  }
+
+  html += _techCell('RSI(14)', tech.rsi, function(v) { return v > 70 ? 'var(--red)' : v < 30 ? 'var(--green)' : 'var(--text2)'; });
+  html += _techCell('MACD Hist', tech.macd ? tech.macd.hist : null, function(v) { return v > 0 ? 'var(--green)' : 'var(--red)'; });
+  html += _techCell('Stoch %K', tech.stochastic ? tech.stochastic.k : null, function(v) { return v > 80 ? 'var(--red)' : v < 20 ? 'var(--green)' : 'var(--text2)'; });
+  html += _techCell('ATR', tech.atr);
+  html += _techCell('EMAs', tech.emaAlignment, function(v) { return (v||'').includes('BULL') ? 'var(--green)' : (v||'').includes('BEAR') ? 'var(--red)' : 'var(--amber)'; });
+  html += _techCell('Bollinger', tech.bollingerPctB);
+  html += _techCell('Mean Rev', tech.meanReversion, function(v) { return (v||'')[0] === '+' ? 'var(--amber)' : (v||'')[0] === '-' ? 'var(--green)' : 'var(--text2)'; });
+  html += _techCell('Consec Days', tech.consecutiveDays, function(v) { return v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--text3)'; });
+  html += '</div></div>';
+
+  // ── News sentiment (from client-side) ────────────────────────────────
+  var BEARISH_RX = /\b(war|invasion|missile|attack|bomb|strike|retaliat|escalat|nuclear|crash|crisis|recession|depression|contagion|bank run|selloff|sell-off|capitulation|sanctions|embargo|blockade|tariff hike|trade war|rate hike|hawkish|shutdown|default|debt ceiling|coup|collaps|fail|broke down|tensions? (rise|rising|escalat)|plunge|plummet|tumble|slump)\b/i;
+  var BULLISH_RX = /\b(ceasefire|cease-fire|peace deal|truce|de-escalat|rate cut|dovish|stimulus|bailout|recovery|rally|surge|soar|beat expectation|strong (gdp|growth|jobs)|easing|soft landing|breakout|record high)\b/i;
+  var NEG_MOD_RX = /\b(collaps|fail|broke|end|reject|violat|dead|doubt|unlikely|risk|threat|stall|not working|fell apart|breaks? down|abandon|cancel)\b/i;
+  var newsBias = 0;
+  var newsHeadlines = [];
+  try {
+    var topNews = (typeof _lastNewsItems !== 'undefined' && Array.isArray(_lastNewsItems)) ? _lastNewsItems.slice(0, 12) : [];
+    for (var ni = 0; ni < topNews.length; ni++) {
+      var nb = ((topNews[ni].title || '') + ' ' + (topNews[ni].description || '')).toLowerCase();
+      var ncls = typeof classifyNewsImpact === 'function' ? classifyNewsImpact(topNews[ni].title, topNews[ni].description) : { level: 'low' };
+      var nw = ncls.level === 'high' ? 1.0 : ncls.level === 'med' ? 0.4 : 0;
+      if (nw === 0) continue;
+      var isBear = BEARISH_RX.test(nb), isBull = BULLISH_RX.test(nb);
+      if (isBull && NEG_MOD_RX.test(nb)) { isBull = false; isBear = true; }
+      var dir = 0;
+      if (isBear && !isBull) dir = -1;
+      else if (isBull && !isBear) dir = 1;
+      if (dir !== 0 || ncls.level === 'high') {
+        newsBias += dir * nw;
+        newsHeadlines.push({ title: topNews[ni].title, dir: dir, level: ncls.level });
+      }
+    }
+    newsBias = Math.max(-2, Math.min(2, newsBias));
+  } catch(e) {}
+
+  if (newsHeadlines.length) {
+    var newsBiasCol = newsBias > 0.3 ? 'var(--green)' : newsBias < -0.3 ? 'var(--red)' : 'var(--amber)';
+    var newsBiasLabel = newsBias > 0.3 ? '🟢 Bullish' : newsBias < -0.3 ? '🔴 Bearish' : '🟡 Mixed';
+    html += '<div style="margin-bottom:16px;padding:12px;background:rgba(255,176,32,.04);border:1px solid rgba(255,176,32,.12);border-radius:10px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em">📰 Live News Sentiment</div>';
+    html += '<div style="font-size:10px;font-weight:700;color:' + newsBiasCol + '">' + newsBiasLabel + ' (' + (newsBias >= 0 ? '+' : '') + newsBias.toFixed(1) + ')</div>';
+    html += '</div>';
+    for (var nhi = 0; nhi < Math.min(5, newsHeadlines.length); nhi++) {
+      var nh = newsHeadlines[nhi];
+      var nhCol = nh.level === 'high' ? 'var(--red)' : 'var(--amber)';
+      var nhArrow = nh.dir > 0 ? '↑' : nh.dir < 0 ? '↓' : '↔';
+      var nhDirCol = nh.dir > 0 ? 'var(--green)' : nh.dir < 0 ? 'var(--red)' : 'var(--text4)';
+      html += '<div style="display:flex;align-items:flex-start;gap:8px;padding:3px 0;font-size:11px">';
+      html += '<span style="flex-shrink:0;font-size:8px;font-weight:800;padding:1px 5px;border-radius:3px;background:' + nhCol.replace('var(--','rgba(').replace(')',',0.1)') + ';color:' + nhCol + '">' + nh.level.toUpperCase() + '</span>';
+      html += '<span style="color:' + nhDirCol + ';font-weight:800">' + nhArrow + '</span>';
+      html += '<span style="color:var(--text2)">' + _escHtml(nh.title) + '</span></div>';
+    }
+    html += '</div>';
+  }
+
+  // ── Backtest results ─────────────────────────────────────────────────
+  if (bt) {
+    var btCol = parseFloat(bt.accuracy) >= 55 ? 'var(--green)' : parseFloat(bt.accuracy) >= 50 ? 'var(--amber)' : 'var(--red)';
+    var retCol = parseFloat(bt.cumulativeReturn) >= 0 ? 'var(--green)' : 'var(--red)';
+    html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🔬 Backtest (ASX 200 — last ' + bt.total + ' signals)</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">';
+    html += '<div><div style="font-size:9px;color:var(--text4)">Accuracy</div><div style="font-size:18px;font-weight:900;color:' + btCol + '">' + bt.accuracy + '%</div></div>';
+    html += '<div><div style="font-size:9px;color:var(--text4)">Win/Total</div><div style="font-size:18px;font-weight:900;color:var(--text2)">' + bt.correct + '/' + bt.total + '</div></div>';
+    html += '<div><div style="font-size:9px;color:var(--text4)">Avg Return</div><div style="font-size:18px;font-weight:900;color:' + retCol + '">' + bt.avgReturn + '%</div></div>';
+    html += '<div><div style="font-size:9px;color:var(--text4)">Cumulative</div><div style="font-size:18px;font-weight:900;color:' + retCol + '">' + (parseFloat(bt.cumulativeReturn) > 0 ? '+' : '') + bt.cumulativeReturn + '%</div></div>';
+    html += '</div>';
+
+    // Recent backtest results mini-chart
+    if (bt.recentResults && bt.recentResults.length) {
+      html += '<div style="margin-top:10px;display:flex;gap:2px;align-items:flex-end;height:30px">';
+      for (var ri = 0; ri < bt.recentResults.length; ri++) {
+        var rr = bt.recentResults[ri];
+        var wasRight = rr.predicted === rr.actual;
+        var barH = Math.min(28, Math.max(4, Math.abs(rr.return) * 8));
+        html += '<div title="' + rr.date + ': Predicted ' + rr.predicted + ', Actual ' + rr.actual + ' (' + rr.return.toFixed(2) + '%)" style="flex:1;height:' + barH + 'px;background:' + (wasRight ? 'var(--green)' : 'var(--red)') + ';border-radius:2px;opacity:0.7"></div>';
+      }
+      html += '</div>';
+      html += '<div style="font-size:9px;color:var(--text4);margin-top:4px">Recent predictions: <span style="color:var(--green)">■</span> correct <span style="color:var(--red)">■</span> wrong</div>';
+    }
+    html += '</div>';
+  }
+
+  // ── Historical pattern matches ───────────────────────────────────────
+  if (v2.historicalMatches && v2.historicalMatches.length) {
+    html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🔎 Similar Historical Days (matched by RSI + pattern)</div>';
+    for (var hi = 0; hi < v2.historicalMatches.length; hi++) {
+      var hm = v2.historicalMatches[hi];
+      var hmCol = hm.nextDayReturn >= 0 ? 'var(--green)' : 'var(--red)';
+      html += '<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid rgba(255,255,255,.03)">';
+      html += '<span style="color:var(--text3)">' + hm.date + '</span>';
+      html += '<span style="color:var(--text4)">RSI ' + hm.rsi.toFixed(0) + '</span>';
+      html += '<span style="color:var(--text4)">' + hm.consecutive + ' consec</span>';
+      html += '<span style="font-weight:700;color:' + hmCol + '">Next day: ' + (hm.nextDayReturn >= 0 ? '+' : '') + hm.nextDayReturn.toFixed(2) + '%</span>';
+      html += '</div>';
+    }
+    html += '</div>';
+  }
+
+  // ── Seasonal note ────────────────────────────────────────────────────
+  if (v2.seasonal) {
+    html += '<div style="margin-bottom:16px;padding:10px 12px;background:rgba(6,182,212,.04);border:1px solid rgba(6,182,212,.12);border-radius:8px;font-size:11px;color:var(--text3)">';
+    html += '<span style="color:var(--accent);font-weight:700">📅 Seasonal:</span> ' + _escHtml(v2.seasonal);
+    html += '</div>';
+  }
+
+  // ── Footer ───────────────────────────────────────────────────────────
+  html += '<div style="text-align:center;font-size:10px;color:var(--text4);margin-top:10px">';
+  html += '16-factor quant model · 2yr backtest · generated ' + new Date(v2.generated).toLocaleTimeString() + ' · <em>Not financial advice</em>';
+  html += '</div>';
+
+  body.innerHTML = html;
+
+  // Update badge
+  if (badge) {
+    badge.textContent = p.direction === 'BULL' ? 'Bullish' : p.direction === 'BEAR' ? 'Bearish' : 'Neutral';
+    badge.style.color = dirCol;
+    badge.style.borderColor = dirCol.replace('var(--','rgba(').replace(')',',.35)');
+  }
+  if (btn) btn.disabled = false;
+}
+
 async function runMarketPrediction() {
   const body = document.getElementById('prediction-body');
   const badge = document.getElementById('pred-badge');
@@ -9056,7 +9271,23 @@ async function runMarketPrediction() {
 
   if (badge) { badge.textContent = 'Analysing...'; badge.style.color='var(--amber)'; badge.style.borderColor='rgba(255,170,0,.3)'; }
   if (btn) btn.disabled = true;
-  body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px"><div class="lpulse" style="background:var(--accent);margin:0 auto 12px"></div>Fetching index candles &amp; computing technicals...</div>';
+  body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px"><div class="lpulse" style="background:var(--accent);margin:0 auto 12px"></div>Running 16-factor quant model: fetching ASX, VIX, gold, oil, bonds, DXY, AUD, BTC, 2yr history &amp; backtesting...</div>';
+
+  // ═══ V2 QUANT ENGINE — primary prediction source ═══
+  try {
+    const v2Resp = await fetch('/.netlify/functions/predict-v2', { signal: AbortSignal.timeout(20000) });
+    if (v2Resp.ok) {
+      const v2 = await v2Resp.json();
+      if (v2.prediction && v2.factors) {
+        _renderV2Prediction(v2, body, badge, btn);
+        return;
+      }
+    }
+  } catch(e) {
+    console.warn('[predict] V2 engine failed, falling back:', e.message);
+  }
+
+  body.innerHTML = '<div style="color:var(--text3);font-size:12px;text-align:center;padding:30px"><div class="lpulse" style="background:var(--accent);margin:0 auto 12px"></div>V2 unavailable — running legacy prediction...</div>';
 
   const CANDLE_PROXY = 'https://apextrade-proxy.netlify.app/.netlify/functions/candles';
 
