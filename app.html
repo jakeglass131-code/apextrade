@@ -9265,6 +9265,31 @@ RULES:
       </div>`;
     }
 
+    // Pull top news headlines into the prediction for macro context
+    var newsContext = '';
+    try {
+      var topNews = (typeof _lastNewsItems !== 'undefined' && Array.isArray(_lastNewsItems)) ? _lastNewsItems.slice(0, 8) : [];
+      if (topNews.length) {
+        var highItems = topNews.filter(function(n) {
+          var blob = ((n.title || '') + ' ' + (n.description || '')).toLowerCase();
+          return /ceasefire|war|fed|fomc|rate cut|rate hike|cpi|inflation|tariff|sanctions|crisis|crash|recession|opec|nfp|gdp|rba|ecb|nuclear|missile|attack|strait|embargo/.test(blob);
+        });
+        if (highItems.length) {
+          newsContext = '<div style="margin:14px 0;padding:12px 14px;background:rgba(255,176,32,.05);border:1px solid rgba(255,176,32,.12);border-radius:10px">' +
+            '<div style="font-size:10px;font-weight:700;color:var(--amber);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📰 Macro Context (from news feed)</div>' +
+            highItems.slice(0, 4).map(function(n) {
+              var cls = typeof classifyNewsImpact === 'function' ? classifyNewsImpact(n.title, n.description) : { level: 'med', reason: '' };
+              var col = cls.level === 'high' ? 'var(--red)' : cls.level === 'med' ? 'var(--amber)' : 'var(--text4)';
+              return '<div style="display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:11px;line-height:1.4">' +
+                '<span style="flex-shrink:0;font-size:8px;font-weight:800;padding:1px 5px;border-radius:3px;background:' + col.replace('var(--','rgba(').replace(')',',0.1)') + ';color:' + col + '">' + (cls.level || 'med').toUpperCase() + '</span>' +
+                '<span style="color:var(--text2)">' + _escHtml(n.title || '') + '</span></div>';
+            }).join('') +
+            '<div style="font-size:10px;color:var(--text4);margin-top:6px;font-style:italic">These headlines may shift sentiment beyond what technicals show. Factor them into your bias.</div>' +
+          '</div>';
+        }
+      }
+    } catch(e) { console.warn('News context failed:', e); }
+
     const ruleHTML = '<h3 style="margin-top:0">📊 Rule-based prediction <span style="font-size:10px;color:var(--text4);font-weight:500">(technicals + overnight flow)</span></h3>' +
       '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">' +
       PRED_INDICES.map(idx => _ruleCard(idx.label, idx.name, techData[idx.label]?.tech)).join('') +
@@ -9294,7 +9319,7 @@ RULES:
       footer = `<div style="margin-top:10px;font-size:11px;color:var(--text4);text-align:center">AI prediction error: ${_escHtml(e.message || 'unknown')} · <button class="btn" onclick="runMarketPrediction()" style="font-size:10px;padding:3px 10px">Retry</button></div>`;
     }
 
-    body.innerHTML = verdictHTML + techDashHTML + ruleHTML + footer;
+    body.innerHTML = verdictHTML + techDashHTML + newsContext + ruleHTML + footer;
     if (badge) { badge.textContent = bias; badge.style.color = biasCol; badge.style.borderColor = biasCol.replace('var(--','rgba(').replace(')',',.35)'); }
   }
 

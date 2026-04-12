@@ -81,6 +81,13 @@ const FINANCE_KEYWORDS = [
   // Currencies
   "dollar", "euro", "yen", "pound", "yuan", "aussie", "loonie", "franc",
   "usd", "eur", "jpy", "gbp", "aud", "nzd", "cad", "chf", "cny",
+  // Geopolitical / macro events that move markets
+  "ceasefire", "cease-fire", "war", "invasion", "military", "missile",
+  "sanctions", "embargo", "blockade", "geopolitic", "nato", "nuclear",
+  "peace deal", "truce", "conflict", "attack", "strike", "retaliation",
+  "strait of hormuz", "strait", "supply chain", "supply disruption",
+  "government shutdown", "debt ceiling", "default", "sovereign",
+  "election", "vote", "referendum", "coup", "protest",
 ];
 const KEYWORD_REGEX = new RegExp("\\b(" + FINANCE_KEYWORDS.map(k => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")\\b", "i");
 
@@ -236,8 +243,21 @@ async function aggregateNews() {
 
   items = deduplicate(items);
 
-  // Sort by pubDate descending (newest first), tie-break by source weight
+  // Breaking / major-event keywords that should be boosted to the top
+  const BREAKING_RX = /\b(ceasefire|cease-fire|war|invasion|missile|attack|sanctions|embargo|blockade|nato|nuclear|strait|crisis|crash|emergency|recession|default|shutdown|coup|breaking|urgent)\b/i;
+  const MACRO_RX = /\b(fed |fomc|rate (cut|hike|decision|hold)|cpi|nfp|non-farm|gdp|inflation|tariff|opec|rba rate|ecb rate|boj rate)\b/i;
+
+  function storyPriority(item) {
+    const blob = ((item.title || "") + " " + (item.description || "")).toLowerCase();
+    if (BREAKING_RX.test(blob)) return 20;
+    if (MACRO_RX.test(blob)) return 10;
+    return 0;
+  }
+
+  // Sort: priority first, then by pubDate descending, tie-break by source weight
   items.sort((a, b) => {
+    const pa = storyPriority(a), pb = storyPriority(b);
+    if (pa !== pb) return pb - pa;
     const t = new Date(b.pubDate) - new Date(a.pubDate);
     if (t !== 0) return t;
     return (b.weight || 0) - (a.weight || 0);
