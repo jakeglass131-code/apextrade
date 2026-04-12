@@ -9049,7 +9049,7 @@ function _techSummary(label, t) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// V2 QUANT ENGINE RENDERER — 16-factor model with backtest + intermarket
+// V2.5 QUANT ENGINE RENDERER — 46-factor ensemble model
 // ═══════════════════════════════════════════════════════════════════════════
 function _renderV2Prediction(v2, body, badge, btn) {
   const p = v2.prediction;
@@ -9057,22 +9057,54 @@ function _renderV2Prediction(v2, body, badge, btn) {
   const im = v2.intermarket || {};
   const tech = v2.technicals || {};
   const bt = v2.backtest;
+  const regime = v2.regime || {};
+  const ens = v2.ensemble || {};
+  const indices = v2.indices || {};
 
   const dirCol = p.direction === 'BULL' ? 'var(--green)' : p.direction === 'BEAR' ? 'var(--red)' : 'var(--amber)';
   const dirLabel = p.direction === 'BULL' ? 'BULLISH' : p.direction === 'BEAR' ? 'BEARISH' : 'NEUTRAL';
-  const dirClass = p.direction === 'BULL' ? 'bull' : p.direction === 'BEAR' ? 'bear' : 'neutral';
   const confCol = p.confidence >= 65 ? 'var(--green)' : p.confidence >= 50 ? 'var(--amber)' : 'var(--red)';
+  var regimeCol = regime.type === 'TRENDING' ? 'var(--green)' : regime.type === 'MEAN_REVERTING' ? 'var(--accent)' : regime.type === 'VOLATILE' ? 'var(--red)' : 'var(--amber)';
 
   // ── Hero verdict banner ──────────────────────────────────────────────
-  var html = '<div style="padding:16px 20px;background:var(--bg4);border:1px solid ' + dirCol.replace('var(--','rgba(').replace(')',',.3)') + ';border-radius:12px;margin-bottom:16px">';
-  html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">';
-  html += '<div><div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em">16-Factor Quant Model</div>';
-  html += '<div style="font-size:28px;font-weight:900;color:' + dirCol + ';line-height:1.1">' + dirLabel + '</div></div>';
-  html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Score</div><div style="font-size:22px;font-weight:800;color:' + dirCol + '">' + (p.score > 0 ? '+' : '') + p.score.toFixed(2) + '</div></div>';
+  var html = '<div style="padding:16px 20px;background:var(--bg4);border:2px solid ' + dirCol.replace('var(--','rgba(').replace(')',',.35)') + ';border-radius:12px;margin-bottom:16px">';
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">';
+  html += '<div><div style="font-size:9px;color:var(--text4);text-transform:uppercase;letter-spacing:.08em">' + (v2.factorCount || factors.length) + '-Factor Ensemble Quant Model · v' + (v2.version || '2.5') + '</div>';
+  html += '<div style="font-size:32px;font-weight:900;color:' + dirCol + ';line-height:1.1">' + dirLabel + '</div></div>';
+  html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Score</div><div style="font-size:22px;font-weight:800;color:' + dirCol + '">' + (p.score > 0 ? '+' : '') + p.score.toFixed(3) + '</div></div>';
   html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Confidence</div><div style="font-size:22px;font-weight:800;color:' + confCol + '">' + p.confidence.toFixed(0) + '%</div></div>';
   html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Est. Move</div><div style="font-size:22px;font-weight:800;color:' + dirCol + '">' + p.estimatedChange + '</div></div>';
   html += '<div style="text-align:center"><div style="font-size:9px;color:var(--text4)">Range</div><div style="font-size:15px;font-weight:700;font-family:var(--fm);color:var(--text2)">' + p.range.low.toFixed(0) + ' — ' + p.range.high.toFixed(0) + '</div></div>';
+  html += '</div>';
+
+  // Regime + Ensemble sub-row
+  html += '<div style="display:flex;gap:16px;margin-top:12px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06);flex-wrap:wrap">';
+  html += '<div style="font-size:10px;color:var(--text3)">Regime: <span style="font-weight:800;color:' + regimeCol + '">' + (regime.type || 'N/A') + '</span> <span style="color:var(--text4)">(ADX ' + (regime.adx||0).toFixed(0) + ', Hurst ' + (regime.hurst||0).toFixed(2) + ', ATR pctile ' + (regime.atrPercentile||0) + ')</span></div>';
+  html += '<div style="font-size:10px;color:var(--text3)">Ensemble: ';
+  var momCol = ens.momentum?.score > 0 ? 'var(--green)' : ens.momentum?.score < 0 ? 'var(--red)' : 'var(--text4)';
+  var mrCol = ens.meanReversion?.score > 0 ? 'var(--green)' : ens.meanReversion?.score < 0 ? 'var(--red)' : 'var(--text4)';
+  var imCol2 = ens.intermarket?.score > 0 ? 'var(--green)' : ens.intermarket?.score < 0 ? 'var(--red)' : 'var(--text4)';
+  html += 'Mom <span style="font-weight:800;color:' + momCol + '">' + (ens.momentum?.score > 0 ? '+' : '') + (ens.momentum?.score||0).toFixed(2) + '</span>';
+  html += ' · MR <span style="font-weight:800;color:' + mrCol + '">' + (ens.meanReversion?.score > 0 ? '+' : '') + (ens.meanReversion?.score||0).toFixed(2) + '</span>';
+  html += ' · IM <span style="font-weight:800;color:' + imCol2 + '">' + (ens.intermarket?.score > 0 ? '+' : '') + (ens.intermarket?.score||0).toFixed(2) + '</span>';
   html += '</div></div>';
+  html += '</div>';
+
+  // ── Per-index prediction cards ───────────────────────────────────────
+  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0">';
+  ['ASX200', 'XSO', 'XEC'].forEach(function(idx) {
+    var ix = indices[idx];
+    if (!ix) return;
+    var ixCol = ix.direction === 'BULL' ? 'var(--green)' : ix.direction === 'BEAR' ? 'var(--red)' : 'var(--amber)';
+    var klass = ix.direction === 'BULL' ? 'bull' : ix.direction === 'BEAR' ? 'bear' : 'neutral';
+    html += '<div class="pred-idx-card ' + klass + '">';
+    html += '<div class="pred-call">' + ix.direction + '</div>';
+    if (ix.range) html += '<div class="pred-range">Range: ' + ix.range.low + ' — ' + ix.range.high + '</div>';
+    html += '<div class="pred-conf">Confidence: ' + ix.confidence + '%</div>';
+    html += '<div style="font-size:10px;color:var(--text4);margin-top:4px">' + idx + ' @ ' + ix.lastPrice + (ix.rsi ? ' · RSI ' + ix.rsi : '') + '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
 
   // ── Intermarket dashboard ────────────────────────────────────────────
   function _imCell(label, val, suffix) {
@@ -9102,9 +9134,9 @@ function _renderV2Prediction(v2, body, badge, btn) {
   html += '<div style="text-align:center;padding:6px"><div style="font-size:8px;color:var(--text4);text-transform:uppercase;letter-spacing:.04em">Regime</div><div style="font-size:11px;font-weight:700;color:' + dirCol + '">' + (im.vixRegime || 'N/A') + '</div></div>';
   html += '</div></div>';
 
-  // ── Factor breakdown (the 16 factors) ────────────────────────────────
+  // ── Factor breakdown ──────────────────────────────────────────────────
   html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
-  html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">🧮 Factor Breakdown (16 signals)</div>';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">🧮 Factor Breakdown (' + factors.length + ' signals, regime-weighted)</div>';
 
   // Sort factors by absolute weighted score descending (biggest drivers first)
   var sortedFactors = factors.slice().sort(function(a, b) { return Math.abs(b.weightedScore) - Math.abs(a.weightedScore); });
@@ -9130,8 +9162,8 @@ function _renderV2Prediction(v2, body, badge, btn) {
 
   // ── Technicals summary ───────────────────────────────────────────────
   html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
-  html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📊 ASX 200 Technical Snapshot</div>';
-  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-size:11px">';
+  html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📊 ASX 200 Technical Snapshot (20+ indicators)</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px 10px;font-size:10px">';
 
   function _techCell(label, val, colFn) {
     var col = colFn ? colFn(val) : 'var(--text2)';
@@ -9139,13 +9171,21 @@ function _renderV2Prediction(v2, body, badge, btn) {
   }
 
   html += _techCell('RSI(14)', tech.rsi, function(v) { return v > 70 ? 'var(--red)' : v < 30 ? 'var(--green)' : 'var(--text2)'; });
-  html += _techCell('MACD Hist', tech.macd ? tech.macd.hist : null, function(v) { return v > 0 ? 'var(--green)' : 'var(--red)'; });
-  html += _techCell('Stoch %K', tech.stochastic ? tech.stochastic.k : null, function(v) { return v > 80 ? 'var(--red)' : v < 20 ? 'var(--green)' : 'var(--text2)'; });
-  html += _techCell('ATR', tech.atr);
-  html += _techCell('EMAs', tech.emaAlignment, function(v) { return (v||'').includes('BULL') ? 'var(--green)' : (v||'').includes('BEAR') ? 'var(--red)' : 'var(--amber)'; });
-  html += _techCell('Bollinger', tech.bollingerPctB);
-  html += _techCell('Mean Rev', tech.meanReversion, function(v) { return (v||'')[0] === '+' ? 'var(--amber)' : (v||'')[0] === '-' ? 'var(--green)' : 'var(--text2)'; });
-  html += _techCell('Consec Days', tech.consecutiveDays, function(v) { return v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--text3)'; });
+  html += _techCell('MACD', tech.macd ? tech.macd.hist + (tech.macd.accel ? ' ▲' : ' ▼') : null, function(v) { return v && parseFloat(v) > 0 ? 'var(--green)' : 'var(--red)'; });
+  html += _techCell('Stoch', tech.stochastic ? tech.stochastic.k.toFixed(0) + '/' + tech.stochastic.d.toFixed(0) : null, function(v) { if(!v)return'var(--text2)'; var k=parseFloat(v); return k>80?'var(--red)':k<20?'var(--green)':'var(--text2)'; });
+  html += _techCell('ATR', tech.atr ? tech.atr + ' (P' + tech.atrPctile + ')' : null);
+  html += _techCell('ADX', tech.adx ? tech.adx.adx + ' +' + tech.adx.pDI.toFixed(0) + '/-' + tech.adx.nDI.toFixed(0) : null, function(v) { if(!v)return'var(--text2)'; return parseFloat(v)>25?'var(--green)':'var(--text4)'; });
+  html += _techCell('Ichimoku', tech.ichimoku ? (tech.ichimoku.aboveCloud ? 'Above' : 'Below') + ' · TK ' + tech.ichimoku.tkCross : null, function(v) { return (v||'').includes('Above')?'var(--green)':(v||'').includes('Below')?'var(--red)':'var(--amber)'; });
+  html += _techCell('CCI', tech.cci, function(v) { return v>100?'var(--red)':v<-100?'var(--green)':'var(--text2)'; });
+  html += _techCell('MFI', tech.mfi, function(v) { return v>80?'var(--red)':v<20?'var(--green)':'var(--text2)'; });
+  html += _techCell('Williams%R', tech.williamsR, function(v) { return v>-20?'var(--red)':v<-80?'var(--green)':'var(--text2)'; });
+  html += _techCell('ROC(12)', tech.roc ? (tech.roc > 0 ? '+' : '') + tech.roc + '%' : null, function(v) { return (v||'')[0]==='+'?'var(--green)':'var(--red)'; });
+  html += _techCell('SAR', tech.parabolicSAR ? tech.parabolicSAR.direction + ' @ ' + tech.parabolicSAR.level : null, function(v) { return (v||'').includes('BULL')?'var(--green)':'var(--red)'; });
+  html += _techCell('Fibonacci', tech.fibonacci ? tech.fibonacci.nearLevel + ' (' + tech.fibonacci.retracement + '%)' : null);
+  html += _techCell('Pivots', tech.pivots ? 'PP ' + tech.pivots.pp + ' R1 ' + tech.pivots.r1 + ' S1 ' + tech.pivots.s1 : null);
+  html += _techCell('Hurst', tech.hurst, function(v) { return v>0.55?'var(--green)':v<0.45?'var(--accent)':'var(--text2)'; });
+  html += _techCell('Z-Score', tech.zScore, function(v) { return Math.abs(v)>2?'var(--red)':Math.abs(v)>1.5?'var(--amber)':'var(--text2)'; });
+  html += _techCell('Consec', tech.consecutiveDays, function(v) { return v > 0 ? 'var(--green)' : v < 0 ? 'var(--red)' : 'var(--text3)'; });
   html += '</div></div>';
 
   // ── News sentiment (from client-side) ────────────────────────────────
@@ -9199,14 +9239,34 @@ function _renderV2Prediction(v2, body, badge, btn) {
   if (bt) {
     var btCol = parseFloat(bt.accuracy) >= 55 ? 'var(--green)' : parseFloat(bt.accuracy) >= 50 ? 'var(--amber)' : 'var(--red)';
     var retCol = parseFloat(bt.cumulativeReturn) >= 0 ? 'var(--green)' : 'var(--red)';
+    var sharpeCol = parseFloat(bt.sharpeRatio) >= 1 ? 'var(--green)' : parseFloat(bt.sharpeRatio) >= 0.5 ? 'var(--amber)' : 'var(--red)';
     html += '<div style="margin-bottom:16px;padding:12px;background:var(--bg4);border:1px solid var(--border2);border-radius:10px">';
-    html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🔬 Backtest (ASX 200 — last ' + bt.total + ' signals)</div>';
-    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">🔬 Walk-Forward Backtest (ASX 200 — ' + bt.total + ' signals, 2yr)</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center;margin-bottom:10px">';
     html += '<div><div style="font-size:9px;color:var(--text4)">Accuracy</div><div style="font-size:18px;font-weight:900;color:' + btCol + '">' + bt.accuracy + '%</div></div>';
-    html += '<div><div style="font-size:9px;color:var(--text4)">Win/Total</div><div style="font-size:18px;font-weight:900;color:var(--text2)">' + bt.correct + '/' + bt.total + '</div></div>';
-    html += '<div><div style="font-size:9px;color:var(--text4)">Avg Return</div><div style="font-size:18px;font-weight:900;color:' + retCol + '">' + bt.avgReturn + '%</div></div>';
-    html += '<div><div style="font-size:9px;color:var(--text4)">Cumulative</div><div style="font-size:18px;font-weight:900;color:' + retCol + '">' + (parseFloat(bt.cumulativeReturn) > 0 ? '+' : '') + bt.cumulativeReturn + '%</div></div>';
+    html += '<div><div style="font-size:9px;color:var(--text4)">Win/Loss</div><div style="font-size:18px;font-weight:900;color:var(--text2)">' + bt.wins + '/' + bt.losses + '</div></div>';
+    html += '<div><div style="font-size:9px;color:var(--text4)">Sharpe Ratio</div><div style="font-size:18px;font-weight:900;color:' + sharpeCol + '">' + bt.sharpeRatio + '</div></div>';
+    html += '<div><div style="font-size:9px;color:var(--text4)">Profit Factor</div><div style="font-size:18px;font-weight:900;color:' + (parseFloat(bt.profitFactor) >= 1.3 ? 'var(--green)' : 'var(--red)') + '">' + bt.profitFactor + '</div></div>';
     html += '</div>';
+    html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">';
+    html += '<div><div style="font-size:9px;color:var(--text4)">Max Drawdown</div><div style="font-size:14px;font-weight:800;color:var(--red)">-' + bt.maxDrawdown + '%</div></div>';
+    html += '<div><div style="font-size:9px;color:var(--text4)">Avg Win/Loss</div><div style="font-size:14px;font-weight:800;color:var(--text2)">+' + bt.avgWin + '/-' + bt.avgLoss + '</div></div>';
+    html += '<div><div style="font-size:9px;color:var(--text4)">Kelly %</div><div style="font-size:14px;font-weight:800;color:var(--accent)">' + bt.kellyPct + '%</div></div>';
+    html += '<div><div style="font-size:9px;color:var(--text4)">Win Streaks</div><div style="font-size:14px;font-weight:800;color:var(--text2)">W' + bt.maxStreakWin + ' / L' + bt.maxStreakLoss + '</div></div>';
+    html += '</div>';
+
+    // Regime accuracy breakdown
+    if (bt.regimeAccuracy) {
+      var raKeys = Object.keys(bt.regimeAccuracy).filter(function(k) { return bt.regimeAccuracy[k].total > 5; });
+      if (raKeys.length) {
+        html += '<div style="margin-top:10px;display:flex;gap:12px;flex-wrap:wrap">';
+        raKeys.forEach(function(rk) {
+          var ra = bt.regimeAccuracy[rk];
+          html += '<div style="font-size:10px;color:var(--text3)">' + rk + ': <span style="font-weight:800;color:' + (parseFloat(ra.accuracy) >= 55 ? 'var(--green)' : 'var(--amber)') + '">' + ra.accuracy + '%</span> <span style="color:var(--text4)">(' + ra.total + ')</span></div>';
+        });
+        html += '</div>';
+      }
+    }
 
     // Recent backtest results mini-chart
     if (bt.recentResults && bt.recentResults.length) {
@@ -9249,7 +9309,7 @@ function _renderV2Prediction(v2, body, badge, btn) {
 
   // ── Footer ───────────────────────────────────────────────────────────
   html += '<div style="text-align:center;font-size:10px;color:var(--text4);margin-top:10px">';
-  html += '16-factor quant model · 2yr backtest · generated ' + new Date(v2.generated).toLocaleTimeString() + ' · <em>Not financial advice</em>';
+  html += (v2.factorCount || factors.length) + '-factor ensemble model · 18 assets · 3 sub-models · regime-adaptive weights · 2yr walk-forward backtest · ' + new Date(v2.generated).toLocaleTimeString() + ' · <em>Not financial advice</em>';
   html += '</div>';
 
   body.innerHTML = html;
